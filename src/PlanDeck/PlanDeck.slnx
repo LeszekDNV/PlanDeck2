@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/Aspire/">
+    <Project Path="Aspire/PlanDeck.AppHost/PlanDeck.AppHost.csproj" />
+    <Project Path="Aspire/PlanDeck.ServiceDefaults/PlanDeck.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/Core/">
+    <Project Path="Core/PlanDeck.Application/PlanDeck.Application.csproj" Id="7527f2dc-7223-4398-ac0f-667f1ea49568" />
+    <Project Path="Core/PlanDeck.Common/PlanDeck.Common.csproj" Id="4763c5a0-d229-482b-95f0-94eddcda48b0" />
+    <Project Path="Core/PlanDeck.Core.Shared/PlanDeck.Core.Shared.csproj" Id="94015398-6534-48f3-b978-a8630eebf38a" />
+    <Project Path="Core/PlanDeck.Infrastructure/PlanDeck.Infrastructure.csproj" Id="4fdf8862-7693-4401-8511-bacce1162094" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj" Id="1f0cce7e-367c-4283-bf0b-261416f5732b" />
+    <Project Path="Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj" Id="f0423bc1-4854-429f-b5ab-f1ed85489ec3" />
+    <Project Path="tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj" Id="67419bfa-0b9b-4b59-9c3e-44ae010dc6c9" />
+  </Folder>
+  <Folder Name="/Web/">
+    <Project Path="Web/PlanDeck.Client/PlanDeck.Client.csproj" Id="91e7256f-2073-4d27-a6b6-0e9a85e2edcb" />
+    <Project Path="Web/PlanDeck.Server/PlanDeck.Server.csproj" />
+  </Folder>
+</Solution>

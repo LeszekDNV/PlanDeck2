@@ -1,0 +1,21 @@
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Grpc.Net.Client;
+using Grpc.Net.Client.Web;
+using MudBlazor.Services;
+using PlanDeck.Client;
+using PlanDeck.Client.Services;
+
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
+
+builder.Services.AddMudServices();
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+builder.Services.AddScoped(sp => GrpcChannel.ForAddress(
+    builder.HostEnvironment.BaseAddress,
+    new GrpcChannelOptions { HttpHandler = new GrpcWebHandler(new HttpClientHandler()) }));
+builder.Services.AddScoped<IHelloClientService, HelloClientService>();
+
+await builder.Build().RunAsync();

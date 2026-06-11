@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <TestRunParameters>
+    <!--
+      BaseUrl controls where the E2E tests point the browser.
+      Empty value: local developer machine, Aspire is started automatically.
+      A URL value: remote environment (CI / test / prod), Aspire is NOT started and
+      the tests navigate straight to this already-deployed server.
+
+      Override per run without editing this file by passing a TestRunParameters
+      argument to "dotnet test".
+    -->
+    <Parameter name="BaseUrl" value="" />
+  </TestRunParameters>
+</RunSettings>
