@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.JSInterop;
+using System.Globalization;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Web;
 using MudBlazor.Services;
@@ -13,6 +15,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddMudServices();
 builder.Services.AddAuthorizationCore();
+builder.Services.AddLocalization();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 builder.Services.AddScoped(sp => GrpcChannel.ForAddress(
@@ -25,4 +28,12 @@ builder.Services.AddScoped<GrpcAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<GrpcAuthenticationStateProvider>());
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+var jsRuntime = host.Services.GetRequiredService<IJSRuntime>();
+var storedCulture = await jsRuntime.InvokeAsync<string?>("localStorage.getItem", "BlazorCulture");
+var culture = new CultureInfo(string.IsNullOrWhiteSpace(storedCulture) ? "en" : storedCulture);
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+await host.RunAsync();

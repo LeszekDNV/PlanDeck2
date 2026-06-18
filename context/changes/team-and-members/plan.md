@@ -525,23 +525,23 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 #### Automated
 
-- [x] 3.1 Build passes: `dotnet build PlanDeck.slnx`
-- [x] 3.2 Solution builds with the new Client auth package restored (packages.lock.json updated)
+- [x] 3.1 Build passes: `dotnet build PlanDeck.slnx` — d602ca3
+- [x] 3.2 Solution builds with the new Client auth package restored (packages.lock.json updated) — d602ca3
 
 #### Manual
 
-- [x] 3.3 Header shows Login when signed out; signed-in display name after /auth/login; anonymous after /auth/logout
-- [x] 3.4 IAuthService.GetCurrentUserAsync returns the correct identity for the signed-in user
+- [x] 3.3 Header shows Login when signed out; signed-in display name after /auth/login; anonymous after /auth/logout — d602ca3
+- [x] 3.4 IAuthService.GetCurrentUserAsync returns the correct identity for the signed-in user — d602ca3
 
 ### Phase 4: Localization Foundation (WASM, en/pl)
 
 #### Automated
 
-- [ ] 4.1 Build passes: `dotnet build PlanDeck.slnx` (resx compiles; satellite resources produced)
+- [x] 4.1 Build passes: `dotnet build PlanDeck.slnx` (resx compiles; satellite resources produced)
 
 #### Manual
 
-- [ ] 4.2 Header language toggle switches en↔pl and survives reload
+- [x] 4.2 Header language toggle switches en↔pl and survives reload
 
 ### Phase 5: Teams UI
 
