@@ -14,6 +14,10 @@ public sealed class PlanDeckDbContext(
 
     public DbSet<AppUser> AppUsers => Set<AppUser>();
 
+    public DbSet<Team> Teams => Set<Team>();
+
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+
     private Guid CurrentTenantId => _currentUser.TenantId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
