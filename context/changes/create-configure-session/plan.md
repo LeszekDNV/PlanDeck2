@@ -362,22 +362,20 @@ A single additive `AddPlanningSessions` migration creates two new tables; no exi
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Migration generates and the snapshot compiles (no pending-model-changes warning)
-- [x] 1.3 Integration test passes: SessionPersistenceTests
-
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — cd69bae
+- [x] 1.2 Migration generates and the snapshot compiles (no pending-model-changes warning) — cd69bae
+- [x] 1.3 Integration test passes: SessionPersistenceTests — cd69bae
 #### Manual
-
-- [ ] 1.4 App startup applies the migration and creates `Sessions` + `SessionTasks` tables
-- [ ] 1.5 `sql` health check is healthy after startup
+- [x] 1.4 App startup applies the migration and creates `Sessions` + `SessionTasks` tables — cd69bae
+- [x] 1.5 `sql` health check is healthy after startup — cd69bae
 
 ### Phase 2: Backend — Contract, Service & Repository
 
 #### Automated
 
-- [ ] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 Unit tests pass: SessionGrpcServiceTests
-- [ ] 2.3 Full test suite still green: `dotnet test PlanDeck.slnx`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 2.2 Unit tests pass: SessionGrpcServiceTests
+- [x] 2.3 Full test suite still green: `dotnet test PlanDeck.slnx`
 
 #### Manual
 

@@ -116,6 +116,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<TeamGrpcService>();
+            services.AddScoped<ISessionRepository, SessionRepository>();
+            services.AddScoped<SessionGrpcService>();
             services.AddScoped<AuthGrpcService>();
             return services;
         }

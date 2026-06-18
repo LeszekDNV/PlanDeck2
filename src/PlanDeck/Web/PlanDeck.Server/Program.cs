@@ -91,6 +91,7 @@ app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 app.MapGrpcService<HelloGrpcService>();
 app.MapGrpcService<AzureDevOpsWorkItemGrpcService>();
 app.MapGrpcService<TeamGrpcService>();
+app.MapGrpcService<SessionGrpcService>();
 app.MapGrpcService<AuthGrpcService>();
 app.MapHub<PlanningRoomHub>("/hubs/planning-room");
 app.MapStaticAssets();

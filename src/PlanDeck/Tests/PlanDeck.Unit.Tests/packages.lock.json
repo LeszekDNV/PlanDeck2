@@ -41,6 +41,11 @@
           "Microsoft.Testing.Platform.MSBuild": "2.1.0"
         }
       },
+      "Grpc.Core.Api": {
+        "type": "Transitive",
+        "resolved": "2.66.0",
+        "contentHash": "HsjsQVAHe4hqP4t4rpUnmq+MZvPdyrlPsWF4T5fbMvyP3o/lMV+KVJfDlaNH8+v0aGQTVT3EsDFufbhaWb52cw=="
+      },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
         "resolved": "2.23.0",
@@ -115,6 +120,42 @@
         "type": "Transitive",
         "resolved": "13.0.3",
         "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+      },
+      "protobuf-net": {
+        "type": "Transitive",
+        "resolved": "3.2.56",
+        "contentHash": "4IPJeTYAMNewlN8MDaFkcmR/9hLhJeo9eARnTh104zh7mf+vXT2gu5MUfUnkSQU+CH578Q6vcdU7LQDQPG6eaw==",
+        "dependencies": {
+          "protobuf-net.Core": "3.2.56"
+        }
+      },
+      "protobuf-net.Core": {
+        "type": "Transitive",
+        "resolved": "3.2.56",
+        "contentHash": "d6QOukTpDzs7zZv9tPnBZMtvHDNeHJQXUhMx54g4urUQsXK3oo9U70H9HvklYq7hlQ4A7AHJl7EVEqyCXXIl8Q=="
+      },
+      "protobuf-net.Grpc": {
+        "type": "Transitive",
+        "resolved": "1.2.2",
+        "contentHash": "ywpDWMKewrojQQyAKicELuTuaH+heEQfcuB+aJdENN9OfNOIuWLnwLdnHOzJ1162hD/1trzYDFMV5g8vmTxJTQ==",
+        "dependencies": {
+          "Grpc.Core.Api": "2.66.0",
+          "protobuf-net": "2.4.8"
+        }
+      },
+      "plandeck.application": {
+        "type": "Project",
+        "dependencies": {
+          "PlanDeck.Core.Shared": "[1.0.0, )",
+          "protobuf-net.Grpc": "[1.2.2, )"
+        }
+      },
+      "plandeck.core.shared": {
+        "type": "Project",
+        "dependencies": {
+          "protobuf-net": "[3.2.56, )",
+          "protobuf-net.Grpc": "[1.2.2, )"
+        }
       }
     }
   }

@@ -26,4 +26,8 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\PlanDeck.Application\PlanDeck.Application.csproj" />
+  </ItemGroup>
+
 </Project>
