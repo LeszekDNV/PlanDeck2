@@ -18,6 +18,10 @@ public sealed class PlanDeckDbContext(
 
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
 
+    public DbSet<PlanningSession> Sessions => Set<PlanningSession>();
+
+    public DbSet<SessionTask> SessionTasks => Set<SessionTask>();
+
     private Guid CurrentTenantId => _currentUser.TenantId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
