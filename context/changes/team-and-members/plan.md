@@ -504,7 +504,7 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 - [x] 1.1 Build passes: `dotnet build PlanDeck.slnx` — 822bb6b
 - [x] 1.2 Migration generated and model snapshot includes Teams + TeamMembers — 822bb6b
-- [x] 1.3 Migration applies cleanly on startup in Development (via Phase 6 boot)
+- [x] 1.3 Migration applies cleanly on startup in Development (via Phase 6 boot) — e9390f2
 
 #### Manual
 
@@ -515,7 +515,7 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 #### Automated
 
 - [x] 2.1 Build passes: `dotnet build PlanDeck.slnx` — 520655a
-- [x] 2.2 Team persistence/isolation exercised green in Phase 6 integration tests
+- [x] 2.2 Team persistence/isolation exercised green in Phase 6 integration tests — e9390f2
 
 #### Manual
 
@@ -559,10 +559,10 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 #### Automated
 
-- [x] 6.1 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
-- [x] 6.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
-- [x] 6.3 Full suite green: `dotnet test PlanDeck.slnx`
+- [x] 6.1 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj` — e9390f2
+- [x] 6.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj` — e9390f2
+- [x] 6.3 Full suite green: `dotnet test PlanDeck.slnx` — e9390f2
 
 #### Manual
 
-- [x] 6.4 Reviewed that the E2E test-auth path is environment-gated (off in Development/Production)
+- [x] 6.4 Reviewed that the E2E test-auth path is environment-gated (off in Development/Production) — e9390f2

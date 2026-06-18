@@ -1,7 +1,7 @@
 ---
 change_id: team-and-members
 title: Team and members — create a team and add members to it
-status: implementing
+status: implemented
 created: 2026-06-18
 updated: 2026-06-18
 archived_at: null
