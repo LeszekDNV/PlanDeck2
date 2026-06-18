@@ -32,7 +32,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | F-01 | multitenant-persistence-baseline | (foundation) persisted, tenant-scoped domain model with verified migrations | — | Access Control Changes, Guardrails (tenant isolation), FR-001 | done |
 | F-02 | realtime-vote-integrity | (foundation) authoritative hidden-vote/reveal contract with consistency guarantees | F-01 | Guardrails (vote consistency, hidden-until-reveal), Business Logic Changes | proposed |
 | F-03 | deploy-realtime-validation-skeleton | (foundation) pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL stack | — | Constraints & Compatibility; infrastructure.md (ACA + Azure SQL) | ready |
-| S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | proposed |
+| S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | done |
 | S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | proposed |
 | S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | proposed |
 | S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | blocked |
@@ -122,7 +122,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Teams persist membership across sessions and drive both assignment (S-05) and notifications, so they are the membership root the assigned-member voting path needs. Low integration risk; mostly CRUD over the F-01 persistence pattern.
-- **Status:** proposed
+- **Status:** done
 
 ### S-02: Ad-hoc tasks
 
@@ -248,3 +248,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 (Empty on first generation. `/10x-archive` appends an entry here — and flips that item's `Status` to `done` — when a change whose `Change ID` matches the item is archived. Do NOT pre-populate.)
 
 - **F-01: (foundation) the EF Core domain-persistence pattern and the per-user/tenant data-scoping convention are established, with a real migration applied on startup against the configured SQL database.** — Archived 2026-06-18 → `context/archive/2026-06-18-multitenant-persistence-baseline/`. Lesson: —.
+- **S-01: a signed-in user can create a team and add members to it.** — Archived 2026-06-18 → `context/archive/2026-06-18-team-and-members/`. Lesson: —.
