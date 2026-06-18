@@ -32,6 +32,10 @@ public class AspireAppFixture
         }
 
         // Local developer machine: spin up the whole app via Aspire.
+        // Drive the deterministic test-auth scheme so the browser is auto-authenticated
+        // (env-gated in the AppHost; has no effect on a normal `dotnet run`).
+        Environment.SetEnvironmentVariable("PLANDECK_E2E_TESTAUTH", "true");
+
         var builder = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.PlanDeck_AppHost>();
 

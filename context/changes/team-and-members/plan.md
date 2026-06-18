@@ -504,7 +504,7 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 - [x] 1.1 Build passes: `dotnet build PlanDeck.slnx` — 822bb6b
 - [x] 1.2 Migration generated and model snapshot includes Teams + TeamMembers — 822bb6b
-- [ ] 1.3 Migration applies cleanly on startup in Development (via Phase 6 boot)
+- [x] 1.3 Migration applies cleanly on startup in Development (via Phase 6 boot)
 
 #### Manual
 
@@ -515,7 +515,7 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 #### Automated
 
 - [x] 2.1 Build passes: `dotnet build PlanDeck.slnx` — 520655a
-- [ ] 2.2 Team persistence/isolation exercised green in Phase 6 integration tests
+- [x] 2.2 Team persistence/isolation exercised green in Phase 6 integration tests
 
 #### Manual
 
@@ -547,22 +547,22 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 #### Automated
 
-- [x] 5.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 5.1 Build passes: `dotnet build PlanDeck.slnx` — ec8594c
 
 #### Manual
 
-- [x] 5.2 Create team / add member / remove member work end-to-end when signed in
-- [x] 5.3 Duplicate member email shows a friendly localized error
-- [x] 5.4 All Teams-screen text switches en↔pl via the header toggle
+- [x] 5.2 Create team / add member / remove member work end-to-end when signed in — ec8594c
+- [x] 5.3 Duplicate member email shows a friendly localized error — ec8594c
+- [x] 5.4 All Teams-screen text switches en↔pl via the header toggle — ec8594c
 
 ### Phase 6: Tests (Integration + E2E)
 
 #### Automated
 
-- [ ] 6.1 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
-- [ ] 6.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
-- [ ] 6.3 Full suite green: `dotnet test PlanDeck.slnx`
+- [x] 6.1 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
+- [x] 6.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
+- [x] 6.3 Full suite green: `dotnet test PlanDeck.slnx`
 
 #### Manual
 
-- [ ] 6.4 Reviewed that the E2E test-auth path is environment-gated (off in Development/Production)
+- [x] 6.4 Reviewed that the E2E test-auth path is environment-gated (off in Development/Production)
