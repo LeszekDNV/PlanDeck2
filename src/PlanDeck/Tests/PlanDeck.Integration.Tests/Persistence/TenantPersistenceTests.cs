@@ -27,9 +27,10 @@ public sealed class TenantPersistenceTests
     }
 
     [Test]
-    public async Task Write_UnderTenantA_IsInvisibleToTenantB()
+    public async Task Writes_AreScopedPerTenant_BothDirections()
     {
-        var email = $"a-{Guid.NewGuid():N}@example.com";
+        var emailA = $"a-{Guid.NewGuid():N}@example.com";
+        var emailB = $"b-{Guid.NewGuid():N}@example.com";
 
         await using (var tenantAContext = CreateContext(new FakeCurrentUserContext(TenantA, authenticated: true)))
         {
@@ -37,19 +38,37 @@ public sealed class TenantPersistenceTests
             {
                 Id = Guid.NewGuid(),
                 DisplayName = "Tenant A user",
-                Email = email,
+                Email = emailA,
             });
             await tenantAContext.SaveChangesAsync();
         }
 
-        await using var tenantBContext = CreateContext(new FakeCurrentUserContext(TenantB, authenticated: true));
-        var visibleToB = await tenantBContext.AppUsers.AnyAsync(u => u.Email == email);
+        await using (var tenantBContext = CreateContext(new FakeCurrentUserContext(TenantB, authenticated: true)))
+        {
+            tenantBContext.AppUsers.Add(new AppUser
+            {
+                Id = Guid.NewGuid(),
+                DisplayName = "Tenant B user",
+                Email = emailB,
+            });
+            await tenantBContext.SaveChangesAsync();
+        }
 
-        Assert.That(visibleToB, Is.False);
+        await using var readA = CreateContext(new FakeCurrentUserContext(TenantA, authenticated: true));
+        await using var readB = CreateContext(new FakeCurrentUserContext(TenantB, authenticated: true));
+
+        // Positive direction: each tenant reads back its own row. If the query filter had
+        // captured a one-time constant at model-build time, one of these would be invisible.
+        Assert.That(await readA.AppUsers.AnyAsync(u => u.Email == emailA), Is.True);
+        Assert.That(await readB.AppUsers.AnyAsync(u => u.Email == emailB), Is.True);
+
+        // Negative direction: neither tenant sees the other's row.
+        Assert.That(await readA.AppUsers.AnyAsync(u => u.Email == emailB), Is.False);
+        Assert.That(await readB.AppUsers.AnyAsync(u => u.Email == emailA), Is.False);
     }
 
     [Test]
-    public void Write_WithNoTenantContext_IsRejectedFailClosed()
+    public void Insert_WithNoTenantContext_IsRejectedFailClosed()
     {
         using var context = CreateContext(new FakeCurrentUserContext(Guid.Empty, authenticated: false));
         context.AppUsers.Add(new AppUser
@@ -58,6 +77,59 @@ public sealed class TenantPersistenceTests
             DisplayName = "No tenant",
             Email = $"nobody-{Guid.NewGuid():N}@example.com",
         });
+
+        Assert.That(() => context.SaveChanges(), Throws.TypeOf<InvalidOperationException>());
+    }
+
+    [Test]
+    public void Insert_Unauthenticated_WithExplicitTenant_IsRejectedFailClosed()
+    {
+        using var context = CreateContext(new FakeCurrentUserContext(Guid.Empty, authenticated: false));
+        context.AppUsers.Add(new AppUser
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Forged tenant",
+            Email = $"forged-{Guid.NewGuid():N}@example.com",
+            TenantId = TenantA,
+        });
+
+        Assert.That(() => context.SaveChanges(), Throws.TypeOf<InvalidOperationException>());
+    }
+
+    [Test]
+    public void Update_AttachedCrossTenantRow_IsRejected()
+    {
+        using var context = CreateContext(new FakeCurrentUserContext(TenantA, authenticated: true));
+        context.AppUsers.Update(new AppUser
+        {
+            Id = Guid.NewGuid(),
+            DisplayName = "Belongs to B",
+            Email = $"b-attached-{Guid.NewGuid():N}@example.com",
+            TenantId = TenantB,
+        });
+
+        Assert.That(() => context.SaveChanges(), Throws.TypeOf<InvalidOperationException>());
+    }
+
+    [Test]
+    public async Task Reassigning_TenantId_IsRejected()
+    {
+        var email = $"a-move-{Guid.NewGuid():N}@example.com";
+
+        await using (var seed = CreateContext(new FakeCurrentUserContext(TenantA, authenticated: true)))
+        {
+            seed.AppUsers.Add(new AppUser
+            {
+                Id = Guid.NewGuid(),
+                DisplayName = "Tenant A user",
+                Email = email,
+            });
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = CreateContext(new FakeCurrentUserContext(TenantA, authenticated: true));
+        var row = await context.AppUsers.SingleAsync(u => u.Email == email);
+        row.TenantId = TenantB;
 
         Assert.That(() => context.SaveChanges(), Throws.TypeOf<InvalidOperationException>());
     }

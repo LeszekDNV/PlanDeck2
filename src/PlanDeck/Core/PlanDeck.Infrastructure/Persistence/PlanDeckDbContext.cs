@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
 
@@ -60,7 +61,7 @@ public sealed class PlanDeckDbContext(
             switch (entry.State)
             {
                 case EntityState.Added:
-                    StampTenant(entry.Entity);
+                    StampTenantOnInsert(entry.Entity);
                     if (entry.Entity is TenantEntity added)
                     {
                         added.CreatedAtUtc = now;
@@ -70,34 +71,62 @@ public sealed class PlanDeckDbContext(
                     break;
 
                 case EntityState.Modified:
+                    GuardTenantOwnership(entry);
                     if (entry.Entity is TenantEntity modified)
                     {
                         modified.UpdatedAtUtc = now;
                     }
 
                     break;
+
+                case EntityState.Deleted:
+                    GuardTenantOwnership(entry);
+                    break;
             }
         }
     }
 
-    private void StampTenant(ITenantScoped entity)
+    private void StampTenantOnInsert(ITenantScoped entity)
     {
+        if (CurrentTenantId == Guid.Empty)
+        {
+            throw new InvalidOperationException(
+                "Cannot persist a tenant-scoped entity without a resolvable tenant. The current user context has no tenant.");
+        }
+
         if (entity.TenantId == Guid.Empty)
         {
-            if (CurrentTenantId == Guid.Empty)
-            {
-                throw new InvalidOperationException(
-                    "Cannot persist a tenant-scoped entity without a resolvable tenant. The current user context has no tenant.");
-            }
-
             entity.TenantId = CurrentTenantId;
             return;
         }
 
-        if (_currentUser.IsAuthenticated && entity.TenantId != CurrentTenantId)
+        if (entity.TenantId != CurrentTenantId)
         {
             throw new InvalidOperationException(
                 "Cannot persist a tenant-scoped entity whose TenantId differs from the current tenant.");
+        }
+    }
+
+    private void GuardTenantOwnership(EntityEntry<ITenantScoped> entry)
+    {
+        if (CurrentTenantId == Guid.Empty)
+        {
+            throw new InvalidOperationException(
+                "Cannot modify or delete a tenant-scoped entity without a resolvable tenant. The current user context has no tenant.");
+        }
+
+        var tenantProperty = entry.Property(e => e.TenantId);
+
+        if (tenantProperty.OriginalValue != CurrentTenantId)
+        {
+            throw new InvalidOperationException(
+                "Cannot modify or delete a tenant-scoped entity that belongs to a different tenant.");
+        }
+
+        if (entry.State == EntityState.Modified && tenantProperty.IsModified)
+        {
+            throw new InvalidOperationException(
+                "TenantId is immutable; reassigning a tenant-scoped entity to a different tenant is not allowed.");
         }
     }
 }
