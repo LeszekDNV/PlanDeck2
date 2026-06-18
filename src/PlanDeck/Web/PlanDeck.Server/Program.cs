@@ -1,6 +1,9 @@
 using PlanDeck.Server.Extensions;
 using PlanDeck.Application.Services;
 using PlanDeck.Server.Hubs;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using ProtoBuf.Grpc.Server;
 using System.Globalization;
 
@@ -54,12 +57,41 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
+var useTestScheme = app.Configuration.GetValue<bool>("Authentication:UseTestScheme");
+var microsoftAuth = app.Configuration.GetSection("Authentication:Microsoft");
+var isOidcConfigured = !useTestScheme
+    && !string.IsNullOrWhiteSpace(microsoftAuth["TenantId"])
+    && !string.IsNullOrWhiteSpace(microsoftAuth["ClientId"]);
+
+app.MapGet("/auth/login", (string? returnUrl) =>
+{
+    var target = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
+    return useTestScheme
+        ? Results.LocalRedirect(target)
+        : Results.Challenge(new AuthenticationProperties { RedirectUri = target });
+});
+
+app.MapGet("/auth/logout", () =>
+{
+    if (useTestScheme)
+    {
+        return Results.LocalRedirect("/");
+    }
+
+    var schemes = isOidcConfigured
+        ? new[] { CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme }
+        : new[] { CookieAuthenticationDefaults.AuthenticationScheme };
+
+    return Results.SignOut(new AuthenticationProperties { RedirectUri = "/" }, schemes);
+});
+
 
 // Configure the HTTP request pipeline.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 app.MapGrpcService<HelloGrpcService>();
 app.MapGrpcService<AzureDevOpsWorkItemGrpcService>();
 app.MapGrpcService<TeamGrpcService>();
+app.MapGrpcService<AuthGrpcService>();
 app.MapHub<PlanningRoomHub>("/hubs/planning-room");
 app.MapStaticAssets();
 app.MapDefaultEndpoints();

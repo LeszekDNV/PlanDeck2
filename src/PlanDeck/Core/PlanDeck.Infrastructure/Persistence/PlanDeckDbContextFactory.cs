@@ -22,5 +22,9 @@ public sealed class PlanDeckDbContextFactory : IDesignTimeDbContextFactory<PlanD
         public Guid UserId => Guid.Empty;
 
         public bool IsAuthenticated => false;
+
+        public string? DisplayName => null;
+
+        public string? Email => null;
     }
 }

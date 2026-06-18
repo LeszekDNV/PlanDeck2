@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <PreserveCompilationContext>true</PreserveCompilationContext>
+    <UserSecretsId>055253f8-7031-485c-8e6f-3712ab2354b3</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,11 +34,7 @@
     <ItemGroup>
       <BlazorBootScript Include="$(PublishDir)wwwroot\_framework\blazor.webassembly.*.js" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(BlazorBootScript)"
-      DestinationFiles="@(BlazorBootScript->'$(PublishDir)wwwroot\_framework\blazor.webassembly.js')"
-      SkipUnchangedFiles="true"
-      Condition="'@(BlazorBootScript)' != ''" />
+    <Copy SourceFiles="@(BlazorBootScript)" DestinationFiles="@(BlazorBootScript-&gt;'$(PublishDir)wwwroot\_framework\blazor.webassembly.js')" SkipUnchangedFiles="true" Condition="'@(BlazorBootScript)' != ''" />
   </Target>
 
 </Project>

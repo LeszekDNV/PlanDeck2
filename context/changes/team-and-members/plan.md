@@ -514,24 +514,24 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 #### Automated
 
-- [x] 2.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 2.1 Build passes: `dotnet build PlanDeck.slnx` — 520655a
 - [ ] 2.2 Team persistence/isolation exercised green in Phase 6 integration tests
 
 #### Manual
 
-- [x] 2.3 Walked the contract: every ITeamService op has a request/reply DTO and a delegating implementation
+- [x] 2.3 Walked the contract: every ITeamService op has a request/reply DTO and a delegating implementation — 520655a
 
 ### Phase 3: Authentication Foundation (Server + Client)
 
 #### Automated
 
-- [ ] 3.1 Build passes: `dotnet build PlanDeck.slnx`
-- [ ] 3.2 Solution builds with the new Client auth package restored (packages.lock.json updated)
+- [x] 3.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 3.2 Solution builds with the new Client auth package restored (packages.lock.json updated)
 
 #### Manual
 
-- [ ] 3.3 Header shows Login when signed out; signed-in display name after /auth/login; anonymous after /auth/logout
-- [ ] 3.4 IAuthService.GetCurrentUserAsync returns the correct identity for the signed-in user
+- [x] 3.3 Header shows Login when signed out; signed-in display name after /auth/login; anonymous after /auth/logout
+- [x] 3.4 IAuthService.GetCurrentUserAsync returns the correct identity for the signed-in user
 
 ### Phase 4: Localization Foundation (WASM, en/pl)
 

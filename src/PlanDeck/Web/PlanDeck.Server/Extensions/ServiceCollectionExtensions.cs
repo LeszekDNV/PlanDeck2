@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -50,6 +51,21 @@ public static class ServiceCollectionExtensions
 
         public IServiceCollection AddExternalServices(IConfiguration configuration)
         {
+            var useTestScheme = configuration.GetValue<bool>("Authentication:UseTestScheme");
+            if (useTestScheme)
+            {
+                services
+                    .AddAuthentication(TestAuthenticationHandler.SchemeName)
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
+                        TestAuthenticationHandler.SchemeName, null);
+
+                services.AddAuthorization();
+                services.Configure<AzureDevOpsOptions>(configuration.GetSection(AzureDevOpsOptions.SectionName));
+                services.AddHttpClient<IAzureDevOpsWorkItemClient, AzureDevOpsWorkItemClient>();
+
+                return services;
+            }
+
             var microsoftAuth = configuration.GetSection("Authentication:Microsoft");
             var tenantId = microsoftAuth["TenantId"];
             var clientId = microsoftAuth["ClientId"];
@@ -100,6 +116,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<TeamGrpcService>();
+            services.AddScoped<AuthGrpcService>();
             return services;
         }
     }

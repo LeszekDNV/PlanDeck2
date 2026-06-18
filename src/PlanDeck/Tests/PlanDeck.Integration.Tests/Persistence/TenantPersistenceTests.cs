@@ -150,5 +150,9 @@ public sealed class TenantPersistenceTests
         public Guid UserId { get; } = Guid.Empty;
 
         public bool IsAuthenticated { get; } = authenticated;
+
+        public string? DisplayName { get; }
+
+        public string? Email { get; }
     }
 }

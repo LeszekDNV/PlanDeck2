@@ -15,6 +15,10 @@ public sealed class HttpContextCurrentUserContext(IHttpContextAccessor httpConte
     public bool IsAuthenticated =>
         _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true;
 
+    public string? DisplayName => ReadStringClaim("name") ?? ReadStringClaim("preferred_username");
+
+    public string? Email => ReadStringClaim("email") ?? ReadStringClaim("preferred_username");
+
     private Guid ReadGuidClaim(string claimType)
     {
         var principal = _httpContextAccessor.HttpContext?.User;
@@ -27,5 +31,17 @@ public sealed class HttpContextCurrentUserContext(IHttpContextAccessor httpConte
         return Guid.TryParse(value, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : Guid.Empty;
+    }
+
+    private string? ReadStringClaim(string claimType)
+    {
+        var principal = _httpContextAccessor.HttpContext?.User;
+        if (principal?.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var value = principal.FindFirstValue(claimType);
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 }
