@@ -1,0 +1,8 @@
+name: plandeck
+metadata:
+  template: plandeck-aspire-aca@0.1.0
+services:
+  plandeck-server:
+    project: Aspire/PlanDeck.AppHost/PlanDeck.AppHost.csproj
+    language: dotnet
+    host: containerapp

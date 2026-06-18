@@ -9,16 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\greet.proto" GrpcServices="Server" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.*-*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.*-*" />
     <PackageReference Include="Grpc.AspNetCore.Web" Version="2.80.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.*-*">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.*-*" />
     <PackageReference Include="protobuf-net" Version="3.2.56" />
     <PackageReference Include="protobuf-net.Grpc.AspNetCore" Version="1.2.2" />
   </ItemGroup>
@@ -27,7 +25,19 @@
     <ProjectReference Include="..\..\Aspire\PlanDeck.ServiceDefaults\PlanDeck.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Core\PlanDeck.Application\PlanDeck.Application.csproj" />
     <ProjectReference Include="..\..\Core\PlanDeck.Core.Shared\PlanDeck.Core.Shared.csproj" />
+    <ProjectReference Include="..\..\Core\PlanDeck.Infrastructure\PlanDeck.Infrastructure.csproj" />
     <ProjectReference Include="..\PlanDeck.Client\PlanDeck.Client.csproj" />
   </ItemGroup>
+
+  <Target Name="CopyBlazorBootScriptWithoutFingerprint" AfterTargets="Publish">
+    <ItemGroup>
+      <BlazorBootScript Include="$(PublishDir)wwwroot\_framework\blazor.webassembly.*.js" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(BlazorBootScript)"
+      DestinationFiles="@(BlazorBootScript->'$(PublishDir)wwwroot\_framework\blazor.webassembly.js')"
+      SkipUnchangedFiles="true"
+      Condition="'@(BlazorBootScript)' != ''" />
+  </Target>
 
 </Project>

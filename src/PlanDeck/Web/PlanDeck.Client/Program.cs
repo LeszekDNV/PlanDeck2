@@ -17,5 +17,7 @@ builder.Services.AddScoped(sp => GrpcChannel.ForAddress(
     builder.HostEnvironment.BaseAddress,
     new GrpcChannelOptions { HttpHandler = new GrpcWebHandler(new HttpClientHandler()) }));
 builder.Services.AddScoped<IHelloClientService, HelloClientService>();
+builder.Services.AddScoped<IAzureDevOpsClientService, AzureDevOpsClientService>();
+builder.Services.AddScoped<IPlanningRoomClientService, PlanningRoomClientService>();
 
 await builder.Build().RunAsync();

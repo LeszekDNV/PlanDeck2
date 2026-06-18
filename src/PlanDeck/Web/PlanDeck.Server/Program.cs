@@ -1,5 +1,6 @@
 using PlanDeck.Server.Extensions;
 using PlanDeck.Application.Services;
+using PlanDeck.Server.Hubs;
 using ProtoBuf.Grpc.Server;
 using System.Globalization;
 
@@ -10,6 +11,7 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddGrpc();
+builder.Services.AddSignalR();
 
 builder.Services
     .AddSqlDatabase(builder.Configuration)
@@ -47,19 +49,20 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     ApplyCurrentCultureToResponseHeaders = true
 });
 
-app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
-
-app.MapFallbackToFile("index.html");
-
-//app.UseAuthentication();
-//app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 
 // Configure the HTTP request pipeline.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 app.MapGrpcService<HelloGrpcService>();
+app.MapGrpcService<AzureDevOpsWorkItemGrpcService>();
+app.MapHub<PlanningRoomHub>("/hubs/planning-room");
+app.MapStaticAssets();
+app.MapDefaultEndpoints();
+app.MapFallbackToFile("index.html");
 //app.MapGrpcService<GreeterService>();
 
 app.Run();
