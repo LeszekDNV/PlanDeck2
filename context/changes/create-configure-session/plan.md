@@ -373,9 +373,9 @@ A single additive `AddPlanningSessions` migration creates two new tables; no exi
 
 #### Automated
 
-- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 2.2 Unit tests pass: SessionGrpcServiceTests
-- [x] 2.3 Full test suite still green: `dotnet test PlanDeck.slnx`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx` — 5f7f3a3
+- [x] 2.2 Unit tests pass: SessionGrpcServiceTests — 5f7f3a3
+- [x] 2.3 Full test suite still green: `dotnet test PlanDeck.slnx` — 5f7f3a3
 
 #### Manual
 
@@ -386,8 +386,8 @@ A single additive `AddPlanningSessions` migration creates two new tables; no exi
 
 #### Automated
 
-- [ ] 3.1 Solution builds (Razor + client): `dotnet build PlanDeck.slnx`
-- [ ] 3.2 Full test suite still green: `dotnet test PlanDeck.slnx`
+- [x] 3.1 Solution builds (Razor + client): `dotnet build PlanDeck.slnx`
+- [x] 3.2 Full test suite still green: `dotnet test PlanDeck.slnx`
 
 #### Manual
 

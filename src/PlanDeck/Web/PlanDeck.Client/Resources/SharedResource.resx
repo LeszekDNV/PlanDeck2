@@ -121,4 +121,91 @@
   <data name="Error_Generic" xml:space="preserve">
     <value>Something went wrong. Please try again.</value>
   </data>
+  <data name="Nav_Sessions" xml:space="preserve">
+    <value>Sessions</value>
+  </data>
+  <data name="Sessions_Title" xml:space="preserve">
+    <value>Planning sessions</value>
+  </data>
+  <data name="Sessions_Create" xml:space="preserve">
+    <value>Create session</value>
+  </data>
+  <data name="Sessions_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Sessions_Team" xml:space="preserve">
+    <value>Team (optional)</value>
+  </data>
+  <data name="Sessions_Empty" xml:space="preserve">
+    <value>You don't have any sessions yet.</value>
+  </data>
+  <data name="Sessions_Scale" xml:space="preserve">
+    <value>Voting scale</value>
+  </data>
+  <data name="Scale_Fibonacci" xml:space="preserve">
+    <value>Fibonacci</value>
+  </data>
+  <data name="Scale_TShirt" xml:space="preserve">
+    <value>T-shirt sizes</value>
+  </data>
+  <data name="Scale_Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Sessions_CustomValues" xml:space="preserve">
+    <value>Custom values</value>
+  </data>
+  <data name="Sessions_CustomValuesHint" xml:space="preserve">
+    <value>Separate values with commas or new lines.</value>
+  </data>
+  <data name="Sessions_Tasks" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="Sessions_NoTasks" xml:space="preserve">
+    <value>This session has no tasks yet.</value>
+  </data>
+  <data name="Sessions_TaskTitle" xml:space="preserve">
+    <value>Task title</value>
+  </data>
+  <data name="Sessions_AddAdHocTask" xml:space="preserve">
+    <value>Add task</value>
+  </data>
+  <data name="Sessions_ImportAdo" xml:space="preserve">
+    <value>Import from Azure DevOps</value>
+  </data>
+  <data name="Sessions_Activate" xml:space="preserve">
+    <value>Activate</value>
+  </data>
+  <data name="Sessions_Activated" xml:space="preserve">
+    <value>Session activated.</value>
+  </data>
+  <data name="Sessions_Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Sessions_Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Sessions_Config" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="Sessions_SaveConfig" xml:space="preserve">
+    <value>Save configuration</value>
+  </data>
+  <data name="Sessions_RemoveTask" xml:space="preserve">
+    <value>Remove task</value>
+  </data>
+  <data name="Sessions_ActiveLocked" xml:space="preserve">
+    <value>This session is active and can no longer be edited.</value>
+  </data>
+  <data name="Sessions_NameRequired" xml:space="preserve">
+    <value>Session name is required.</value>
+  </data>
+  <data name="Sessions_TaskTitleRequired" xml:space="preserve">
+    <value>A task title is required.</value>
+  </data>
+  <data name="Sessions_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Sessions_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
 </root>

@@ -1,0 +1,31 @@
+using PlanDeck.Core.Shared.Contracts;
+
+namespace PlanDeck.Client.Services;
+
+public interface ISessionClientService
+{
+    Task<IReadOnlyList<SessionDto>> GetSessionsAsync();
+
+    Task<SessionDto> GetSessionAsync(Guid id);
+
+    Task<SessionDto> CreateSessionAsync(
+        string name,
+        Guid? teamId,
+        VotingScaleTypeDto scaleType,
+        IReadOnlyList<string> customScaleValues,
+        IReadOnlyList<NewSessionTaskDto> tasks);
+
+    Task<SessionDto> UpdateSessionConfigAsync(
+        Guid id,
+        string name,
+        VotingScaleTypeDto scaleType,
+        IReadOnlyList<string> customScaleValues);
+
+    Task<SessionDto> AddTaskAsync(Guid sessionId, NewSessionTaskDto task);
+
+    Task<SessionDto> RemoveTaskAsync(Guid sessionId, Guid taskId);
+
+    Task<SessionDto> ActivateSessionAsync(Guid id);
+
+    Task<bool> DeleteSessionAsync(Guid id);
+}

@@ -1,0 +1,593 @@
+@page "/sessions"
+@using Grpc.Core
+@using PlanDeck.Client.Services
+@using PlanDeck.Core.Shared.Contracts
+@inject ISessionClientService SessionService
+@inject ITeamClientService TeamService
+@inject IAzureDevOpsClientService AdoService
+@inject IStringLocalizer<SharedResource> L
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>@L["Sessions_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+    <AuthorizeView>
+        <Authorized>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                <MudText Typo="Typo.h4">@L["Sessions_Title"]</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate">
+                    @L["Sessions_Create"]
+                </MudButton>
+            </MudStack>
+
+            @if (_loading)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (_sessions.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info">@L["Sessions_Empty"]</MudAlert>
+            }
+            else
+            {
+                <MudPaper Class="pa-2 mb-4">
+                    @foreach (var session in _sessions)
+                    {
+                        <MudButton FullWidth="true" Class="justify-start"
+                                   Color="@(_selected?.Id == session.Id ? Color.Primary : Color.Default)"
+                                   OnClick="@(() => SelectAsync(session))">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%">
+                                <span>@session.Name</span>
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
+                                    @StatusLabel(session.Status)
+                                </MudChip>
+                            </MudStack>
+                        </MudButton>
+                    }
+                </MudPaper>
+            }
+
+            @if (_selected is not null)
+            {
+                <MudCard Class="mt-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.h6">@L["Sessions_Config"] — @_selected.Name</MudText>
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(_selected.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
+                                    @StatusLabel(_selected.Status)
+                                </MudChip>
+                            </MudStack>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @if (_selected.Status == SessionStatusDto.Active)
+                        {
+                            <MudAlert Severity="Severity.Info" Class="mb-3">@L["Sessions_ActiveLocked"]</MudAlert>
+                        }
+
+                        <MudTextField @bind-Value="_configName" Label="@L["Sessions_Name"]"
+                                      Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked" />
+
+                        <MudSelect T="VotingScaleTypeDto" @bind-Value="_configScaleType" Label="@L["Sessions_Scale"]"
+                                   Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked">
+                            <MudSelectItem Value="VotingScaleTypeDto.Fibonacci">@L["Scale_Fibonacci"]</MudSelectItem>
+                            <MudSelectItem Value="VotingScaleTypeDto.TShirt">@L["Scale_TShirt"]</MudSelectItem>
+                            <MudSelectItem Value="VotingScaleTypeDto.Custom">@L["Scale_Custom"]</MudSelectItem>
+                        </MudSelect>
+
+                        @if (_configScaleType == VotingScaleTypeDto.Custom)
+                        {
+                            <MudTextField @bind-Value="_configCustomValues" Label="@L["Sessions_CustomValues"]"
+                                          HelperText="@L["Sessions_CustomValuesHint"]" Lines="2"
+                                          Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked" />
+                        }
+
+                        @if (!_isLocked)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       Disabled="_savingConfig" OnClick="SaveConfigAsync" Class="mb-4">
+                                @L["Sessions_SaveConfig"]
+                            </MudButton>
+                        }
+
+                        <MudText Typo="Typo.subtitle1" Class="mt-2">@L["Sessions_Tasks"]</MudText>
+                        @if (_selected.Tasks.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info" Class="my-2">@L["Sessions_NoTasks"]</MudAlert>
+                        }
+                        else
+                        {
+                            <MudList T="SessionTaskDto">
+                                @foreach (var task in _selected.Tasks)
+                                {
+                                    <MudListItem T="SessionTaskDto">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                            <MudText>
+                                                @task.Title
+                                                @if (task.Source == TaskSourceDto.AzureDevOps && task.AdoWorkItemId is not null)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Class="ml-2">ADO #@task.AdoWorkItemId</MudChip>
+                                                }
+                                            </MudText>
+                                            @if (!_isLocked)
+                                            {
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                               Size="Size.Small" aria-label="@L["Sessions_RemoveTask"]"
+                                                               OnClick="@(() => RemoveTaskAsync(task))" />
+                                            }
+                                        </MudStack>
+                                    </MudListItem>
+                                }
+                            </MudList>
+                        }
+
+                        @if (!_isLocked)
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
+                                <MudTextField @bind-Value="_configTaskTitle" Label="@L["Sessions_TaskTitle"]"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                           Disabled="_addingTask" OnClick="AddTaskAsync">
+                                    @L["Sessions_AddAdHocTask"]
+                                </MudButton>
+                            </MudStack>
+
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mt-4">
+                                <MudButton Variant="Variant.Filled" Color="Color.Success"
+                                           Disabled="_activating" OnClick="ActivateAsync">
+                                    @L["Sessions_Activate"]
+                                </MudButton>
+                            </MudStack>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            }
+
+            <MudDialog @bind-Visible="_createOpen">
+                <TitleContent>
+                    <MudText Typo="Typo.h6">@L["Sessions_Create"]</MudText>
+                </TitleContent>
+                <DialogContent>
+                    <MudTextField @bind-Value="_newName" Label="@L["Sessions_Name"]"
+                                  Required="true" Variant="Variant.Outlined" Class="mb-3" />
+
+                    <MudSelect T="Guid?" @bind-Value="_newTeamId" Label="@L["Sessions_Team"]"
+                               Clearable="true" Variant="Variant.Outlined" Class="mb-3">
+                        @foreach (var team in _teams)
+                        {
+                            <MudSelectItem T="Guid?" Value="@((Guid?)team.Id)">@team.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="VotingScaleTypeDto" @bind-Value="_newScaleType" Label="@L["Sessions_Scale"]"
+                               Variant="Variant.Outlined" Class="mb-3">
+                        <MudSelectItem Value="VotingScaleTypeDto.Fibonacci">@L["Scale_Fibonacci"]</MudSelectItem>
+                        <MudSelectItem Value="VotingScaleTypeDto.TShirt">@L["Scale_TShirt"]</MudSelectItem>
+                        <MudSelectItem Value="VotingScaleTypeDto.Custom">@L["Scale_Custom"]</MudSelectItem>
+                    </MudSelect>
+
+                    @if (_newScaleType == VotingScaleTypeDto.Custom)
+                    {
+                        <MudTextField @bind-Value="_newCustomValues" Label="@L["Sessions_CustomValues"]"
+                                      HelperText="@L["Sessions_CustomValuesHint"]" Lines="2"
+                                      Variant="Variant.Outlined" Class="mb-3" />
+                    }
+
+                    <MudText Typo="Typo.subtitle2" Class="mt-2">@L["Sessions_Tasks"]</MudText>
+                    @if (_stagedTasks.Count > 0)
+                    {
+                        <MudList T="NewSessionTaskDto" Dense="true">
+                            @foreach (var task in _stagedTasks)
+                            {
+                                <MudListItem T="NewSessionTaskDto">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                        <MudText>
+                                            @task.Title
+                                            @if (task.Source == TaskSourceDto.AzureDevOps && task.AdoWorkItemId is not null)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Class="ml-2">ADO #@task.AdoWorkItemId</MudChip>
+                                            }
+                                        </MudText>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                       Size="Size.Small" aria-label="@L["Sessions_RemoveTask"]"
+                                                       OnClick="@(() => _stagedTasks.Remove(task))" />
+                                    </MudStack>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2 mb-2">
+                        <MudTextField @bind-Value="_adHocTitle" Label="@L["Sessions_TaskTitle"]"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        <MudButton Variant="Variant.Outlined" OnClick="StageAdHocTask">@L["Sessions_AddAdHocTask"]</MudButton>
+                    </MudStack>
+
+                    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CloudDownload"
+                               Disabled="_adoLoading" OnClick="LoadAdoAsync" Class="mb-2">
+                        @L["Sessions_ImportAdo"]
+                    </MudButton>
+                    @if (_adoLoading)
+                    {
+                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    }
+                    else if (_adoItems.Count > 0)
+                    {
+                        <MudPaper Class="pa-2 mb-2" MaxHeight="200px" Style="overflow:auto">
+                            @foreach (var item in _adoItems)
+                            {
+                                var id = item.Id;
+                                <MudCheckBox T="bool" Dense="true"
+                                             Value="@_selectedAdo.Contains(id)"
+                                             ValueChanged="@((bool v) => ToggleAdo(id, v))"
+                                             Label="@($"#{item.Id} {item.Title}")" />
+                            }
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="StageSelectedAdo">
+                                @L["Sessions_AddAdHocTask"]
+                            </MudButton>
+                        </MudPaper>
+                    }
+                </DialogContent>
+                <DialogActions>
+                    <MudButton OnClick="@(() => _createOpen = false)">@L["Sessions_Cancel"]</MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                               Disabled="_createSubmitting" OnClick="SubmitCreateAsync">
+                        @L["Sessions_Save"]
+                    </MudButton>
+                </DialogActions>
+            </MudDialog>
+        </Authorized>
+        <NotAuthorized>
+            <MudAlert Severity="Severity.Warning" Class="mb-4">@L["Sessions_Title"]</MudAlert>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Login">
+                @L["Auth_Login"]
+            </MudButton>
+        </NotAuthorized>
+    </AuthorizeView>
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private bool _createOpen;
+    private bool _createSubmitting;
+    private bool _savingConfig;
+    private bool _addingTask;
+    private bool _activating;
+    private bool _adoLoading;
+
+    private List<SessionDto> _sessions = [];
+    private List<TeamDto> _teams = [];
+    private SessionDto? _selected;
+
+    private string _newName = string.Empty;
+    private Guid? _newTeamId;
+    private VotingScaleTypeDto _newScaleType = VotingScaleTypeDto.Fibonacci;
+    private string _newCustomValues = string.Empty;
+    private string _adHocTitle = string.Empty;
+    private readonly List<NewSessionTaskDto> _stagedTasks = [];
+
+    private List<AzureDevOpsWorkItemDto> _adoItems = [];
+    private readonly HashSet<int> _selectedAdo = [];
+
+    private string _configName = string.Empty;
+    private VotingScaleTypeDto _configScaleType = VotingScaleTypeDto.Fibonacci;
+    private string _configCustomValues = string.Empty;
+    private string _configTaskTitle = string.Empty;
+
+    private bool _isLocked => _selected?.Status == SessionStatusDto.Active;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            await LoadSessionsAsync();
+            await LoadTeamsAsync();
+        }
+
+        _loading = false;
+    }
+
+    private async Task LoadSessionsAsync()
+    {
+        try
+        {
+            _sessions = (await SessionService.GetSessionsAsync()).ToList();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task LoadTeamsAsync()
+    {
+        try
+        {
+            _teams = (await TeamService.GetTeamsAsync()).ToList();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private void OpenCreate()
+    {
+        _newName = string.Empty;
+        _newTeamId = null;
+        _newScaleType = VotingScaleTypeDto.Fibonacci;
+        _newCustomValues = string.Empty;
+        _adHocTitle = string.Empty;
+        _stagedTasks.Clear();
+        _adoItems = [];
+        _selectedAdo.Clear();
+        _createOpen = true;
+    }
+
+    private void StageAdHocTask()
+    {
+        var title = _adHocTitle?.Trim() ?? string.Empty;
+        if (title.Length == 0)
+        {
+            Snackbar.Add(L["Sessions_TaskTitleRequired"], Severity.Error);
+            return;
+        }
+
+        _stagedTasks.Add(new NewSessionTaskDto { Title = title, Source = TaskSourceDto.AdHoc });
+        _adHocTitle = string.Empty;
+    }
+
+    private async Task LoadAdoAsync()
+    {
+        _adoLoading = true;
+        try
+        {
+            _adoItems = (await AdoService.ImportWorkItemsAsync()).ToList();
+            _selectedAdo.Clear();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _adoLoading = false;
+        }
+    }
+
+    private void ToggleAdo(int id, bool selected)
+    {
+        if (selected)
+        {
+            _selectedAdo.Add(id);
+        }
+        else
+        {
+            _selectedAdo.Remove(id);
+        }
+    }
+
+    private void StageSelectedAdo()
+    {
+        foreach (var item in _adoItems.Where(i => _selectedAdo.Contains(i.Id)))
+        {
+            if (_stagedTasks.Any(t => t.AdoWorkItemId == item.Id))
+            {
+                continue;
+            }
+
+            _stagedTasks.Add(new NewSessionTaskDto
+            {
+                Title = item.Title,
+                Source = TaskSourceDto.AzureDevOps,
+                AdoWorkItemId = item.Id,
+                AdoRevision = item.Revision,
+                WorkItemType = item.WorkItemType,
+                State = item.State
+            });
+        }
+
+        _selectedAdo.Clear();
+    }
+
+    private async Task SubmitCreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName))
+        {
+            Snackbar.Add(L["Sessions_NameRequired"], Severity.Error);
+            return;
+        }
+
+        _createSubmitting = true;
+        try
+        {
+            var session = await SessionService.CreateSessionAsync(
+                _newName.Trim(),
+                _newTeamId,
+                _newScaleType,
+                ParseCustomValues(_newCustomValues),
+                _stagedTasks);
+
+            _sessions.Insert(0, session);
+            _createOpen = false;
+            await SelectAsync(session);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _createSubmitting = false;
+        }
+    }
+
+    private async Task SelectAsync(SessionDto session)
+    {
+        try
+        {
+            _selected = await SessionService.GetSessionAsync(session.Id);
+            _configName = _selected.Name;
+            _configScaleType = _selected.ScaleType;
+            _configCustomValues = string.Join(", ", _selected.ScaleValues);
+            _configTaskTitle = string.Empty;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task SaveConfigAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_configName))
+        {
+            Snackbar.Add(L["Sessions_NameRequired"], Severity.Error);
+            return;
+        }
+
+        _savingConfig = true;
+        try
+        {
+            var updated = await SessionService.UpdateSessionConfigAsync(
+                _selected.Id,
+                _configName.Trim(),
+                _configScaleType,
+                ParseCustomValues(_configCustomValues));
+
+            ReplaceSelected(updated);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _savingConfig = false;
+        }
+    }
+
+    private async Task AddTaskAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var title = _configTaskTitle?.Trim() ?? string.Empty;
+        if (title.Length == 0)
+        {
+            Snackbar.Add(L["Sessions_TaskTitleRequired"], Severity.Error);
+            return;
+        }
+
+        _addingTask = true;
+        try
+        {
+            var updated = await SessionService.AddTaskAsync(
+                _selected.Id,
+                new NewSessionTaskDto { Title = title, Source = TaskSourceDto.AdHoc });
+
+            ReplaceSelected(updated);
+            _configTaskTitle = string.Empty;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _addingTask = false;
+        }
+    }
+
+    private async Task RemoveTaskAsync(SessionTaskDto task)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var updated = await SessionService.RemoveTaskAsync(_selected.Id, task.Id);
+            ReplaceSelected(updated);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _activating = true;
+        try
+        {
+            var updated = await SessionService.ActivateSessionAsync(_selected.Id);
+            ReplaceSelected(updated);
+            Snackbar.Add(L["Sessions_Activated"], Severity.Success);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _activating = false;
+        }
+    }
+
+    private void ReplaceSelected(SessionDto updated)
+    {
+        _selected = updated;
+        var index = _sessions.FindIndex(s => s.Id == updated.Id);
+        if (index >= 0)
+        {
+            _sessions[index] = updated;
+        }
+    }
+
+    private static List<string> ParseCustomValues(string raw) =>
+        (raw ?? string.Empty)
+            .Split([',', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+    private string StatusLabel(SessionStatusDto status) =>
+        status == SessionStatusDto.Active ? L["Sessions_Active"] : L["Sessions_Draft"];
+
+    private void Login() =>
+        Navigation.NavigateTo(
+            $"/auth/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",
+            forceLoad: true);
+
+    private void ShowError(RpcException ex)
+    {
+        var message = ex.StatusCode switch
+        {
+            StatusCode.InvalidArgument => L["Sessions_NameRequired"],
+            StatusCode.FailedPrecondition => L["Sessions_ActiveLocked"],
+            StatusCode.NotFound => L["Error_Generic"],
+            _ => L["Error_Generic"]
+        };
+
+        Snackbar.Add(message, Severity.Error);
+    }
+}
