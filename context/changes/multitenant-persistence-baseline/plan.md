@@ -281,12 +281,12 @@ Negligible at MVP scale. The global query filter adds a `TenantId` predicate (co
 
 #### Automated
 
-- [x] 2.1 Solution builds with the migration present: `dotnet build PlanDeck.slnx`
-- [x] 2.2 No pending model changes: `dotnet ef migrations has-pending-model-changes ...`
-- [x] 2.3 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
-- [x] 2.4 Full suite passes: `dotnet test PlanDeck.slnx`
+- [x] 2.1 Solution builds with the migration present: `dotnet build PlanDeck.slnx` — 9546451
+- [x] 2.2 No pending model changes: `dotnet ef migrations has-pending-model-changes ...` — 9546451
+- [x] 2.3 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj` — 9546451
+- [x] 2.4 Full suite passes: `dotnet test PlanDeck.slnx` — 9546451
 
 #### Manual
 
-- [x] 2.5 App boots via Aspire, applies the migration on startup, and `AppUsers` exists in `PlanDeckDb`
-- [x] 2.6 The `sql` health check reports healthy after startup
+- [x] 2.5 App boots via Aspire, applies the migration on startup, and `AppUsers` exists in `PlanDeckDb` — 9546451
+- [x] 2.6 The `sql` health check reports healthy after startup — 9546451
