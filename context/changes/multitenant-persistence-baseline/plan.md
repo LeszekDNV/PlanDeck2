@@ -268,14 +268,14 @@ Negligible at MVP scale. The global query filter adds a `TenantId` predicate (co
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 1.3 Design-time factory resolves: `dotnet ef dbcontext info` succeeds without a live database
-- [x] 1.5 No new analyzer/nullable warnings introduced in changed files
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — 0ead8de
+- [x] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — 0ead8de
+- [x] 1.3 Design-time factory resolves: `dotnet ef dbcontext info` succeeds without a live database — 0ead8de
+- [x] 1.5 No new analyzer/nullable warnings introduced in changed files — 0ead8de
 
 #### Manual
 
-- [x] 1.4 Code review confirms isolation lives only in `PlanDeckDbContext` and the DbContext references no ASP.NET types
+- [x] 1.4 Code review confirms isolation lives only in `PlanDeckDbContext` and the DbContext references no ASP.NET types — 0ead8de
 
 ### Phase 2: Initial migration & verified persistence
 
