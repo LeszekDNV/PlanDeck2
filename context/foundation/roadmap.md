@@ -29,7 +29,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 
 | ID | Change ID | Outcome (user can …) | Prerequisites | PRD refs | Status |
 |---|---|---|---|---|---|
-| F-01 | multitenant-persistence-baseline | (foundation) persisted, tenant-scoped domain model with verified migrations | — | Access Control Changes, Guardrails (tenant isolation), FR-001 | ready |
+| F-01 | multitenant-persistence-baseline | (foundation) persisted, tenant-scoped domain model with verified migrations | — | Access Control Changes, Guardrails (tenant isolation), FR-001 | done |
 | F-02 | realtime-vote-integrity | (foundation) authoritative hidden-vote/reveal contract with consistency guarantees | F-01 | Guardrails (vote consistency, hidden-until-reveal), Business Logic Changes | proposed |
 | F-03 | deploy-realtime-validation-skeleton | (foundation) pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL stack | — | Constraints & Compatibility; infrastructure.md (ACA + Azure SQL) | ready |
 | S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | proposed |
@@ -246,3 +246,5 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Done
 
 (Empty on first generation. `/10x-archive` appends an entry here — and flips that item's `Status` to `done` — when a change whose `Change ID` matches the item is archived. Do NOT pre-populate.)
+
+- **F-01: (foundation) the EF Core domain-persistence pattern and the per-user/tenant data-scoping convention are established, with a real migration applied on startup against the configured SQL database.** — Archived 2026-06-18 → `context/archive/2026-06-18-multitenant-persistence-baseline/`. Lesson: —.
