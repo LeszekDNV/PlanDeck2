@@ -68,6 +68,11 @@ public sealed class PlanDeckDbContext(
                     StampTenantOnInsert(entry.Entity);
                     if (entry.Entity is TenantEntity added)
                     {
+                        if (added.Id == Guid.Empty)
+                        {
+                            added.Id = Guid.NewGuid();
+                        }
+
                         added.CreatedAtUtc = now;
                         added.UpdatedAtUtc = now;
                     }

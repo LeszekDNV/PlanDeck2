@@ -36,7 +36,7 @@ public sealed class TeamDto
     public string? Description { get; set; }
 
     [DataMember(Order = 4)]
-    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
 }
 
 [DataContract]

@@ -537,23 +537,23 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 #### Automated
 
-- [x] 4.1 Build passes: `dotnet build PlanDeck.slnx` (resx compiles; satellite resources produced)
+- [x] 4.1 Build passes: `dotnet build PlanDeck.slnx` (resx compiles; satellite resources produced) — b8a4961
 
 #### Manual
 
-- [x] 4.2 Header language toggle switches en↔pl and survives reload
+- [x] 4.2 Header language toggle switches en↔pl and survives reload — b8a4961
 
 ### Phase 5: Teams UI
 
 #### Automated
 
-- [ ] 5.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 5.1 Build passes: `dotnet build PlanDeck.slnx`
 
 #### Manual
 
-- [ ] 5.2 Create team / add member / remove member work end-to-end when signed in
-- [ ] 5.3 Duplicate member email shows a friendly localized error
-- [ ] 5.4 All Teams-screen text switches en↔pl via the header toggle
+- [x] 5.2 Create team / add member / remove member work end-to-end when signed in
+- [x] 5.3 Duplicate member email shows a friendly localized error
+- [x] 5.4 All Teams-screen text switches en↔pl via the header toggle
 
 ### Phase 6: Tests (Integration + E2E)
 

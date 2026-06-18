@@ -89,7 +89,7 @@ public sealed class TeamGrpcService(ITeamRepository repository) : ITeamService
         Id = team.Id,
         Name = team.Name,
         Description = team.Description,
-        CreatedAtUtc = team.CreatedAtUtc
+        CreatedAtUtc = team.CreatedAtUtc.UtcDateTime
     };
 
     private static TeamMemberDto ToDto(TeamMember member) => new()

@@ -24,6 +24,7 @@ builder.Services.AddScoped(sp => GrpcChannel.ForAddress(
 builder.Services.AddScoped<IHelloClientService, HelloClientService>();
 builder.Services.AddScoped<IAzureDevOpsClientService, AzureDevOpsClientService>();
 builder.Services.AddScoped<IPlanningRoomClientService, PlanningRoomClientService>();
+builder.Services.AddScoped<ITeamClientService, TeamClientService>();
 builder.Services.AddScoped<GrpcAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<GrpcAuthenticationStateProvider>());
