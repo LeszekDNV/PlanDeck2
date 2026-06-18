@@ -7,6 +7,7 @@ using PlanDeck.Application.Planning;
 using PlanDeck.Application.Services;
 using PlanDeck.Infrastructure.AzureDevOps;
 using PlanDeck.Infrastructure.Persistence;
+using PlanDeck.Server.Identity;
 
 namespace PlanDeck.Server.Extensions;
 
@@ -93,6 +94,7 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddLocalServices()
         {
             services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
             services.AddScoped<HelloGrpcService>();
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();

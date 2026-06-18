@@ -1,7 +1,7 @@
 ---
 change_id: multitenant-persistence-baseline
 title: Multi-tenant EF Core persistence baseline with verified migration
-status: plan_reviewed
+status: implementing
 created: 2026-06-18
 updated: 2026-06-18
 archived_at: null

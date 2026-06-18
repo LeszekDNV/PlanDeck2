@@ -268,25 +268,25 @@ Negligible at MVP scale. The global query filter adds a `TenantId` predicate (co
 
 #### Automated
 
-- [ ] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [ ] 1.3 Design-time factory resolves: `dotnet ef dbcontext info` succeeds without a live database
-- [ ] 1.5 No new analyzer/nullable warnings introduced in changed files
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 1.3 Design-time factory resolves: `dotnet ef dbcontext info` succeeds without a live database
+- [x] 1.5 No new analyzer/nullable warnings introduced in changed files
 
 #### Manual
 
-- [ ] 1.4 Code review confirms isolation lives only in `PlanDeckDbContext` and the DbContext references no ASP.NET types
+- [x] 1.4 Code review confirms isolation lives only in `PlanDeckDbContext` and the DbContext references no ASP.NET types
 
 ### Phase 2: Initial migration & verified persistence
 
 #### Automated
 
-- [ ] 2.1 Solution builds with the migration present: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 No pending model changes: `dotnet ef migrations has-pending-model-changes ...`
-- [ ] 2.3 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
-- [ ] 2.4 Full suite passes: `dotnet test PlanDeck.slnx`
+- [x] 2.1 Solution builds with the migration present: `dotnet build PlanDeck.slnx`
+- [x] 2.2 No pending model changes: `dotnet ef migrations has-pending-model-changes ...`
+- [x] 2.3 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
+- [x] 2.4 Full suite passes: `dotnet test PlanDeck.slnx`
 
 #### Manual
 
-- [ ] 2.5 App boots via Aspire, applies the migration on startup, and `AppUsers` exists in `PlanDeckDb`
-- [ ] 2.6 The `sql` health check reports healthy after startup
+- [x] 2.5 App boots via Aspire, applies the migration on startup, and `AppUsers` exists in `PlanDeckDb`
+- [x] 2.6 The `sql` health check reports healthy after startup
