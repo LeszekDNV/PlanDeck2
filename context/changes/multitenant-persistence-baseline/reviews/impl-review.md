@@ -3,7 +3,13 @@
 - **Reviewed:** 2026-06-18
 - **Scope:** commits `0ead8de` (p1) + `9546451` (p2)
 - **Reviewer:** code-review agent (built-in)
-- **Verdict:** ⚠ Changes requested — 2 High-severity correctness/security bugs violate the plan's fail-closed + central-enforcement contract.
+- **Verdict:** ✅ Resolved — all three findings fixed in `e8ad3a2` (6/6 integration tests green on real MSSQL).
+
+## Resolution (e8ad3a2)
+
+- **H-1 fixed** — insert is now unconditionally fail-closed: any write with no resolvable tenant throws, including an explicitly-set `TenantId` from an unauthenticated caller. Regression: `Insert_Unauthenticated_WithExplicitTenant_IsRejectedFailClosed`.
+- **H-2 fixed** — `Modified`/`Deleted` entries are guarded: cross-tenant update/delete is rejected and `TenantId` is immutable. Regressions: `Update_AttachedCrossTenantRow_IsRejected`, `Reassigning_TenantId_IsRejected`.
+- **M-1 fixed** — `Writes_AreScopedPerTenant_BothDirections` now asserts each tenant reads back its own row (positive direction) as well as the negative, so a stale-constant filter fails the test.
 
 ## What is correct
 
