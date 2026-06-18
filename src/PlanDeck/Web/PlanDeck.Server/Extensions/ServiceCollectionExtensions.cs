@@ -98,6 +98,8 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
             services.AddScoped<HelloGrpcService>();
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();
+            services.AddScoped<ITeamRepository, TeamRepository>();
+            services.AddScoped<TeamGrpcService>();
             return services;
         }
     }

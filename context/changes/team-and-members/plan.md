@@ -502,24 +502,24 @@ Single additive migration `AddTeamsAndTeamMembers` (new tables only; no data bac
 
 #### Automated
 
-- [x] 1.1 Build passes: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Migration generated and model snapshot includes Teams + TeamMembers
+- [x] 1.1 Build passes: `dotnet build PlanDeck.slnx` — 822bb6b
+- [x] 1.2 Migration generated and model snapshot includes Teams + TeamMembers — 822bb6b
 - [ ] 1.3 Migration applies cleanly on startup in Development (via Phase 6 boot)
 
 #### Manual
 
-- [x] 1.4 Reviewed migration Up() creates both tables and the unique index (TenantId, TeamId, Email)
+- [x] 1.4 Reviewed migration Up() creates both tables and the unique index (TenantId, TeamId, Email) — 822bb6b
 
 ### Phase 2: gRPC Contract, Application Service & Repository
 
 #### Automated
 
-- [ ] 2.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 2.1 Build passes: `dotnet build PlanDeck.slnx`
 - [ ] 2.2 Team persistence/isolation exercised green in Phase 6 integration tests
 
 #### Manual
 
-- [ ] 2.3 Walked the contract: every ITeamService op has a request/reply DTO and a delegating implementation
+- [x] 2.3 Walked the contract: every ITeamService op has a request/reply DTO and a delegating implementation
 
 ### Phase 3: Authentication Foundation (Server + Client)
 
