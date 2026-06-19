@@ -125,6 +125,43 @@ public sealed class SessionGrpcServiceTests
     }
 
     [Test]
+    public async Task CreateSession_WithDuplicateAdoWorkItems_KeepsFirstOnly()
+    {
+        var request = new CreateSessionRequest
+        {
+            Name = "Sprint 1",
+            ScaleType = VotingScaleTypeDto.Fibonacci,
+            Tasks =
+            [
+                new NewSessionTaskDto { Title = "Item 101", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 101 },
+                new NewSessionTaskDto { Title = "Item 101 again", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 101 },
+                new NewSessionTaskDto { Title = "Item 102", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 102 }
+            ]
+        };
+
+        var reply = await _service.CreateSessionAsync(request);
+
+        Assert.That(reply.Session.Tasks.Select(t => t.AdoWorkItemId), Is.EqualTo(new int?[] { 101, 102 }));
+        Assert.That(reply.Session.Tasks.Select(t => t.SortOrder), Is.EqualTo(new[] { 0, 1 }));
+    }
+
+    [Test]
+    public async Task AddTask_WithExistingAdoWorkItem_IsIdempotent()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+        var request = new AddTaskRequest
+        {
+            SessionId = session.Id,
+            Task = new NewSessionTaskDto { Title = "Item 101", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 101 }
+        };
+
+        await _service.AddTaskAsync(request);
+        var reply = await _service.AddTaskAsync(request);
+
+        Assert.That(reply.Session.Tasks.Count(t => t.AdoWorkItemId == 101), Is.EqualTo(1));
+    }
+
+    [Test]
     public void UpdateSessionConfig_OnActiveSession_ThrowsFailedPrecondition()
     {
         var session = _repository.Seed(SessionStatus.Active);

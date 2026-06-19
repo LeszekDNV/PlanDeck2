@@ -2,6 +2,7 @@
 @using Grpc.Core
 @using PlanDeck.Client.Services
 @using PlanDeck.Core.Shared.Contracts
+@using PlanDeck.Core.Shared.Validation
 @inject ISessionClientService SessionService
 @inject ITeamClientService TeamService
 @inject IAzureDevOpsClientService AdoService
@@ -611,9 +612,9 @@
         }
 
         _addingTask = true;
+        SessionDto? updated = null;
         try
         {
-            SessionDto? updated = null;
             foreach (var item in toAdd)
             {
                 if (_selected.Tasks.Any(t => t.AdoWorkItemId == item.Id))
@@ -632,11 +633,6 @@
                 });
             }
 
-            if (updated is not null)
-            {
-                ReplaceSelected(updated);
-            }
-
             _configSelectedAdo.Clear();
             _configAdoItems = [];
         }
@@ -646,6 +642,11 @@
         }
         finally
         {
+            if (updated is not null)
+            {
+                ReplaceSelected(updated);
+            }
+
             _addingTask = false;
         }
     }
@@ -701,7 +702,7 @@
     {
         var message = ex.StatusCode switch
         {
-            StatusCode.InvalidArgument => L["Sessions_NameRequired"],
+            StatusCode.InvalidArgument => MapInvalidArgument(ex.Status.Detail),
             StatusCode.FailedPrecondition => L["Sessions_ActiveLocked"],
             StatusCode.NotFound => L["Error_Generic"],
             _ => L["Error_Generic"]
@@ -709,4 +710,12 @@
 
         Snackbar.Add(message, Severity.Error);
     }
+
+    private string MapInvalidArgument(string detail) => detail switch
+    {
+        SessionValidationMessages.NameRequired => L["Sessions_NameRequired"],
+        SessionValidationMessages.CustomScaleRequired => L["Sessions_CustomScaleRequired"],
+        SessionValidationMessages.TaskTitleRequired => L["Sessions_TaskTitleRequired"],
+        _ => L["Error_Generic"]
+    };
 }

@@ -205,6 +205,9 @@
   <data name="Sessions_TaskTitleRequired" xml:space="preserve">
     <value>Tytuł zadania jest wymagany.</value>
   </data>
+  <data name="Sessions_CustomScaleRequired" xml:space="preserve">
+    <value>Skala niestandardowa wymaga co najmniej jednej wartości.</value>
+  </data>
   <data name="Sessions_Save" xml:space="preserve">
     <value>Zapisz</value>
   </data>

@@ -30,5 +30,9 @@ public sealed class SessionTaskConfiguration : IEntityTypeConfiguration<SessionT
         builder.HasIndex(t => t.TenantId);
 
         builder.HasIndex(t => t.SessionId);
+
+        builder.HasIndex(t => new { t.SessionId, t.AdoWorkItemId })
+            .IsUnique()
+            .HasFilter("[AdoWorkItemId] IS NOT NULL");
     }
 }

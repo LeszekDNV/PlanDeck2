@@ -2,6 +2,7 @@ using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
 using PlanDeck.Core.Shared.Contracts;
+using PlanDeck.Core.Shared.Validation;
 using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
@@ -30,7 +31,14 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         var sortOrder = 0;
         foreach (var task in request.Tasks)
         {
-            session.Tasks.Add(MapNewTask(task, sortOrder++));
+            var mapped = MapNewTask(task, sortOrder);
+            if (IsDuplicateAdoTask(session.Tasks, mapped.AdoWorkItemId))
+            {
+                continue;
+            }
+
+            session.Tasks.Add(mapped);
+            sortOrder++;
         }
 
         var created = await repository.CreateSessionAsync(session, context.CancellationToken);
@@ -87,8 +95,14 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         try
         {
             var session = await LoadDraftAsync(request.SessionId, context.CancellationToken);
-            var nextSortOrder = session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1;
-            session.Tasks.Add(MapNewTask(request.Task, nextSortOrder));
+
+            var mapped = MapNewTask(request.Task, session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1);
+            if (IsDuplicateAdoTask(session.Tasks, mapped.AdoWorkItemId))
+            {
+                return new AddTaskReply { Session = ToDto(session) };
+            }
+
+            session.Tasks.Add(mapped);
 
             await repository.UpdateSessionAsync(session, context.CancellationToken);
             return new AddTaskReply { Session = ToDto(session) };
@@ -174,7 +188,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         var trimmed = name?.Trim() ?? string.Empty;
         if (trimmed.Length == 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Session name is required."));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, SessionValidationMessages.NameRequired));
         }
 
         return trimmed;
@@ -185,7 +199,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         VotingScaleType.Fibonacci => [.. FibonacciFaces],
         VotingScaleType.TShirt => [.. TShirtFaces],
         VotingScaleType.Custom => ResolveCustomScaleValues(customValues),
-        _ => throw new RpcException(new Status(StatusCode.InvalidArgument, "Unknown voting scale type."))
+        _ => throw new RpcException(new Status(StatusCode.InvalidArgument, SessionValidationMessages.UnknownScaleType))
     };
 
     private static List<string> ResolveCustomScaleValues(List<string>? customValues)
@@ -208,18 +222,21 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
 
         if (values.Count == 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "A custom scale requires at least one value."));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, SessionValidationMessages.CustomScaleRequired));
         }
 
         return values;
     }
+
+    private static bool IsDuplicateAdoTask(IEnumerable<SessionTask> tasks, int? adoWorkItemId) =>
+        adoWorkItemId is int id && tasks.Any(t => t.AdoWorkItemId == id);
 
     private static SessionTask MapNewTask(NewSessionTaskDto task, int sortOrder)
     {
         var title = task.Title?.Trim() ?? string.Empty;
         if (title.Length == 0)
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "A task title is required."));
+            throw new RpcException(new Status(StatusCode.InvalidArgument, SessionValidationMessages.TaskTitleRequired));
         }
 
         return new SessionTask
