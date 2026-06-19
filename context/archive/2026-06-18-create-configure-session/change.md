@@ -1,10 +1,10 @@
 ---
 change_id: create-configure-session
 title: Create and configure a planning session from selected tasks
-status: implemented
+status: archived
 created: 2026-06-18
 updated: 2026-06-19
-archived_at: null
+archived_at: 2026-06-19T00:38:38Z
 ---
 
 ## Notes

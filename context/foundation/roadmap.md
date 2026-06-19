@@ -3,7 +3,7 @@ project: "PlanDeck"
 version: 1
 status: draft
 created: 2026-06-18
-updated: 2026-06-18
+updated: 2026-06-19
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -35,7 +35,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | done |
 | S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | proposed |
 | S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | proposed |
-| S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | blocked |
+| S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | done |
 | S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | proposed |
 | S-06 | realtime-voting-round | run a hidden-vote → reveal → manual-pick round in a session | F-02, S-04, S-05 | FR-008, FR-009, US-01 | proposed |
 | S-07 | guest-link-voting | join a session's vote via a share link with only a temporary username | S-04, F-02 | FR-013 | proposed |
@@ -160,7 +160,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Which voting scales are offered (Fibonacci, T-shirt, custom)? — Owner: user. Block: yes.
 - **Risk:** The hinge of the workflow — the session is what voting and write-back attach to. Deliberately minimal configuration per the PRD ("only task selection and voting scale"). Blocked until the voting-scale options are decided, because the scale is also required by the voting round (S-06); the create-only part (FR-005) could proceed if configuration is descoped, but the loop cannot complete without a scale.
-- **Status:** blocked
+- **Status:** done
 
 ### S-05: Assign session members
 
@@ -249,3 +249,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 - **F-01: (foundation) the EF Core domain-persistence pattern and the per-user/tenant data-scoping convention are established, with a real migration applied on startup against the configured SQL database.** — Archived 2026-06-18 → `context/archive/2026-06-18-multitenant-persistence-baseline/`. Lesson: —.
 - **S-01: a signed-in user can create a team and add members to it.** — Archived 2026-06-18 → `context/archive/2026-06-18-team-and-members/`. Lesson: —.
+- **S-04: a user can create a planning session from a set of selected tasks and configure it (task selection and voting scale only).** — Archived 2026-06-19 → `context/archive/2026-06-18-create-configure-session/`. Lesson: —.
