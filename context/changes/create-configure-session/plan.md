@@ -379,31 +379,31 @@ A single additive `AddPlanningSessions` migration creates two new tables; no exi
 
 #### Manual
 
-- [ ] 2.4 gRPC endpoint reachable from the running app
-- [ ] 2.5 Editing an activated session is rejected (FailedPrecondition surfaced, not silent)
+- [x] 2.4 gRPC endpoint reachable from the running app
+- [x] 2.5 Editing an activated session is rejected (FailedPrecondition surfaced, not silent)
 
 ### Phase 3: Client — UI & Localization
 
 #### Automated
 
-- [x] 3.1 Solution builds (Razor + client): `dotnet build PlanDeck.slnx`
-- [x] 3.2 Full test suite still green: `dotnet test PlanDeck.slnx`
+- [x] 3.1 Solution builds (Razor + client): `dotnet build PlanDeck.slnx` — 32ed00f
+- [x] 3.2 Full test suite still green: `dotnet test PlanDeck.slnx` — 32ed00f
 
 #### Manual
 
-- [ ] 3.3 Signed-in user creates a session with ad-hoc tasks + a scale; it appears in the list
-- [ ] 3.4 Importing ADO work items snapshots selected items (when ADO configured)
-- [ ] 3.5 Draft session reconfigurable; after Activate config controls disable
-- [ ] 3.6 Page renders correctly in English and Polish
+- [x] 3.3 Signed-in user creates a session with ad-hoc tasks + a scale; it appears in the list
+- [x] 3.4 Importing ADO work items snapshots selected items (when ADO configured)
+- [x] 3.5 Draft session reconfigurable; after Activate config controls disable
+- [x] 3.6 Page renders correctly in English and Polish
 
 ### Phase 4: End-to-End Test
 
 #### Automated
 
-- [ ] 4.1 Build + Playwright browsers installed
-- [ ] 4.2 E2E test passes locally: SessionsTests
-- [ ] 4.3 Full suite green: `dotnet test PlanDeck.slnx`
+- [x] 4.1 Build + Playwright browsers installed
+- [x] 4.2 E2E test passes locally: SessionsTests
+- [x] 4.3 Full suite green: `dotnet test PlanDeck.slnx`
 
 #### Manual
 
-- [ ] 4.4 E2E run boots Aspire, creates a session, assertion stable across reruns
+- [x] 4.4 E2E run boots Aspire, creates a session, assertion stable across reruns

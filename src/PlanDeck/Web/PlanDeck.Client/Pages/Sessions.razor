@@ -36,17 +36,17 @@
                 <MudPaper Class="pa-2 mb-4">
                     @foreach (var session in _sessions)
                     {
-                        <MudButton FullWidth="true" Class="justify-start"
-                                   Color="@(_selected?.Id == session.Id ? Color.Primary : Color.Default)"
-                                   OnClick="@(() => SelectAsync(session))">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%">
-                                <span>@session.Name</span>
-                                <MudChip T="string" Size="Size.Small"
-                                         Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
-                                    @StatusLabel(session.Status)
-                                </MudChip>
-                            </MudStack>
-                        </MudButton>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudButton Class="justify-start flex-grow-1"
+                                       Color="@(_selected?.Id == session.Id ? Color.Primary : Color.Default)"
+                                       OnClick="@(() => SelectAsync(session))">
+                                @session.Name
+                            </MudButton>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
+                                @StatusLabel(session.Status)
+                            </MudChip>
+                        </MudStack>
                     }
                 </MudPaper>
             }
@@ -138,6 +138,32 @@
                                 </MudButton>
                             </MudStack>
 
+                            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CloudDownload"
+                                       Disabled="_configAdoLoading" OnClick="LoadConfigAdoAsync" Class="mt-2 mb-1">
+                                @L["Sessions_ImportAdo"]
+                            </MudButton>
+                            @if (_configAdoLoading)
+                            {
+                                <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                            }
+                            else if (_configAdoItems.Count > 0)
+                            {
+                                <MudPaper Class="pa-2 mb-2" MaxHeight="200px" Style="overflow:auto">
+                                    @foreach (var item in _configAdoItems)
+                                    {
+                                        var id = item.Id;
+                                        <MudCheckBox T="bool" Dense="true"
+                                                     Value="@_configSelectedAdo.Contains(id)"
+                                                     ValueChanged="@((bool v) => ToggleConfigAdo(id, v))"
+                                                     Label="@($"#{item.Id} {item.Title}")" />
+                                    }
+                                    <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="AddSelectedAdoTasksAsync"
+                                               Disabled="@(_addingTask || _configSelectedAdo.Count == 0)">
+                                        @($"{L["Sessions_AddSelected"]} ({_configSelectedAdo.Count})")
+                                    </MudButton>
+                                </MudPaper>
+                            }
+
                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mt-4">
                                 <MudButton Variant="Variant.Filled" Color="Color.Success"
                                            Disabled="_activating" OnClick="ActivateAsync">
@@ -228,8 +254,9 @@
                                              ValueChanged="@((bool v) => ToggleAdo(id, v))"
                                              Label="@($"#{item.Id} {item.Title}")" />
                             }
-                            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="StageSelectedAdo">
-                                @L["Sessions_AddAdHocTask"]
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="StageSelectedAdo"
+                                       Disabled="@(_selectedAdo.Count == 0)">
+                                @($"{L["Sessions_AddSelected"]} ({_selectedAdo.Count})")
                             </MudButton>
                         </MudPaper>
                     }
@@ -279,6 +306,10 @@
     private VotingScaleTypeDto _configScaleType = VotingScaleTypeDto.Fibonacci;
     private string _configCustomValues = string.Empty;
     private string _configTaskTitle = string.Empty;
+
+    private bool _configAdoLoading;
+    private List<AzureDevOpsWorkItemDto> _configAdoItems = [];
+    private readonly HashSet<int> _configSelectedAdo = [];
 
     private bool _isLocked => _selected?.Status == SessionStatusDto.Active;
 
@@ -405,6 +436,9 @@
             return;
         }
 
+        // Fold in any ADO work items that were checked but not explicitly staged yet.
+        StageSelectedAdo();
+
         _createSubmitting = true;
         try
         {
@@ -438,6 +472,8 @@
             _configScaleType = _selected.ScaleType;
             _configCustomValues = string.Join(", ", _selected.ScaleValues);
             _configTaskTitle = string.Empty;
+            _configAdoItems = [];
+            _configSelectedAdo.Clear();
         }
         catch (RpcException ex)
         {
@@ -528,6 +564,89 @@
         catch (RpcException ex)
         {
             ShowError(ex);
+        }
+    }
+
+    private async Task LoadConfigAdoAsync()
+    {
+        _configAdoLoading = true;
+        try
+        {
+            _configAdoItems = (await AdoService.ImportWorkItemsAsync()).ToList();
+            _configSelectedAdo.Clear();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _configAdoLoading = false;
+        }
+    }
+
+    private void ToggleConfigAdo(int id, bool selected)
+    {
+        if (selected)
+        {
+            _configSelectedAdo.Add(id);
+        }
+        else
+        {
+            _configSelectedAdo.Remove(id);
+        }
+    }
+
+    private async Task AddSelectedAdoTasksAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var toAdd = _configAdoItems.Where(i => _configSelectedAdo.Contains(i.Id)).ToList();
+        if (toAdd.Count == 0)
+        {
+            return;
+        }
+
+        _addingTask = true;
+        try
+        {
+            SessionDto? updated = null;
+            foreach (var item in toAdd)
+            {
+                if (_selected.Tasks.Any(t => t.AdoWorkItemId == item.Id))
+                {
+                    continue;
+                }
+
+                updated = await SessionService.AddTaskAsync(_selected.Id, new NewSessionTaskDto
+                {
+                    Title = item.Title,
+                    Source = TaskSourceDto.AzureDevOps,
+                    AdoWorkItemId = item.Id,
+                    AdoRevision = item.Revision,
+                    WorkItemType = item.WorkItemType,
+                    State = item.State
+                });
+            }
+
+            if (updated is not null)
+            {
+                ReplaceSelected(updated);
+            }
+
+            _configSelectedAdo.Clear();
+            _configAdoItems = [];
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _addingTask = false;
         }
     }
 

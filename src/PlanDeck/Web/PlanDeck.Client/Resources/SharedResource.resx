@@ -172,6 +172,9 @@
   <data name="Sessions_ImportAdo" xml:space="preserve">
     <value>Import from Azure DevOps</value>
   </data>
+  <data name="Sessions_AddSelected" xml:space="preserve">
+    <value>Add selected</value>
+  </data>
   <data name="Sessions_Activate" xml:space="preserve">
     <value>Activate</value>
   </data>
