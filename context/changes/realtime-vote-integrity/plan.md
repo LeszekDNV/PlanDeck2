@@ -296,26 +296,26 @@ None — no schema or data changes. Wire-contract change (`PlanningParticipantSt
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 1.3 `PlanningRoomServiceTests` fixture present and green
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — a2bac2e
+- [x] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — a2bac2e
+- [x] 1.3 `PlanningRoomServiceTests` fixture present and green — a2bac2e
 
 #### Manual
 
-- [x] 1.4 Each "Desired End State" contract rule maps to a named test
-- [x] 1.5 Hub + client service compile against the new interface (mechanical re-wiring, no new behavior)
+- [x] 1.4 Each "Desired End State" contract rule maps to a named test — a2bac2e
+- [x] 1.5 Hub + client service compile against the new interface (mechanical re-wiring, no new behavior) — a2bac2e
 
 ### Phase 2: Hub lifecycle & authorization
 
 #### Automated
 
-- [ ] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 Existing unit + persistence tests still pass
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 2.2 Existing unit + persistence tests still pass
 
 #### Manual
 
-- [ ] 2.3 Authenticated client completes negotiate + `JoinRoom`; hub carries `[Authorize]` (anonymous 401 is prod-OIDC-only, not reproducible under test scheme)
-- [ ] 2.4 Hub methods no longer accept client-supplied `participantId`/`displayName`
+- [x] 2.3 Authenticated client completes negotiate + `JoinRoom`; hub carries `[Authorize]` (anonymous 401 is prod-OIDC-only, not reproducible under test scheme)
+- [x] 2.4 Hub methods no longer accept client-supplied `participantId`/`displayName`
 
 ### Phase 3: Client reconnection + hub integration test
 
