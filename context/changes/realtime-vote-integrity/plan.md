@@ -309,23 +309,23 @@ None — no schema or data changes. Wire-contract change (`PlanningParticipantSt
 
 #### Automated
 
-- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 2.2 Existing unit + persistence tests still pass
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx` — 17ffbf1
+- [x] 2.2 Existing unit + persistence tests still pass — 17ffbf1
 
 #### Manual
 
-- [x] 2.3 Authenticated client completes negotiate + `JoinRoom`; hub carries `[Authorize]` (anonymous 401 is prod-OIDC-only, not reproducible under test scheme)
-- [x] 2.4 Hub methods no longer accept client-supplied `participantId`/`displayName`
+- [x] 2.3 Authenticated client completes negotiate + `JoinRoom`; hub carries `[Authorize]` (anonymous 401 is prod-OIDC-only, not reproducible under test scheme) — 17ffbf1
+- [x] 2.4 Hub methods no longer accept client-supplied `participantId`/`displayName` — 17ffbf1
 
 ### Phase 3: Client reconnection + hub integration test
 
 #### Automated
 
-- [ ] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 3.2 Unit tests pass
-- [ ] 3.3 Hub integration test passes: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 3.2 Unit tests pass
+- [x] 3.3 Hub integration test passes: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
 
 #### Manual
 
-- [ ] 3.4 Local smoke: drop + reconnect preserves vote, stays hidden until reveal
-- [ ] 3.5 No `.razor` regressions from the client service change
+- [x] 3.4 Local smoke: drop + reconnect preserves vote, stays hidden until reveal
+- [x] 3.5 No `.razor` regressions from the client service change

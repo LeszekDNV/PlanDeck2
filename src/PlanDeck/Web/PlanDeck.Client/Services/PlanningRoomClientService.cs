@@ -11,11 +11,25 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
         .WithAutomaticReconnect()
         .Build();
 
+    private bool _handlerRegistered;
+    private string? _joinedSessionId;
+
     public event Action<PlanningRoomState>? RoomStateChanged;
 
     public async Task ConnectAsync()
     {
-        _hubConnection.On<PlanningRoomState>("RoomStateChanged", state => RoomStateChanged?.Invoke(state));
+        if (!_handlerRegistered)
+        {
+            _hubConnection.On<PlanningRoomState>("RoomStateChanged", state => RoomStateChanged?.Invoke(state));
+            _hubConnection.Reconnected += async _ =>
+            {
+                if (_joinedSessionId is { } sessionId)
+                {
+                    await _hubConnection.InvokeAsync("JoinRoom", sessionId);
+                }
+            };
+            _handlerRegistered = true;
+        }
 
         if (_hubConnection.State == HubConnectionState.Disconnected)
         {
@@ -23,19 +37,24 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
         }
     }
 
-    public Task JoinRoomAsync(string sessionId, string participantId, string displayName)
+    public async Task JoinRoomAsync(string sessionId)
     {
-        return _hubConnection.InvokeAsync("JoinRoom", sessionId, participantId, displayName);
+        _joinedSessionId = sessionId;
+        await _hubConnection.InvokeAsync("JoinRoom", sessionId);
     }
 
-    public Task LeaveRoomAsync(string sessionId, string participantId)
+    public async Task LeaveRoomAsync(string sessionId)
     {
-        return _hubConnection.InvokeAsync("LeaveRoom", sessionId, participantId);
+        await _hubConnection.InvokeAsync("LeaveRoom", sessionId);
+        if (string.Equals(_joinedSessionId, sessionId, StringComparison.Ordinal))
+        {
+            _joinedSessionId = null;
+        }
     }
 
-    public Task CastVoteAsync(string sessionId, string participantId, string vote)
+    public Task CastVoteAsync(string sessionId, string vote)
     {
-        return _hubConnection.InvokeAsync("CastVote", sessionId, participantId, vote);
+        return _hubConnection.InvokeAsync("CastVote", sessionId, vote);
     }
 
     public Task RevealVotesAsync(string sessionId)

@@ -8,11 +8,11 @@ public interface IPlanningRoomClientService : IAsyncDisposable
 
     Task ConnectAsync();
 
-    Task JoinRoomAsync(string sessionId, string participantId, string displayName);
+    Task JoinRoomAsync(string sessionId);
 
-    Task LeaveRoomAsync(string sessionId, string participantId);
+    Task LeaveRoomAsync(string sessionId);
 
-    Task CastVoteAsync(string sessionId, string participantId, string vote);
+    Task CastVoteAsync(string sessionId, string vote);
 
     Task RevealVotesAsync(string sessionId);
 

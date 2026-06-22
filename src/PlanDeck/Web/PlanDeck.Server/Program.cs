@@ -101,3 +101,9 @@ app.MapFallbackToFile("index.html");
 //app.MapGrpcService<GreeterService>();
 
 app.Run();
+
+
+namespace PlanDeck.Server
+{
+    public sealed class ServerEntryPoint;
+}
