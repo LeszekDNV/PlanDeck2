@@ -321,11 +321,11 @@ None — no schema or data changes. Wire-contract change (`PlanningParticipantSt
 
 #### Automated
 
-- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 3.2 Unit tests pass
-- [x] 3.3 Hub integration test passes: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx` — 6b28768
+- [x] 3.2 Unit tests pass — 6b28768
+- [x] 3.3 Hub integration test passes: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"` — 6b28768
 
 #### Manual
 
-- [x] 3.4 Local smoke: drop + reconnect preserves vote, stays hidden until reveal
-- [x] 3.5 No `.razor` regressions from the client service change
+- [x] 3.4 Local smoke: drop + reconnect preserves vote, stays hidden until reveal — 6b28768
+- [x] 3.5 No `.razor` regressions from the client service change — 6b28768
