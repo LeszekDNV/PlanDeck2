@@ -27,6 +27,9 @@ public sealed class SessionTaskConfiguration : IEntityTypeConfiguration<SessionT
         builder.Property(t => t.State)
             .HasMaxLength(128);
 
+        builder.Property(t => t.AgreedEstimate)
+            .HasMaxLength(32);
+
         builder.HasIndex(t => t.TenantId);
 
         builder.HasIndex(t => t.SessionId);

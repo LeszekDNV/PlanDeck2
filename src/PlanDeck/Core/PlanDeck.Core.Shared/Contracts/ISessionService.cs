@@ -108,6 +108,9 @@ public sealed class SessionTaskDto
 
     [DataMember(Order = 8)]
     public string? State { get; set; }
+
+    [DataMember(Order = 9)]
+    public string? AgreedEstimate { get; set; }
 }
 
 [DataContract]

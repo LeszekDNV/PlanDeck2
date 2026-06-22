@@ -273,6 +273,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         AdoWorkItemId = task.AdoWorkItemId,
         AdoRevision = task.AdoRevision,
         WorkItemType = task.WorkItemType,
-        State = task.State
+        State = task.State,
+        AgreedEstimate = task.AgreedEstimate
     };
 }

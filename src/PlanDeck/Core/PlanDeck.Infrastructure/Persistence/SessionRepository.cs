@@ -49,4 +49,18 @@ public sealed class SessionRepository(PlanDeckDbContext db, ICurrentUserContext 
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<bool> SetAgreedEstimateAsync(Guid sessionId, Guid taskId, string? estimate, CancellationToken cancellationToken)
+    {
+        var task = await db.SessionTasks
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.SessionId == sessionId, cancellationToken);
+        if (task is null)
+        {
+            return false;
+        }
+
+        task.AgreedEstimate = estimate;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }

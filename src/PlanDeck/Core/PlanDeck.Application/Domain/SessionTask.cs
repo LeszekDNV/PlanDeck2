@@ -17,4 +17,6 @@ public sealed class SessionTask : TenantEntity
     public string? WorkItemType { get; set; }
 
     public string? State { get; set; }
+
+    public string? AgreedEstimate { get; set; }
 }

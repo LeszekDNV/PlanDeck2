@@ -13,6 +13,8 @@ public interface ISessionRepository
     Task<PlanningSession> UpdateSessionAsync(PlanningSession session, CancellationToken cancellationToken);
 
     Task<bool> DeleteSessionAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<bool> SetAgreedEstimateAsync(Guid sessionId, Guid taskId, string? estimate, CancellationToken cancellationToken);
 }
 
 public sealed class SessionNotFoundException(Guid sessionId)

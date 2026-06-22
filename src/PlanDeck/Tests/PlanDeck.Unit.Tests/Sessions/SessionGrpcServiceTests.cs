@@ -260,5 +260,19 @@ public sealed class SessionGrpcServiceTests
             _sessions.Remove(session);
             return Task.FromResult(true);
         }
+
+        public Task<bool> SetAgreedEstimateAsync(Guid sessionId, Guid taskId, string? estimate, CancellationToken cancellationToken)
+        {
+            var task = _sessions
+                .FirstOrDefault(s => s.Id == sessionId)?.Tasks
+                .FirstOrDefault(t => t.Id == taskId);
+            if (task is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            task.AgreedEstimate = estimate;
+            return Task.FromResult(true);
+        }
     }
 }
