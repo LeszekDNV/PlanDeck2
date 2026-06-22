@@ -19,7 +19,7 @@ public sealed class PlanningRoomHub(IPlanningRoomService planningRoomService) : 
     public async Task LeaveRoom(string sessionId)
     {
         var key = BuildKey(sessionId);
-        var state = planningRoomService.Leave(key, ParticipantId);
+        var state = planningRoomService.Leave(key, ParticipantId, Context.ConnectionId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, key.GroupName, Context.ConnectionAborted);
         await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }

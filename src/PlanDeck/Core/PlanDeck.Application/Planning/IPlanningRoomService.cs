@@ -6,7 +6,7 @@ public interface IPlanningRoomService
 {
     PlanningRoomState Join(RoomKey key, string participantId, string displayName, string connectionId);
 
-    PlanningRoomState Leave(RoomKey key, string participantId);
+    PlanningRoomState Leave(RoomKey key, string participantId, string connectionId);
 
     (RoomKey Key, PlanningRoomState State)? Disconnect(string connectionId);
 

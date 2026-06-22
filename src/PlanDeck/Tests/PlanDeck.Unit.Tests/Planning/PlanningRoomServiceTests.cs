@@ -166,16 +166,33 @@ public sealed class PlanningRoomServiceTests
     }
 
     [Test]
-    public void Leave_RemovesParticipantEntirely()
+    public void Leave_RemovesParticipantOnLastConnection()
     {
         _service.Join(_key, "alice", "Alice", "conn-a");
         _service.Join(_key, "bob", "Bob", "conn-b");
 
-        var state = _service.Leave(_key, "alice");
+        var state = _service.Leave(_key, "alice", "conn-a");
 
         Assert.That(state.Participants, Has.Count.EqualTo(1));
         Assert.That(state.Participants.Single().ParticipantId, Is.EqualTo("bob"));
         Assert.That(_service.Disconnect("conn-a"), Is.Null);
+    }
+
+    [Test]
+    public void Leave_FromOneConnection_KeepsParticipantAndVoteWhileOtherConnectionLive()
+    {
+        _service.Join(_key, "alice", "Alice", "conn-a1");
+        _service.Join(_key, "alice", "Alice", "conn-a2");
+        _service.CastVote(_key, "alice", "5");
+
+        var state = _service.Leave(_key, "alice", "conn-a1");
+
+        var alice = state.Participants.Single(p => p.ParticipantId == "alice");
+        Assert.That(alice.HasVoted, Is.True);
+        Assert.That(alice.IsOnline, Is.True);
+
+        var revealed = _service.RevealVotes(_key);
+        Assert.That(revealed.Participants.Single(p => p.ParticipantId == "alice").Vote, Is.EqualTo("5"));
     }
 
     [Test]

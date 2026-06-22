@@ -35,16 +35,19 @@ public sealed class PlanningRoomService : IPlanningRoomService
         }
     }
 
-    public PlanningRoomState Leave(RoomKey key, string participantId)
+    public PlanningRoomState Leave(RoomKey key, string participantId, string connectionId)
     {
         var room = GetRoom(key);
         lock (room)
         {
-            if (room.Participants.Remove(participantId, out var participant))
+            _connections.TryRemove(connectionId, out _);
+
+            if (room.Participants.TryGetValue(participantId, out var participant))
             {
-                foreach (var connectionId in participant.Connections)
+                participant.Connections.Remove(connectionId);
+                if (participant.Connections.Count == 0)
                 {
-                    _connections.TryRemove(connectionId, out _);
+                    room.Participants.Remove(participantId);
                 }
             }
 
