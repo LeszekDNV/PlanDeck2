@@ -1,7 +1,7 @@
 ---
 change_id: assign-session-members
 title: Assign/invite team members to a session
-status: implementing
+status: implemented
 created: 2026-06-22
 updated: 2026-06-22
 archived_at: null
