@@ -3,7 +3,7 @@ project: "PlanDeck"
 version: 1
 status: draft
 created: 2026-06-18
-updated: 2026-06-19
+updated: 2026-06-22
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -36,7 +36,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | proposed |
 | S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | proposed |
 | S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | done |
-| S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | proposed |
+| S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | done |
 | S-06 | realtime-voting-round | run a hidden-vote → reveal → manual-pick round in a session | F-02, S-04, S-05 | FR-008, FR-009, US-01 | proposed |
 | S-07 | guest-link-voting | join a session's vote via a share link with only a temporary username | S-04, F-02 | FR-013 | proposed |
 | S-08 | ado-estimate-writeback | write the agreed estimate back to the originating Azure DevOps task | S-03, S-06 | FR-010, US-01 | proposed |
@@ -172,7 +172,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Assignment drives who can join as a known member (and later notifications/history). Distinct from the guest-link path (S-07): assignment is for known team members, the link is for ad-hoc participants. Low risk once teams (S-01) and sessions (S-04) exist.
-- **Status:** proposed
+- **Status:** done
 
 ### S-06: Real-time voting round
 
@@ -250,3 +250,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-01: (foundation) the EF Core domain-persistence pattern and the per-user/tenant data-scoping convention are established, with a real migration applied on startup against the configured SQL database.** — Archived 2026-06-18 → `context/archive/2026-06-18-multitenant-persistence-baseline/`. Lesson: —.
 - **S-01: a signed-in user can create a team and add members to it.** — Archived 2026-06-18 → `context/archive/2026-06-18-team-and-members/`. Lesson: —.
 - **S-04: a user can create a planning session from a set of selected tasks and configure it (task selection and voting scale only).** — Archived 2026-06-19 → `context/archive/2026-06-18-create-configure-session/`. Lesson: —.
+- **S-05: a user can assign/invite team members to a session.** — Archived 2026-06-22 → `context/archive/2026-06-22-assign-session-members/`. Lesson: —.
