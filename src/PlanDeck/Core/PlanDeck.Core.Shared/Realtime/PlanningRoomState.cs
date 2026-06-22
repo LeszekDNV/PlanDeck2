@@ -9,4 +9,5 @@ public sealed record PlanningParticipantState(
     string ParticipantId,
     string DisplayName,
     bool HasVoted,
-    string? Vote);
+    string? Vote,
+    bool IsOnline);

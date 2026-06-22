@@ -4,13 +4,17 @@ namespace PlanDeck.Application.Planning;
 
 public interface IPlanningRoomService
 {
-    PlanningRoomState Join(string sessionId, string participantId, string displayName);
+    PlanningRoomState Join(RoomKey key, string participantId, string displayName, string connectionId);
 
-    PlanningRoomState Leave(string sessionId, string participantId);
+    PlanningRoomState Leave(RoomKey key, string participantId);
 
-    PlanningRoomState CastVote(string sessionId, string participantId, string vote);
+    (RoomKey Key, PlanningRoomState State)? Disconnect(string connectionId);
 
-    PlanningRoomState RevealVotes(string sessionId);
+    PlanningRoomState CastVote(RoomKey key, string participantId, string vote);
 
-    PlanningRoomState ResetRound(string sessionId);
+    PlanningRoomState RevealVotes(RoomKey key);
+
+    PlanningRoomState ResetRound(RoomKey key);
+
+    PlanningRoomState GetState(RoomKey key);
 }

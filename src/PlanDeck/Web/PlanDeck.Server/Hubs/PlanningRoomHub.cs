@@ -7,33 +7,48 @@ public sealed class PlanningRoomHub(IPlanningRoomService planningRoomService) : 
 {
     public async Task JoinRoom(string sessionId, string participantId, string displayName)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId, Context.ConnectionAborted);
-        var state = planningRoomService.Join(sessionId, participantId, displayName);
-        await Clients.Group(sessionId).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        var key = BuildKey(sessionId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, key.GroupName, Context.ConnectionAborted);
+        var state = planningRoomService.Join(key, participantId, displayName, Context.ConnectionId);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }
 
     public async Task LeaveRoom(string sessionId, string participantId)
     {
-        var state = planningRoomService.Leave(sessionId, participantId);
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId, Context.ConnectionAborted);
-        await Clients.Group(sessionId).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        var key = BuildKey(sessionId);
+        var state = planningRoomService.Leave(key, participantId);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, key.GroupName, Context.ConnectionAborted);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }
 
     public async Task CastVote(string sessionId, string participantId, string vote)
     {
-        var state = planningRoomService.CastVote(sessionId, participantId, vote);
-        await Clients.Group(sessionId).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        var key = BuildKey(sessionId);
+        var state = planningRoomService.CastVote(key, participantId, vote);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }
 
     public async Task RevealVotes(string sessionId)
     {
-        var state = planningRoomService.RevealVotes(sessionId);
-        await Clients.Group(sessionId).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        var key = BuildKey(sessionId);
+        var state = planningRoomService.RevealVotes(key);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }
 
     public async Task ResetRound(string sessionId)
     {
-        var state = planningRoomService.ResetRound(sessionId);
-        await Clients.Group(sessionId).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        var key = BuildKey(sessionId);
+        var state = planningRoomService.ResetRound(key);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+    }
+
+    private static RoomKey BuildKey(string sessionId)
+    {
+        if (!Guid.TryParse(sessionId, out var sessionGuid))
+        {
+            throw new HubException("A valid session id is required.");
+        }
+
+        return new RoomKey(Guid.Empty, sessionGuid);
     }
 }

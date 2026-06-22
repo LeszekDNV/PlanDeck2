@@ -5,31 +5,79 @@ namespace PlanDeck.Application.Planning;
 
 public sealed class PlanningRoomService : IPlanningRoomService
 {
-    private readonly ConcurrentDictionary<string, PlanningRoom> _rooms = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<RoomKey, PlanningRoom> _rooms = new();
+    private readonly ConcurrentDictionary<string, ConnectionOwner> _connections = new(StringComparer.Ordinal);
 
-    public PlanningRoomState Join(string sessionId, string participantId, string displayName)
+    public PlanningRoomState Join(RoomKey key, string participantId, string displayName, string connectionId)
     {
-        var room = GetRoom(sessionId);
+        if (string.IsNullOrWhiteSpace(participantId))
+        {
+            throw new ArgumentException("Participant ID is required.", nameof(participantId));
+        }
+
+        if (string.IsNullOrWhiteSpace(connectionId))
+        {
+            throw new ArgumentException("Connection ID is required.", nameof(connectionId));
+        }
+
+        var room = GetRoom(key);
         lock (room)
         {
-            room.Participants[participantId] = new Participant(displayName);
-            return ToState(sessionId, room);
+            if (!room.Participants.TryGetValue(participantId, out var participant))
+            {
+                participant = new Participant(displayName);
+                room.Participants[participantId] = participant;
+            }
+
+            participant.Connections.Add(connectionId);
+            _connections[connectionId] = new ConnectionOwner(key, participantId);
+            return ToState(key, room);
         }
     }
 
-    public PlanningRoomState Leave(string sessionId, string participantId)
+    public PlanningRoomState Leave(RoomKey key, string participantId)
     {
-        var room = GetRoom(sessionId);
+        var room = GetRoom(key);
         lock (room)
         {
-            room.Participants.Remove(participantId);
-            return ToState(sessionId, room);
+            if (room.Participants.Remove(participantId, out var participant))
+            {
+                foreach (var connectionId in participant.Connections)
+                {
+                    _connections.TryRemove(connectionId, out _);
+                }
+            }
+
+            return ToState(key, room);
         }
     }
 
-    public PlanningRoomState CastVote(string sessionId, string participantId, string vote)
+    public (RoomKey Key, PlanningRoomState State)? Disconnect(string connectionId)
     {
-        var room = GetRoom(sessionId);
+        if (string.IsNullOrWhiteSpace(connectionId) || !_connections.TryRemove(connectionId, out var owner))
+        {
+            return null;
+        }
+
+        if (!_rooms.TryGetValue(owner.Key, out var room))
+        {
+            return null;
+        }
+
+        lock (room)
+        {
+            if (room.Participants.TryGetValue(owner.ParticipantId, out var participant))
+            {
+                participant.Connections.Remove(connectionId);
+            }
+
+            return (owner.Key, ToState(owner.Key, room));
+        }
+    }
+
+    public PlanningRoomState CastVote(RoomKey key, string participantId, string vote)
+    {
+        var room = GetRoom(key);
         lock (room)
         {
             if (!room.Participants.TryGetValue(participantId, out var participant))
@@ -37,24 +85,29 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 throw new InvalidOperationException("Participant must join the planning room before voting.");
             }
 
+            if (room.IsRevealed)
+            {
+                throw new InvalidOperationException("Votes cannot be cast after the round has been revealed.");
+            }
+
             participant.Vote = vote;
-            return ToState(sessionId, room);
+            return ToState(key, room);
         }
     }
 
-    public PlanningRoomState RevealVotes(string sessionId)
+    public PlanningRoomState RevealVotes(RoomKey key)
     {
-        var room = GetRoom(sessionId);
+        var room = GetRoom(key);
         lock (room)
         {
             room.IsRevealed = true;
-            return ToState(sessionId, room);
+            return ToState(key, room);
         }
     }
 
-    public PlanningRoomState ResetRound(string sessionId)
+    public PlanningRoomState ResetRound(RoomKey key)
     {
-        var room = GetRoom(sessionId);
+        var room = GetRoom(key);
         lock (room)
         {
             room.IsRevealed = false;
@@ -63,24 +116,28 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 participant.Vote = null;
             }
 
-            return ToState(sessionId, room);
+            return ToState(key, room);
         }
     }
 
-    private PlanningRoom GetRoom(string sessionId)
+    public PlanningRoomState GetState(RoomKey key)
     {
-        if (string.IsNullOrWhiteSpace(sessionId))
+        var room = GetRoom(key);
+        lock (room)
         {
-            throw new ArgumentException("Session ID is required.", nameof(sessionId));
+            return ToState(key, room);
         }
-
-        return _rooms.GetOrAdd(sessionId, _ => new PlanningRoom());
     }
 
-    private static PlanningRoomState ToState(string sessionId, PlanningRoom room)
+    private PlanningRoom GetRoom(RoomKey key)
+    {
+        return _rooms.GetOrAdd(key, _ => new PlanningRoom());
+    }
+
+    private static PlanningRoomState ToState(RoomKey key, PlanningRoom room)
     {
         return new PlanningRoomState(
-            sessionId,
+            key.SessionId.ToString(),
             room.IsRevealed,
             room.Participants
                 .OrderBy(participant => participant.Value.DisplayName, StringComparer.OrdinalIgnoreCase)
@@ -88,9 +145,12 @@ public sealed class PlanningRoomService : IPlanningRoomService
                     participant.Key,
                     participant.Value.DisplayName,
                     participant.Value.Vote is not null,
-                    room.IsRevealed ? participant.Value.Vote : null))
+                    room.IsRevealed ? participant.Value.Vote : null,
+                    participant.Value.Connections.Count > 0))
                 .ToArray());
     }
+
+    private readonly record struct ConnectionOwner(RoomKey Key, string ParticipantId);
 
     private sealed class PlanningRoom
     {
@@ -104,5 +164,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
         public string DisplayName { get; } = string.IsNullOrWhiteSpace(displayName) ? "Guest" : displayName;
 
         public string? Vote { get; set; }
+
+        public HashSet<string> Connections { get; } = new(StringComparer.Ordinal);
     }
 }
