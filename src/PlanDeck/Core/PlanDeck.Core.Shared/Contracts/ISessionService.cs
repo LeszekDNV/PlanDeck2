@@ -198,6 +198,9 @@ public sealed class UpdateSessionConfigRequest
 
     [DataMember(Order = 4)]
     public List<string> CustomScaleValues { get; set; } = [];
+
+    [DataMember(Order = 5)]
+    public Guid? TeamId { get; set; }
 }
 
 [DataContract]

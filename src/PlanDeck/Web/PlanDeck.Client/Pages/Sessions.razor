@@ -4,10 +4,12 @@
 @using PlanDeck.Core.Shared.Contracts
 @using PlanDeck.Core.Shared.Validation
 @inject ISessionClientService SessionService
+@inject ISessionMemberClientService MemberService
 @inject ITeamClientService TeamService
 @inject IAzureDevOpsClientService AdoService
 @inject IStringLocalizer<SharedResource> L
 @inject ISnackbar Snackbar
+@inject IDialogService Dialog
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthState
 
@@ -74,6 +76,39 @@
 
                         <MudTextField @bind-Value="_configName" Label="@L["Sessions_Name"]"
                                       Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked" />
+
+                        <MudSelect T="Guid?" @bind-Value="_configTeamId" @bind-Value:after="OnConfigTeamChangedAsync"
+                                   Label="@L["Sessions_Team"]" Clearable="true" Variant="Variant.Outlined"
+                                   Class="mb-3" Disabled="_isLocked">
+                            @foreach (var team in _teams)
+                            {
+                                <MudSelectItem T="Guid?" Value="@((Guid?)team.Id)">@team.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+
+                        @if (_configTeamId is not null)
+                        {
+                            <MudText Typo="Typo.subtitle2" Class="mt-2">@L["Sessions_TeamMembers"]</MudText>
+                            @if (_teamMembers.Count == 0)
+                            {
+                                <MudAlert Severity="Severity.Info" Class="my-2">@L["Sessions_NoTeamMembers"]</MudAlert>
+                            }
+                            else
+                            {
+                                <MudList T="TeamMemberDto" Dense="true" Class="mb-2">
+                                    @foreach (var teamMember in _teamMembers)
+                                    {
+                                        <MudListItem T="TeamMemberDto">
+                                            @teamMember.Email
+                                            @if (!string.IsNullOrWhiteSpace(teamMember.DisplayName))
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Class="ml-2">@teamMember.DisplayName</MudChip>
+                                            }
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                        }
 
                         <MudSelect T="VotingScaleTypeDto" @bind-Value="_configScaleType" Label="@L["Sessions_Scale"]"
                                    Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked">
@@ -172,6 +207,45 @@
                                 </MudButton>
                             </MudStack>
                         }
+
+                        <MudText Typo="Typo.subtitle1" Class="mt-4">@L["Sessions_Members"]</MudText>
+                        @if (_members.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info" Class="my-2">@L["Sessions_NoMembers"]</MudAlert>
+                        }
+                        else
+                        {
+                            <MudList T="SessionMemberDto">
+                                @foreach (var member in _members)
+                                {
+                                    <MudListItem T="SessionMemberDto">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                            <MudText>
+                                                @member.Email
+                                                @if (!string.IsNullOrWhiteSpace(member.DisplayName))
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Class="ml-2">@member.DisplayName</MudChip>
+                                                }
+                                            </MudText>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                           Size="Size.Small" aria-label="@L["Sessions_RemoveMember"]"
+                                                           OnClick="@(() => RemoveMemberAsync(member))" />
+                                        </MudStack>
+                                    </MudListItem>
+                                }
+                            </MudList>
+                        }
+
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
+                            <MudTextField @bind-Value="_memberEmail" Label="@L["Sessions_MemberEmail"]"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_memberDisplayName" Label="@L["Sessions_MemberDisplayName"]"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       Disabled="_assigningMember" OnClick="AssignMemberAsync">
+                                @L["Sessions_AssignMember"]
+                            </MudButton>
+                        </MudStack>
                     </MudCardContent>
                 </MudCard>
             }
@@ -304,9 +378,16 @@
     private readonly HashSet<int> _selectedAdo = [];
 
     private string _configName = string.Empty;
+    private Guid? _configTeamId;
+    private List<TeamMemberDto> _teamMembers = [];
     private VotingScaleTypeDto _configScaleType = VotingScaleTypeDto.Fibonacci;
     private string _configCustomValues = string.Empty;
     private string _configTaskTitle = string.Empty;
+
+    private List<SessionMemberDto> _members = [];
+    private string _memberEmail = string.Empty;
+    private string _memberDisplayName = string.Empty;
+    private bool _assigningMember;
 
     private bool _configAdoLoading;
     private List<AzureDevOpsWorkItemDto> _configAdoItems = [];
@@ -470,11 +551,114 @@
         {
             _selected = await SessionService.GetSessionAsync(session.Id);
             _configName = _selected.Name;
+            _configTeamId = _selected.TeamId;
             _configScaleType = _selected.ScaleType;
             _configCustomValues = string.Join(", ", _selected.ScaleValues);
             _configTaskTitle = string.Empty;
             _configAdoItems = [];
             _configSelectedAdo.Clear();
+            await LoadMembersAsync();
+            await LoadTeamMembersAsync();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task OnConfigTeamChangedAsync()
+    {
+        await LoadTeamMembersAsync();
+    }
+
+    private async Task LoadTeamMembersAsync()
+    {
+        if (_configTeamId is null)
+        {
+            _teamMembers = [];
+            return;
+        }
+
+        try
+        {
+            _teamMembers = (await TeamService.GetMembersAsync(_configTeamId.Value)).ToList();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task LoadMembersAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _memberEmail = string.Empty;
+        _memberDisplayName = string.Empty;
+        _members = (await MemberService.GetMembersAsync(_selected.Id)).ToList();
+    }
+
+    private async Task AssignMemberAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var email = _memberEmail?.Trim() ?? string.Empty;
+        if (!EmailValidator.IsValid(email))
+        {
+            Snackbar.Add(L["Sessions_MemberInvalidEmail"], Severity.Error);
+            return;
+        }
+
+        _assigningMember = true;
+        try
+        {
+            var displayName = string.IsNullOrWhiteSpace(_memberDisplayName) ? null : _memberDisplayName.Trim();
+            var member = await MemberService.AssignMemberAsync(_selected.Id, email, displayName);
+            _members.Add(member);
+            _memberEmail = string.Empty;
+            _memberDisplayName = string.Empty;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _assigningMember = false;
+        }
+    }
+
+    private async Task RemoveMemberAsync(SessionMemberDto member)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var confirmed = await Dialog.ShowMessageBoxAsync(
+            L["Sessions_RemoveMemberConfirmTitle"],
+            string.Format(L["Sessions_RemoveMemberConfirmText"], member.Email),
+            yesText: L["Sessions_RemoveMember"],
+            cancelText: L["Sessions_Cancel"]);
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var removed = await MemberService.RemoveMemberAsync(_selected.Id, member.Id);
+            if (removed)
+            {
+                _members.Remove(member);
+            }
         }
         catch (RpcException ex)
         {
@@ -501,6 +685,7 @@
             var updated = await SessionService.UpdateSessionConfigAsync(
                 _selected.Id,
                 _configName.Trim(),
+                _configTeamId,
                 _configScaleType,
                 ParseCustomValues(_configCustomValues));
 
@@ -703,6 +888,7 @@
         var message = ex.StatusCode switch
         {
             StatusCode.InvalidArgument => MapInvalidArgument(ex.Status.Detail),
+            StatusCode.AlreadyExists => L["Sessions_MemberDuplicate"],
             StatusCode.FailedPrecondition => L["Sessions_ActiveLocked"],
             StatusCode.NotFound => L["Error_Generic"],
             _ => L["Error_Generic"]
@@ -716,6 +902,7 @@
         SessionValidationMessages.NameRequired => L["Sessions_NameRequired"],
         SessionValidationMessages.CustomScaleRequired => L["Sessions_CustomScaleRequired"],
         SessionValidationMessages.TaskTitleRequired => L["Sessions_TaskTitleRequired"],
+        SessionMemberValidationMessages.EmailRequired => L["Sessions_MemberInvalidEmail"],
         _ => L["Error_Generic"]
     };
 }

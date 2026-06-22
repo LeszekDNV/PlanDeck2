@@ -2,6 +2,7 @@ using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
 using PlanDeck.Core.Shared.Contracts;
+using PlanDeck.Core.Shared.Validation;
 using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
@@ -37,7 +38,7 @@ public sealed class TeamGrpcService(ITeamRepository repository) : ITeamService
         }
 
         var email = request.Email?.Trim() ?? string.Empty;
-        if (string.IsNullOrEmpty(email) || !email.Contains('@'))
+        if (!EmailValidator.IsValid(email))
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "A valid member email is required."));
         }

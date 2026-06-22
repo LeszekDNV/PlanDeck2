@@ -42,6 +42,7 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
     public async Task<SessionDto> UpdateSessionConfigAsync(
         Guid id,
         string name,
+        Guid? teamId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues)
     {
@@ -50,6 +51,7 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
         {
             Id = id,
             Name = name,
+            TeamId = teamId,
             ScaleType = scaleType,
             CustomScaleValues = customScaleValues.ToList()
         });

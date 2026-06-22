@@ -18,6 +18,7 @@ public interface ISessionClientService
     Task<SessionDto> UpdateSessionConfigAsync(
         Guid id,
         string name,
+        Guid? teamId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues);
 

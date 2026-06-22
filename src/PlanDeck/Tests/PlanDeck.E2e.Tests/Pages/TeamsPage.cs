@@ -59,5 +59,20 @@ public class TeamsPage
         await AddMemberButton.ClickAsync();
     }
 
+    public async Task RemoveMemberAsync(string email)
+    {
+        await MemberRow(email)
+            .GetByRole(AriaRole.Button, new() { Name = "Remove" })
+            .ClickAsync();
+
+        // Confirm the removal in the MudMessageBox dialog.
+        await _page.Locator(".mud-dialog")
+            .GetByRole(AriaRole.Button, new() { Name = "Remove" })
+            .ClickAsync();
+    }
+
     public ILocator MemberEntry(string email) => _page.GetByText(email);
+
+    private ILocator MemberRow(string email) =>
+        _page.Locator(".mud-list-item").Filter(new() { HasText = email });
 }

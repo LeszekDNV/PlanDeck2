@@ -74,6 +74,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         {
             var session = await LoadDraftAsync(request.Id, context.CancellationToken);
             session.Name = name;
+            session.TeamId = request.TeamId;
             session.ScaleType = scaleType;
             session.ScaleValues = scaleValues;
 

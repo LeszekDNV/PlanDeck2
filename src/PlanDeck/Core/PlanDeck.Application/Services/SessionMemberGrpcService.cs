@@ -17,7 +17,7 @@ public sealed class SessionMemberGrpcService(ISessionMemberRepository repository
         }
 
         var email = request.Email?.Trim() ?? string.Empty;
-        if (string.IsNullOrEmpty(email) || !email.Contains('@'))
+        if (!EmailValidator.IsValid(email))
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, SessionMemberValidationMessages.EmailRequired));
         }

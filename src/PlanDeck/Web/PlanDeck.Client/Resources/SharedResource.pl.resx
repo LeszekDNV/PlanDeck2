@@ -109,6 +109,12 @@
   <data name="Members_Remove" xml:space="preserve">
     <value>Usuń</value>
   </data>
+  <data name="Members_RemoveConfirmTitle" xml:space="preserve">
+    <value>Usuń członka</value>
+  </data>
+  <data name="Members_RemoveConfirmText" xml:space="preserve">
+    <value>Usunąć {0} z tego zespołu?</value>
+  </data>
   <data name="Members_Empty" xml:space="preserve">
     <value>Ten zespół nie ma jeszcze członków.</value>
   </data>
@@ -213,5 +219,41 @@
   </data>
   <data name="Sessions_Cancel" xml:space="preserve">
     <value>Anuluj</value>
+  </data>
+  <data name="Sessions_Members" xml:space="preserve">
+    <value>Członkowie</value>
+  </data>
+  <data name="Sessions_NoMembers" xml:space="preserve">
+    <value>Nie przypisano jeszcze żadnych członków.</value>
+  </data>
+  <data name="Sessions_MemberEmail" xml:space="preserve">
+    <value>E-mail członka</value>
+  </data>
+  <data name="Sessions_MemberDisplayName" xml:space="preserve">
+    <value>Nazwa wyświetlana (opcjonalnie)</value>
+  </data>
+  <data name="Sessions_AssignMember" xml:space="preserve">
+    <value>Przypisz</value>
+  </data>
+  <data name="Sessions_RemoveMember" xml:space="preserve">
+    <value>Usuń członka</value>
+  </data>
+  <data name="Sessions_MemberDuplicate" xml:space="preserve">
+    <value>Ten członek jest już przypisany do sesji.</value>
+  </data>
+  <data name="Sessions_MemberInvalidEmail" xml:space="preserve">
+    <value>Wymagany jest prawidłowy adres e-mail członka.</value>
+  </data>
+  <data name="Sessions_RemoveMemberConfirmTitle" xml:space="preserve">
+    <value>Usuń członka</value>
+  </data>
+  <data name="Sessions_RemoveMemberConfirmText" xml:space="preserve">
+    <value>Usunąć {0} z tej sesji?</value>
+  </data>
+  <data name="Sessions_TeamMembers" xml:space="preserve">
+    <value>Członkowie zespołu</value>
+  </data>
+  <data name="Sessions_NoTeamMembers" xml:space="preserve">
+    <value>Ten zespół nie ma jeszcze członków.</value>
   </data>
 </root>

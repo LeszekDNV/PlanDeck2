@@ -26,6 +26,7 @@ builder.Services.AddScoped<IAzureDevOpsClientService, AzureDevOpsClientService>(
 builder.Services.AddScoped<IPlanningRoomClientService, PlanningRoomClientService>();
 builder.Services.AddScoped<ITeamClientService, TeamClientService>();
 builder.Services.AddScoped<ISessionClientService, SessionClientService>();
+builder.Services.AddScoped<ISessionMemberClientService, SessionMemberClientService>();
 builder.Services.AddScoped<GrpcAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<GrpcAuthenticationStateProvider>());

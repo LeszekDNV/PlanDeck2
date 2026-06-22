@@ -2,9 +2,11 @@
 @using Grpc.Core
 @using PlanDeck.Client.Services
 @using PlanDeck.Core.Shared.Contracts
+@using PlanDeck.Core.Shared.Validation
 @inject ITeamClientService TeamService
 @inject IStringLocalizer<SharedResource> L
 @inject ISnackbar Snackbar
+@inject IDialogService Dialog
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthState
 
@@ -86,7 +88,7 @@
                                                 }
                                             </MudText>
                                             <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
-                                                           Size="Size.Small" Title="@L["Members_Remove"]"
+                                                           Size="Size.Small" aria-label="@L["Members_Remove"]"
                                                            OnClick="@(() => RemoveMemberAsync(member))" />
                                         </MudStack>
                                     </MudListItem>
@@ -232,7 +234,8 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(_newMemberEmail) || !_newMemberEmail.Contains('@'))
+        var email = _newMemberEmail?.Trim() ?? string.Empty;
+        if (!EmailValidator.IsValid(email))
         {
             Snackbar.Add(L["Members_EmailRequired"], Severity.Error);
             return;
@@ -243,7 +246,7 @@
         {
             var member = await TeamService.AddMemberAsync(
                 _selectedTeam.Id,
-                _newMemberEmail.Trim(),
+                email,
                 _newMemberDisplayName);
             _members.Add(member);
             _newMemberEmail = string.Empty;
@@ -262,6 +265,17 @@
     private async Task RemoveMemberAsync(TeamMemberDto member)
     {
         if (_selectedTeam is null)
+        {
+            return;
+        }
+
+        var confirmed = await Dialog.ShowMessageBoxAsync(
+            L["Members_RemoveConfirmTitle"],
+            string.Format(L["Members_RemoveConfirmText"], member.Email),
+            yesText: L["Members_Remove"],
+            cancelText: L["Teams_Cancel"]);
+
+        if (confirmed != true)
         {
             return;
         }

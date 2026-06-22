@@ -109,6 +109,12 @@
   <data name="Members_Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
+  <data name="Members_RemoveConfirmTitle" xml:space="preserve">
+    <value>Remove member</value>
+  </data>
+  <data name="Members_RemoveConfirmText" xml:space="preserve">
+    <value>Remove {0} from this team?</value>
+  </data>
   <data name="Members_Empty" xml:space="preserve">
     <value>This team has no members yet.</value>
   </data>
@@ -213,5 +219,41 @@
   </data>
   <data name="Sessions_Cancel" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="Sessions_Members" xml:space="preserve">
+    <value>Members</value>
+  </data>
+  <data name="Sessions_NoMembers" xml:space="preserve">
+    <value>No members assigned yet.</value>
+  </data>
+  <data name="Sessions_MemberEmail" xml:space="preserve">
+    <value>Member email</value>
+  </data>
+  <data name="Sessions_MemberDisplayName" xml:space="preserve">
+    <value>Display name (optional)</value>
+  </data>
+  <data name="Sessions_AssignMember" xml:space="preserve">
+    <value>Assign</value>
+  </data>
+  <data name="Sessions_RemoveMember" xml:space="preserve">
+    <value>Remove member</value>
+  </data>
+  <data name="Sessions_MemberDuplicate" xml:space="preserve">
+    <value>This member is already assigned to the session.</value>
+  </data>
+  <data name="Sessions_MemberInvalidEmail" xml:space="preserve">
+    <value>A valid member email is required.</value>
+  </data>
+  <data name="Sessions_RemoveMemberConfirmTitle" xml:space="preserve">
+    <value>Remove member</value>
+  </data>
+  <data name="Sessions_RemoveMemberConfirmText" xml:space="preserve">
+    <value>Remove {0} from this session?</value>
+  </data>
+  <data name="Sessions_TeamMembers" xml:space="preserve">
+    <value>Team members</value>
+  </data>
+  <data name="Sessions_NoTeamMembers" xml:space="preserve">
+    <value>This team has no members yet.</value>
   </data>
 </root>

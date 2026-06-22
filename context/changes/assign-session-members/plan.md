@@ -326,20 +326,20 @@ Single additive migration `AddSessionMembers` (new table + indexes, no data back
 
 #### Automated
 
-- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx` — f81e34a
+- [x] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — f81e34a
 
 ### Phase 3: Client, UI, Localization & E2E
 
 #### Automated
 
-- [ ] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 3.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
+- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 3.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
 
 #### Manual
 
-- [ ] 3.3 Assigning a valid email adds the member and persists across reload
-- [ ] 3.4 Duplicate email shows a clear error; invalid email rejected
-- [ ] 3.5 Removing a member works
-- [ ] 3.6 Assignment works in both Draft and Active status
-- [ ] 3.7 UI strings render correctly in en and pl
+- [x] 3.3 Assigning a valid email adds the member and persists across reload
+- [x] 3.4 Duplicate email shows a clear error; invalid email rejected
+- [x] 3.5 Removing a member works
+- [x] 3.6 Assignment works in both Draft and Active status
+- [x] 3.7 UI strings render correctly in en and pl

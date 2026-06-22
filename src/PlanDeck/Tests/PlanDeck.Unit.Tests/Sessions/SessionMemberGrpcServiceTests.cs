@@ -46,6 +46,18 @@ public sealed class SessionMemberGrpcServiceTests
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
     }
 
+    [TestCase("a@b")]
+    [TestCase("##@##")]
+    [TestCase("a@b.")]
+    [TestCase("foo@bar baz.com")]
+    public void AssignMember_WithMalformedEmail_ThrowsInvalidArgument(string email)
+    {
+        var request = new AssignSessionMemberRequest { SessionId = Guid.NewGuid(), Email = email };
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.AssignMemberAsync(request));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+    }
+
     [Test]
     public void AssignMember_WhenSessionMissing_ThrowsNotFound()
     {
