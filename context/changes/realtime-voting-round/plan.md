@@ -367,21 +367,21 @@ One additive, nullable column (`SessionTasks.AgreedEstimate`) — backward compa
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Migration is generated and the model snapshot updates (no pending-model-changes warning)
-- [x] 1.3 Unit/existing tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 1.4 Persistence test for `SetAgreedEstimateAsync` passes (write + re-read; cross-tenant returns false): `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — e255991
+- [x] 1.2 Migration is generated and the model snapshot updates (no pending-model-changes warning) — e255991
+- [x] 1.3 Unit/existing tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — e255991
+- [x] 1.4 Persistence test for `SetAgreedEstimateAsync` passes (write + re-read; cross-tenant returns false): `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj` — e255991
 
 #### Manual
 
-- [x] 1.5 On app start in Development the new migration applies cleanly against the configured SQL database
+- [x] 1.5 On app start in Development the new migration applies cleanly against the configured SQL database — e255991
 
 ### Phase 2: Realtime Contract Extension — Per-Task Round
 
 #### Automated
 
-- [ ] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
 
 ### Phase 3: Hub Authorization & Persistence Wiring
 
