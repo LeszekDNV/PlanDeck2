@@ -4,24 +4,31 @@ using PlanDeck.Application.Abstractions;
 
 namespace PlanDeck.Server.Identity;
 
-public sealed class HttpContextCurrentUserContext(IHttpContextAccessor httpContextAccessor) : ICurrentUserContext
+public sealed class HttpContextCurrentUserContext(
+    IHttpContextAccessor httpContextAccessor,
+    RequestPrincipalAccessor principalAccessor) : ICurrentUserContext
 {
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly RequestPrincipalAccessor _principalAccessor = principalAccessor;
 
     public Guid TenantId => ReadGuidClaim("tid");
 
     public Guid UserId => ReadGuidClaim("oid");
 
-    public bool IsAuthenticated =>
-        _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true;
+    public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated == true;
 
     public string? DisplayName => ReadStringClaim("name") ?? ReadStringClaim("preferred_username");
 
     public string? Email => ReadStringClaim("email") ?? ReadStringClaim("preferred_username");
 
+    // Prefer an explicitly supplied principal (SignalR hub invocations) and fall back to the
+    // ambient HttpContext for HTTP/gRPC requests.
+    private ClaimsPrincipal? Principal =>
+        _principalAccessor.Principal ?? _httpContextAccessor.HttpContext?.User;
+
     private Guid ReadGuidClaim(string claimType)
     {
-        var principal = _httpContextAccessor.HttpContext?.User;
+        var principal = Principal;
         if (principal?.Identity?.IsAuthenticated != true)
         {
             return Guid.Empty;
@@ -35,7 +42,7 @@ public sealed class HttpContextCurrentUserContext(IHttpContextAccessor httpConte
 
     private string? ReadStringClaim(string claimType)
     {
-        var principal = _httpContextAccessor.HttpContext?.User;
+        var principal = Principal;
         if (principal?.Identity?.IsAuthenticated != true)
         {
             return null;

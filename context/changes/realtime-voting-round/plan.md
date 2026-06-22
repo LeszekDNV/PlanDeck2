@@ -380,20 +380,20 @@ One additive, nullable column (`SessionTasks.AgreedEstimate`) — backward compa
 
 #### Automated
 
-- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx` — 26adc7c
+- [x] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — 26adc7c
 
 ### Phase 3: Hub Authorization & Persistence Wiring
 
 #### Automated
 
-- [ ] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 3.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [ ] 3.3 Hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 3.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 3.3 Hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
 
 #### Manual
 
-- [ ] 3.4 A non-assigned authenticated user cannot join the room (rejected)
+- [x] 3.4 A non-assigned authenticated user cannot join the room (rejected)
 
 ### Phase 4: Client Service & Voting Screen
 

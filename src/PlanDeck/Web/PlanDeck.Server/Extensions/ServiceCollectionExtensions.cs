@@ -110,8 +110,10 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddLocalServices()
         {
             services.AddHttpContextAccessor();
+            services.AddScoped<RequestPrincipalAccessor>();
             services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
+            services.AddScoped<IVotingRoundService, VotingRoundService>();
             services.AddScoped<HelloGrpcService>();
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();
             services.AddScoped<ITeamRepository, TeamRepository>();
