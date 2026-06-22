@@ -118,6 +118,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<TeamGrpcService>();
             services.AddScoped<ISessionRepository, SessionRepository>();
             services.AddScoped<SessionGrpcService>();
+            services.AddScoped<ISessionMemberRepository, SessionMemberRepository>();
+            services.AddScoped<SessionMemberGrpcService>();
             services.AddScoped<AuthGrpcService>();
             return services;
         }

@@ -92,6 +92,7 @@ app.MapGrpcService<HelloGrpcService>();
 app.MapGrpcService<AzureDevOpsWorkItemGrpcService>();
 app.MapGrpcService<TeamGrpcService>();
 app.MapGrpcService<SessionGrpcService>();
+app.MapGrpcService<SessionMemberGrpcService>();
 app.MapGrpcService<AuthGrpcService>();
 app.MapHub<PlanningRoomHub>("/hubs/planning-room");
 app.MapStaticAssets();

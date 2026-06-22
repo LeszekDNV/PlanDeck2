@@ -314,20 +314,20 @@ Single additive migration `AddSessionMembers` (new table + indexes, no data back
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Migration created and applies cleanly
-- [x] 1.3 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj`
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — c2ab2aa
+- [x] 1.2 Migration created and applies cleanly — c2ab2aa
+- [x] 1.3 Integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj` — c2ab2aa
 
 #### Manual
 
-- [x] 1.4 Generated migration up/down look correct (unique index, cascade FK)
+- [x] 1.4 Generated migration up/down look correct (unique index, cascade FK) — c2ab2aa
 
 ### Phase 2: gRPC Contract & Application Service
 
 #### Automated
 
-- [ ] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 2.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
 
 ### Phase 3: Client, UI, Localization & E2E
 
