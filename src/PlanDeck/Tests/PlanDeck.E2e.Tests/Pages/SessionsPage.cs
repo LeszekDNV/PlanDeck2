@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 
 namespace PlanDeck.E2e.Tests.Pages;
@@ -53,6 +54,31 @@ public class SessionsPage
 
         // The created session appears in the list as a selectable button.
         await SessionEntry(name).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    private ILocator ActivateButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Activate", Exact = true });
+
+    private ILocator JoinVotingButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Join voting" });
+
+    public async Task ActivateAsync()
+    {
+        await ActivateButton.ClickAsync();
+
+        // Activation locks the session and reveals the "Join voting" entry.
+        await JoinVotingButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task<Guid> JoinVotingAsync()
+    {
+        await JoinVotingButton.ClickAsync();
+        await _page.WaitForURLAsync(
+            new Regex("/voting/[0-9a-fA-F-]{36}$"),
+            new() { Timeout = 15_000 });
+
+        var match = Regex.Match(_page.Url, "/voting/([0-9a-fA-F-]{36})");
+        return Guid.Parse(match.Groups[1].Value);
     }
 
     public ILocator SessionEntry(string name) =>

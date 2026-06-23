@@ -399,23 +399,23 @@ One additive, nullable column (`SessionTasks.AgreedEstimate`) — backward compa
 
 #### Automated
 
-- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 4.2 Unit + integration tests still pass (unit project + hub integration filter)
+- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx` — 23172cd
+- [x] 4.2 Unit + integration tests still pass (unit project + hub integration filter) — 23172cd
 
 #### Manual
 
-- [x] 4.3 Two assigned members join an Active session; presence + "has voted" update live without value leakage
-- [x] 4.4 Reveal shows votes together; reset clears and allows re-vote on the active task
-- [x] 4.5 Picking an estimate updates both tabs live and persists after reloading `/voting/{sessionId}`
-- [x] 4.6 Switching the active task carries independent votes; strings render in `en` and `pl`
+- [x] 4.3 Two assigned members join an Active session; presence + "has voted" update live without value leakage — 23172cd
+- [x] 4.4 Reveal shows votes together; reset clears and allows re-vote on the active task — 23172cd
+- [x] 4.5 Picking an estimate updates both tabs live and persists after reloading `/voting/{sessionId}` — 23172cd
+- [x] 4.6 Switching the active task carries independent votes; strings render in `en` and `pl` — 23172cd
 
 ### Phase 5: End-to-End Test (Playwright, two browsers)
 
 #### Automated
 
-- [ ] 5.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 5.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --filter "FullyQualifiedName~VotingRoom"`
+- [x] 5.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 5.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --filter "FullyQualifiedName~VotingRoom"`
 
 #### Manual
 
-- [ ] 5.3 The E2E run is observed green locally (Aspire boots, two contexts complete the flow)
+- [x] 5.3 The E2E run is observed green locally (Aspire boots, two contexts complete the flow)
