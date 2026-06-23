@@ -15,7 +15,7 @@
 
 <PageTitle>@L["Sessions_Title"]</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-6 px-4">
     <AuthorizeView>
         <Authorized>
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
@@ -28,231 +28,311 @@
 
             @if (_loading)
             {
-                <MudProgressCircular Indeterminate="true" />
-            }
-            else if (_sessions.Count == 0)
-            {
-                <MudAlert Severity="Severity.Info">@L["Sessions_Empty"]</MudAlert>
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
             }
             else
             {
-                <MudPaper Class="pa-2 mb-4">
-                    @foreach (var session in _sessions)
-                    {
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudButton Class="justify-start flex-grow-1"
-                                       Color="@(_selected?.Id == session.Id ? Color.Primary : Color.Default)"
-                                       OnClick="@(() => SelectAsync(session))">
-                                @session.Name
-                            </MudButton>
-                            <MudChip T="string" Size="Size.Small"
-                                     Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
-                                @StatusLabel(session.Status)
-                            </MudChip>
-                        </MudStack>
-                    }
-                </MudPaper>
-            }
-
-            @if (_selected is not null)
-            {
-                <MudCard Class="mt-4">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                <MudText Typo="Typo.h6">@L["Sessions_Config"] — @_selected.Name</MudText>
-                                <MudChip T="string" Size="Size.Small"
-                                         Color="@(_selected.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
-                                    @StatusLabel(_selected.Status)
-                                </MudChip>
-                            </MudStack>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        @if (_selected.Status == SessionStatusDto.Active)
-                        {
-                            <MudAlert Severity="Severity.Info" Class="mb-3">@L["Sessions_ActiveLocked"]</MudAlert>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.HowToVote" Class="mb-3"
-                                       OnClick="@(() => Navigation.NavigateTo($"/voting/{_selected!.Id}"))">
-                                @L["Voting_JoinVoting"]
-                            </MudButton>
-                        }
-
-                        <MudTextField @bind-Value="_configName" Label="@L["Sessions_Name"]"
-                                      Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked" />
-
-                        <MudSelect T="Guid?" @bind-Value="_configTeamId" @bind-Value:after="OnConfigTeamChangedAsync"
-                                   Label="@L["Sessions_Team"]" Clearable="true" Variant="Variant.Outlined"
-                                   Class="mb-3" Disabled="_isLocked">
-                            @foreach (var team in _teams)
+                <MudGrid Spacing="4">
+                    <MudItem xs="12" md="4" lg="3">
+                        <MudPaper Class="pa-2" Elevation="1">
+                            <MudText Typo="Typo.subtitle1" Class="px-2 pt-1 pb-2">@L["Sessions_Title"]</MudText>
+                            @if (_sessions.Count == 0)
                             {
-                                <MudSelectItem T="Guid?" Value="@((Guid?)team.Id)">@team.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-
-                        @if (_configTeamId is not null)
-                        {
-                            <MudText Typo="Typo.subtitle2" Class="mt-2">@L["Sessions_TeamMembers"]</MudText>
-                            @if (_teamMembers.Count == 0)
-                            {
-                                <MudAlert Severity="Severity.Info" Class="my-2">@L["Sessions_NoTeamMembers"]</MudAlert>
+                                <MudAlert Severity="Severity.Info" Dense="true">@L["Sessions_Empty"]</MudAlert>
                             }
                             else
                             {
-                                <MudList T="TeamMemberDto" Dense="true" Class="mb-2">
-                                    @foreach (var teamMember in _teamMembers)
+                                <MudList T="Guid" Dense="true">
+                                    @foreach (var session in _sessions)
                                     {
-                                        <MudListItem T="TeamMemberDto">
-                                            @teamMember.Email
-                                            @if (!string.IsNullOrWhiteSpace(teamMember.DisplayName))
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Class="ml-2">@teamMember.DisplayName</MudChip>
-                                            }
+                                        <MudListItem T="Guid" Value="@session.Id"
+                                                     OnClick="@(() => SelectAsync(session))"
+                                                     Class="@(_selected?.Id == session.Id ? "mud-selected-item rounded" : "rounded")">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                <MudText Typo="Typo.body2"
+                                                         Style="@(_selected?.Id == session.Id ? "font-weight:600" : null)">@session.Name</MudText>
+                                                <MudChip T="string" Size="Size.Small"
+                                                         Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
+                                                    @StatusLabel(session.Status)
+                                                </MudChip>
+                                            </MudStack>
                                         </MudListItem>
                                     }
                                 </MudList>
                             }
-                        }
+                        </MudPaper>
+                    </MudItem>
 
-                        <MudSelect T="VotingScaleTypeDto" @bind-Value="_configScaleType" Label="@L["Sessions_Scale"]"
-                                   Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked">
-                            <MudSelectItem Value="VotingScaleTypeDto.Fibonacci">@L["Scale_Fibonacci"]</MudSelectItem>
-                            <MudSelectItem Value="VotingScaleTypeDto.TShirt">@L["Scale_TShirt"]</MudSelectItem>
-                            <MudSelectItem Value="VotingScaleTypeDto.Custom">@L["Scale_Custom"]</MudSelectItem>
-                        </MudSelect>
-
-                        @if (_configScaleType == VotingScaleTypeDto.Custom)
+                    <MudItem xs="12" md="8" lg="9">
+                        @if (_selected is null)
                         {
-                            <MudTextField @bind-Value="_configCustomValues" Label="@L["Sessions_CustomValues"]"
-                                          HelperText="@L["Sessions_CustomValuesHint"]" Lines="2"
-                                          Variant="Variant.Outlined" Class="mb-3" Disabled="_isLocked" />
-                        }
-
-                        @if (!_isLocked)
-                        {
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       Disabled="_savingConfig" OnClick="SaveConfigAsync" Class="mb-4">
-                                @L["Sessions_SaveConfig"]
-                            </MudButton>
-                        }
-
-                        <MudText Typo="Typo.subtitle1" Class="mt-2">@L["Sessions_Tasks"]</MudText>
-                        @if (_selected.Tasks.Count == 0)
-                        {
-                            <MudAlert Severity="Severity.Info" Class="my-2">@L["Sessions_NoTasks"]</MudAlert>
+                            <MudPaper Class="pa-8 d-flex flex-column align-center justify-center" Outlined="true"
+                                      Style="min-height:240px">
+                                <MudIcon Icon="@Icons.Material.Outlined.TouchApp" Size="Size.Large" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">@L["Sessions_SelectPrompt"]</MudText>
+                            </MudPaper>
                         }
                         else
                         {
-                            <MudList T="SessionTaskDto">
-                                @foreach (var task in _selected.Tasks)
-                                {
-                                    <MudListItem T="SessionTaskDto">
+                            <MudStack Spacing="4">
+                            <MudCard Elevation="2">
+                                <MudCardHeader>
+                                    <CardHeaderContent>
                                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                            <MudText>
-                                                @task.Title
-                                                @if (task.Source == TaskSourceDto.AzureDevOps && task.AdoWorkItemId is not null)
-                                                {
-                                                    <MudChip T="string" Size="Size.Small" Class="ml-2">ADO #@task.AdoWorkItemId</MudChip>
-                                                }
-                                            </MudText>
-                                            @if (!_isLocked)
-                                            {
-                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
-                                                               Size="Size.Small" aria-label="@L["Sessions_RemoveTask"]"
-                                                               OnClick="@(() => RemoveTaskAsync(task))" />
-                                            }
+                                            <MudText Typo="Typo.h6">@L["Sessions_Config"] — @_selected.Name</MudText>
+                                            <MudChip T="string" Size="Size.Small"
+                                                     Color="@(_selected.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
+                                                @StatusLabel(_selected.Status)
+                                            </MudChip>
                                         </MudStack>
-                                    </MudListItem>
-                                }
-                            </MudList>
-                        }
-
-                        @if (!_isLocked)
-                        {
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
-                                <MudTextField @bind-Value="_configTaskTitle" Label="@L["Sessions_TaskTitle"]"
-                                              Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                           Disabled="_addingTask" OnClick="AddTaskAsync">
-                                    @L["Sessions_AddAdHocTask"]
-                                </MudButton>
-                            </MudStack>
-
-                            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CloudDownload"
-                                       Disabled="_configAdoLoading" OnClick="LoadConfigAdoAsync" Class="mt-2 mb-1">
-                                @L["Sessions_ImportAdo"]
-                            </MudButton>
-                            @if (_configAdoLoading)
-                            {
-                                <MudProgressCircular Indeterminate="true" Size="Size.Small" />
-                            }
-                            else if (_configAdoItems.Count > 0)
-                            {
-                                <MudPaper Class="pa-2 mb-2" MaxHeight="200px" Style="overflow:auto">
-                                    @foreach (var item in _configAdoItems)
+                                    </CardHeaderContent>
+                                </MudCardHeader>
+                                <MudCardContent>
+                                    @if (_selected.Status == SessionStatusDto.Active)
                                     {
-                                        var id = item.Id;
-                                        <MudCheckBox T="bool" Dense="true"
-                                                     Value="@_configSelectedAdo.Contains(id)"
-                                                     ValueChanged="@((bool v) => ToggleConfigAdo(id, v))"
-                                                     Label="@($"#{item.Id} {item.Title}")" />
+                                        <MudAlert Severity="Severity.Info" Class="mb-3">@L["Sessions_ActiveLocked"]</MudAlert>
+                                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                   StartIcon="@Icons.Material.Filled.HowToVote" Class="mb-3"
+                                                   OnClick="@(() => Navigation.NavigateTo($"/voting/{_selected!.Id}"))">
+                                            @L["Voting_JoinVoting"]
+                                        </MudButton>
                                     }
-                                    <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="AddSelectedAdoTasksAsync"
-                                               Disabled="@(_addingTask || _configSelectedAdo.Count == 0)">
-                                        @($"{L["Sessions_AddSelected"]} ({_configSelectedAdo.Count})")
-                                    </MudButton>
-                                </MudPaper>
-                            }
 
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mt-4">
-                                <MudButton Variant="Variant.Filled" Color="Color.Success"
-                                           Disabled="_activating" OnClick="ActivateAsync">
-                                    @L["Sessions_Activate"]
-                                </MudButton>
+                                    <MudGrid Spacing="2">
+                                        <MudItem xs="12" sm="6">
+                                            <MudTextField @bind-Value="_configName" Label="@L["Sessions_Name"]"
+                                                          Variant="Variant.Outlined" Disabled="_isLocked" />
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudSelect T="Guid?" @bind-Value="_configTeamId" @bind-Value:after="OnConfigTeamChangedAsync"
+                                                       Label="@L["Sessions_Team"]" Clearable="true" Variant="Variant.Outlined"
+                                                       Disabled="_isLocked">
+                                                @foreach (var team in _teams)
+                                                {
+                                                    <MudSelectItem T="Guid?" Value="@((Guid?)team.Id)">@team.Name</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="6">
+                                            <MudSelect T="VotingScaleTypeDto" @bind-Value="_configScaleType" Label="@L["Sessions_Scale"]"
+                                                       Variant="Variant.Outlined" Disabled="_isLocked">
+                                                <MudSelectItem Value="VotingScaleTypeDto.Fibonacci">@L["Scale_Fibonacci"]</MudSelectItem>
+                                                <MudSelectItem Value="VotingScaleTypeDto.TShirt">@L["Scale_TShirt"]</MudSelectItem>
+                                                <MudSelectItem Value="VotingScaleTypeDto.Custom">@L["Scale_Custom"]</MudSelectItem>
+                                            </MudSelect>
+                                        </MudItem>
+                                        @if (_configScaleType == VotingScaleTypeDto.Custom)
+                                        {
+                                            <MudItem xs="12" sm="6">
+                                                <MudTextField @bind-Value="_configCustomValues" Label="@L["Sessions_CustomValues"]"
+                                                              HelperText="@L["Sessions_CustomValuesHint"]" Lines="2"
+                                                              Variant="Variant.Outlined" Disabled="_isLocked" />
+                                            </MudItem>
+                                        }
+                                    </MudGrid>
+
+                                    @if (_configTeamId is not null)
+                                    {
+                                        <MudText Typo="Typo.subtitle2" Class="mt-3">@L["Sessions_TeamMembers"]</MudText>
+                                        @if (_teamMembers.Count == 0)
+                                        {
+                                            <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">@L["Sessions_NoTeamMembers"]</MudAlert>
+                                        }
+                                        else
+                                        {
+                                            <MudList T="TeamMemberDto" Dense="true" Class="mb-2">
+                                                @foreach (var teamMember in _teamMembers)
+                                                {
+                                                    <MudListItem T="TeamMemberDto">
+                                                        @teamMember.Email
+                                                        @if (!string.IsNullOrWhiteSpace(teamMember.DisplayName))
+                                                        {
+                                                            <MudChip T="string" Size="Size.Small" Class="ml-2">@teamMember.DisplayName</MudChip>
+                                                        }
+                                                    </MudListItem>
+                                                }
+                                            </MudList>
+                                        }
+                                    }
+
+                                    <MudStack Row="true" Spacing="2" Class="mt-3">
+                                        @if (!_isLocked)
+                                        {
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                       Disabled="_savingConfig" OnClick="SaveConfigAsync">
+                                                @L["Sessions_SaveConfig"]
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Filled" Color="Color.Success"
+                                                       StartIcon="@Icons.Material.Filled.PlayArrow"
+                                                       Disabled="_activating" OnClick="ActivateAsync">
+                                                @L["Sessions_Activate"]
+                                            </MudButton>
+                                        }
+                                    </MudStack>
+                                </MudCardContent>
+                            </MudCard>
+
+                            <MudCard Elevation="2">
+                                <MudCardHeader>
+                                    <CardHeaderContent>
+                                        <MudText Typo="Typo.h6">@L["Sessions_Tasks"]</MudText>
+                                    </CardHeaderContent>
+                                </MudCardHeader>
+                                <MudCardContent>
+                                    @if (_selected.Tasks.Count == 0)
+                                    {
+                                        <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">@L["Sessions_NoTasks"]</MudAlert>
+                                    }
+                                    else
+                                    {
+                                        <MudList T="SessionTaskDto" Dense="true">
+                                            @foreach (var task in _selected.Tasks)
+                                            {
+                                                <MudListItem T="SessionTaskDto">
+                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                        <div>
+                                                            <MudText Typo="Typo.body1">
+                                                                @task.Title
+                                                                @if (task.Source == TaskSourceDto.AzureDevOps && task.AdoWorkItemId is not null)
+                                                                {
+                                                                    <MudChip T="string" Size="Size.Small" Class="ml-2">ADO #@task.AdoWorkItemId</MudChip>
+                                                                }
+                                                                @if (!string.IsNullOrWhiteSpace(task.AgreedEstimate))
+                                                                {
+                                                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-2">@task.AgreedEstimate</MudChip>
+                                                                }
+                                                            </MudText>
+                                                            @if (!string.IsNullOrWhiteSpace(task.Description))
+                                                            {
+                                                                <MudPaper Class="pa-2 mt-1 mud-background-gray" Elevation="0">
+                                                                    <MarkdownView Markdown="@task.Description" />
+                                                                </MudPaper>
+                                                            }
+                                                        </div>
+                                                        <MudStack Row="true" Spacing="0" AlignItems="AlignItems.Center">
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                                                                           Size="Size.Small" aria-label="@L["Sessions_EditTask"]"
+                                                                           OnClick="@(() => OpenEditTask(task))" />
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                                           Size="Size.Small" aria-label="@L["Sessions_RemoveTask"]"
+                                                                           OnClick="@(() => RemoveTaskAsync(task))" />
+                                                        </MudStack>
+                                                    </MudStack>
+                                                </MudListItem>
+                                            }
+                                        </MudList>
+                                    }
+
+                                    <MudStack Spacing="2" Class="mt-2">
+                                        <MudTextField @bind-Value="_configTaskTitle" Label="@L["Sessions_TaskTitle"]"
+                                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        <MudTextField @bind-Value="_configTaskDescription" Label="@L["Sessions_Description"]"
+                                                      HelperText="@L["Sessions_DescriptionHint"]" Lines="2"
+                                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        <div>
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                       StartIcon="@Icons.Material.Filled.Add"
+                                                       Disabled="_addingTask" OnClick="AddTaskAsync">
+                                                @L["Sessions_AddAdHocTask"]
+                                            </MudButton>
+                                        </div>
+                                    </MudStack>
+
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                               StartIcon="@(_configBulkExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                               OnClick="@(() => _configBulkExpanded = !_configBulkExpanded)" Class="mt-2">
+                                        @L["Sessions_BulkPaste"]
+                                    </MudButton>
+                                    <MudCollapse Expanded="_configBulkExpanded">
+                                        <MudTextField @bind-Value="_configBulkText" Label="@L["Sessions_BulkPaste"]"
+                                                      HelperText="@L["Sessions_BulkPasteHint"]" Placeholder="@L["Sessions_BulkPastePlaceholder"]"
+                                                      Lines="3" Variant="Variant.Outlined" Class="mt-1" />
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlaylistAdd"
+                                                   Disabled="_addingTask" OnClick="AddBulkTasksAsync" Class="mt-1">
+                                            @L["Sessions_BulkAdd"]
+                                        </MudButton>
+                                    </MudCollapse>
+
+                                    <div class="mt-3">
+                                        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CloudDownload"
+                                                   Disabled="_configAdoLoading" OnClick="LoadConfigAdoAsync" Class="mb-1">
+                                            @L["Sessions_ImportAdo"]
+                                        </MudButton>
+                                        @if (_configAdoLoading)
+                                        {
+                                            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                                        }
+                                        else if (_configAdoItems.Count > 0)
+                                        {
+                                            <MudPaper Class="pa-2 mb-2" MaxHeight="200px" Style="overflow:auto">
+                                                @foreach (var item in _configAdoItems)
+                                                {
+                                                    var id = item.Id;
+                                                    <MudCheckBox T="bool" Dense="true"
+                                                                 Value="@_configSelectedAdo.Contains(id)"
+                                                                 ValueChanged="@((bool v) => ToggleConfigAdo(id, v))"
+                                                                 Label="@($"#{item.Id} {item.Title}")" />
+                                                }
+                                                <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="AddSelectedAdoTasksAsync"
+                                                           Disabled="@(_addingTask || _configSelectedAdo.Count == 0)">
+                                                    @($"{L["Sessions_AddSelected"]} ({_configSelectedAdo.Count})")
+                                                </MudButton>
+                                            </MudPaper>
+                                        }
+                                    </div>
+                                </MudCardContent>
+                            </MudCard>
+
+                            <MudCard Elevation="2">
+                                <MudCardHeader>
+                                    <CardHeaderContent>
+                                        <MudText Typo="Typo.h6">@L["Sessions_Members"]</MudText>
+                                    </CardHeaderContent>
+                                </MudCardHeader>
+                                <MudCardContent>
+                                    @if (_members.Count == 0)
+                                    {
+                                        <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">@L["Sessions_NoMembers"]</MudAlert>
+                                    }
+                                    else
+                                    {
+                                        <MudList T="SessionMemberDto" Dense="true">
+                                            @foreach (var member in _members)
+                                            {
+                                                <MudListItem T="SessionMemberDto">
+                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                        <MudText>
+                                                            @member.Email
+                                                            @if (!string.IsNullOrWhiteSpace(member.DisplayName))
+                                                            {
+                                                                <MudChip T="string" Size="Size.Small" Class="ml-2">@member.DisplayName</MudChip>
+                                                            }
+                                                        </MudText>
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                                       Size="Size.Small" aria-label="@L["Sessions_RemoveMember"]"
+                                                                       OnClick="@(() => RemoveMemberAsync(member))" />
+                                                    </MudStack>
+                                                </MudListItem>
+                                            }
+                                        </MudList>
+                                    }
+
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
+                                        <MudTextField @bind-Value="_memberEmail" Label="@L["Sessions_MemberEmail"]"
+                                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        <MudTextField @bind-Value="_memberDisplayName" Label="@L["Sessions_MemberDisplayName"]"
+                                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                   Disabled="_assigningMember" OnClick="AssignMemberAsync">
+                                            @L["Sessions_AssignMember"]
+                                        </MudButton>
+                                    </MudStack>
+                                </MudCardContent>
+                            </MudCard>
                             </MudStack>
                         }
-
-                        <MudText Typo="Typo.subtitle1" Class="mt-4">@L["Sessions_Members"]</MudText>
-                        @if (_members.Count == 0)
-                        {
-                            <MudAlert Severity="Severity.Info" Class="my-2">@L["Sessions_NoMembers"]</MudAlert>
-                        }
-                        else
-                        {
-                            <MudList T="SessionMemberDto">
-                                @foreach (var member in _members)
-                                {
-                                    <MudListItem T="SessionMemberDto">
-                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                            <MudText>
-                                                @member.Email
-                                                @if (!string.IsNullOrWhiteSpace(member.DisplayName))
-                                                {
-                                                    <MudChip T="string" Size="Size.Small" Class="ml-2">@member.DisplayName</MudChip>
-                                                }
-                                            </MudText>
-                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
-                                                           Size="Size.Small" aria-label="@L["Sessions_RemoveMember"]"
-                                                           OnClick="@(() => RemoveMemberAsync(member))" />
-                                        </MudStack>
-                                    </MudListItem>
-                                }
-                            </MudList>
-                        }
-
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
-                            <MudTextField @bind-Value="_memberEmail" Label="@L["Sessions_MemberEmail"]"
-                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            <MudTextField @bind-Value="_memberDisplayName" Label="@L["Sessions_MemberDisplayName"]"
-                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       Disabled="_assigningMember" OnClick="AssignMemberAsync">
-                                @L["Sessions_AssignMember"]
-                            </MudButton>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
+                    </MudItem>
+                </MudGrid>
             }
 
             <MudDialog @bind-Visible="_createOpen">
@@ -299,6 +379,11 @@
                                             {
                                                 <MudChip T="string" Size="Size.Small" Class="ml-2">ADO #@task.AdoWorkItemId</MudChip>
                                             }
+                                            @if (!string.IsNullOrWhiteSpace(task.Description))
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Info" Class="ml-2"
+                                                         Icon="@Icons.Material.Filled.Notes">@L["Sessions_HasDescription"]</MudChip>
+                                            }
                                         </MudText>
                                         <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
                                                        Size="Size.Small" aria-label="@L["Sessions_RemoveTask"]"
@@ -309,11 +394,32 @@
                         </MudList>
                     }
 
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2 mb-2">
+                    <MudStack Spacing="2" Class="mt-2 mb-2">
                         <MudTextField @bind-Value="_adHocTitle" Label="@L["Sessions_TaskTitle"]"
                                       Variant="Variant.Outlined" Margin="Margin.Dense" />
-                        <MudButton Variant="Variant.Outlined" OnClick="StageAdHocTask">@L["Sessions_AddAdHocTask"]</MudButton>
+                        <MudTextField @bind-Value="_adHocDescription" Label="@L["Sessions_Description"]"
+                                      HelperText="@L["Sessions_DescriptionHint"]" Lines="2"
+                                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        <div>
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="StageAdHocTask">@L["Sessions_AddAdHocTask"]</MudButton>
+                        </div>
                     </MudStack>
+
+                    <MudButton Variant="Variant.Text" Color="Color.Primary"
+                               StartIcon="@(_bulkExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                               OnClick="@(() => _bulkExpanded = !_bulkExpanded)" Class="mb-1">
+                        @L["Sessions_BulkPaste"]
+                    </MudButton>
+                    <MudCollapse Expanded="_bulkExpanded">
+                        <MudTextField @bind-Value="_bulkText" Label="@L["Sessions_BulkPaste"]"
+                                      HelperText="@L["Sessions_BulkPasteHint"]" Placeholder="@L["Sessions_BulkPastePlaceholder"]"
+                                      Lines="3" Variant="Variant.Outlined" Class="mb-1" />
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlaylistAdd"
+                                   OnClick="StageBulkTasks" Class="mb-2">
+                            @L["Sessions_BulkAdd"]
+                        </MudButton>
+                    </MudCollapse>
 
                     <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CloudDownload"
                                Disabled="_adoLoading" OnClick="LoadAdoAsync" Class="mb-2">
@@ -345,6 +451,40 @@
                     <MudButton OnClick="@(() => _createOpen = false)">@L["Sessions_Cancel"]</MudButton>
                     <MudButton Color="Color.Primary" Variant="Variant.Filled"
                                Disabled="_createSubmitting" OnClick="SubmitCreateAsync">
+                        @L["Sessions_Save"]
+                    </MudButton>
+                </DialogActions>
+            </MudDialog>
+
+            <MudDialog @bind-Visible="_editOpen">
+                <TitleContent>
+                    <MudText Typo="Typo.h6">@L["Sessions_EditTask"]</MudText>
+                </TitleContent>
+                <DialogContent>
+                    @if (_editIsAdo)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-3">@L["Sessions_EditAdoWarning"]</MudAlert>
+                    }
+
+                    <MudTextField @bind-Value="_editTitle" Label="@L["Sessions_TaskTitle"]"
+                                  Required="true" Variant="Variant.Outlined" Class="mb-3" />
+
+                    <MudTextField @bind-Value="_editDescription" Label="@L["Sessions_Description"]"
+                                  HelperText="@L["Sessions_DescriptionHint"]" Lines="5"
+                                  Variant="Variant.Outlined" Class="mb-2" />
+
+                    @if (!string.IsNullOrWhiteSpace(_editDescription))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@L["Sessions_Preview"]</MudText>
+                        <MudPaper Class="pa-3 mt-1" Outlined="true">
+                            <MarkdownView Markdown="@_editDescription" />
+                        </MudPaper>
+                    }
+                </DialogContent>
+                <DialogActions>
+                    <MudButton OnClick="@(() => _editOpen = false)">@L["Sessions_Cancel"]</MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                               Disabled="_savingEdit" OnClick="SaveEditTaskAsync">
                         @L["Sessions_Save"]
                     </MudButton>
                 </DialogActions>

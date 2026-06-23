@@ -24,6 +24,9 @@ public partial class Sessions
     private VotingScaleTypeDto _newScaleType = VotingScaleTypeDto.Fibonacci;
     private string _newCustomValues = string.Empty;
     private string _adHocTitle = string.Empty;
+    private string _adHocDescription = string.Empty;
+    private string _bulkText = string.Empty;
+    private bool _bulkExpanded;
     private readonly List<NewSessionTaskDto> _stagedTasks = [];
 
     private List<AzureDevOpsWorkItemDto> _adoItems = [];
@@ -35,6 +38,16 @@ public partial class Sessions
     private VotingScaleTypeDto _configScaleType = VotingScaleTypeDto.Fibonacci;
     private string _configCustomValues = string.Empty;
     private string _configTaskTitle = string.Empty;
+    private string _configTaskDescription = string.Empty;
+    private string _configBulkText = string.Empty;
+    private bool _configBulkExpanded;
+
+    private bool _editOpen;
+    private bool _savingEdit;
+    private Guid _editTaskId;
+    private string _editTitle = string.Empty;
+    private string _editDescription = string.Empty;
+    private bool _editIsAdo;
 
     private List<SessionMemberDto> _members = [];
     private string _memberEmail = string.Empty;
@@ -90,6 +103,9 @@ public partial class Sessions
         _newScaleType = VotingScaleTypeDto.Fibonacci;
         _newCustomValues = string.Empty;
         _adHocTitle = string.Empty;
+        _adHocDescription = string.Empty;
+        _bulkText = string.Empty;
+        _bulkExpanded = false;
         _stagedTasks.Clear();
         _adoItems = [];
         _selectedAdo.Clear();
@@ -105,8 +121,36 @@ public partial class Sessions
             return;
         }
 
-        _stagedTasks.Add(new NewSessionTaskDto { Title = title, Source = TaskSourceDto.AdHoc });
+        _stagedTasks.Add(new NewSessionTaskDto
+        {
+            Title = title,
+            Description = string.IsNullOrWhiteSpace(_adHocDescription) ? null : _adHocDescription.Trim(),
+            Source = TaskSourceDto.AdHoc
+        });
         _adHocTitle = string.Empty;
+        _adHocDescription = string.Empty;
+    }
+
+    private void StageBulkTasks()
+    {
+        var parsed = ParseBulkTasks(_bulkText);
+        if (parsed.Count == 0)
+        {
+            Snackbar.Add(L["Sessions_BulkEmpty"], Severity.Error);
+            return;
+        }
+
+        foreach (var task in parsed)
+        {
+            if (_stagedTasks.Any(t => string.Equals(t.Title, task.Title, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            _stagedTasks.Add(task);
+        }
+
+        _bulkText = string.Empty;
     }
 
     private async Task LoadAdoAsync()
@@ -151,6 +195,7 @@ public partial class Sessions
             _stagedTasks.Add(new NewSessionTaskDto
             {
                 Title = item.Title,
+                Description = item.Description,
                 Source = TaskSourceDto.AzureDevOps,
                 AdoWorkItemId = item.Id,
                 AdoRevision = item.Revision,
@@ -207,6 +252,9 @@ public partial class Sessions
             _configScaleType = _selected.ScaleType;
             _configCustomValues = string.Join(", ", _selected.ScaleValues);
             _configTaskTitle = string.Empty;
+            _configTaskDescription = string.Empty;
+            _configBulkText = string.Empty;
+            _configBulkExpanded = false;
             _configAdoItems = [];
             _configSelectedAdo.Clear();
             await LoadMembersAsync();
@@ -372,10 +420,16 @@ public partial class Sessions
         {
             var updated = await SessionService.AddTaskAsync(
                 _selected.Id,
-                new NewSessionTaskDto { Title = title, Source = TaskSourceDto.AdHoc });
+                new NewSessionTaskDto
+                {
+                    Title = title,
+                    Description = string.IsNullOrWhiteSpace(_configTaskDescription) ? null : _configTaskDescription.Trim(),
+                    Source = TaskSourceDto.AdHoc
+                });
 
             ReplaceSelected(updated);
             _configTaskTitle = string.Empty;
+            _configTaskDescription = string.Empty;
         }
         catch (RpcException ex)
         {
@@ -387,11 +441,97 @@ public partial class Sessions
         }
     }
 
+    private async Task AddBulkTasksAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var parsed = ParseBulkTasks(_configBulkText);
+        if (parsed.Count == 0)
+        {
+            Snackbar.Add(L["Sessions_BulkEmpty"], Severity.Error);
+            return;
+        }
+
+        _addingTask = true;
+        try
+        {
+            var updated = await SessionService.AddTasksAsync(_selected.Id, parsed);
+            ReplaceSelected(updated);
+            _configBulkText = string.Empty;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _addingTask = false;
+        }
+    }
+
+    private void OpenEditTask(SessionTaskDto task)
+    {
+        _editTaskId = task.Id;
+        _editTitle = task.Title;
+        _editDescription = task.Description ?? string.Empty;
+        _editIsAdo = task.Source == TaskSourceDto.AzureDevOps;
+        _editOpen = true;
+    }
+
+    private async Task SaveEditTaskAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var title = _editTitle?.Trim() ?? string.Empty;
+        if (title.Length == 0)
+        {
+            Snackbar.Add(L["Sessions_TaskTitleRequired"], Severity.Error);
+            return;
+        }
+
+        _savingEdit = true;
+        try
+        {
+            var description = string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription;
+            var updated = await SessionService.UpdateTaskAsync(_selected.Id, _editTaskId, title, description);
+            ReplaceSelected(updated);
+            _editOpen = false;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _savingEdit = false;
+        }
+    }
+
     private async Task RemoveTaskAsync(SessionTaskDto task)
     {
         if (_selected is null)
         {
             return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(task.AgreedEstimate))
+        {
+            var confirmed = await Dialog.ShowMessageBoxAsync(
+                L["Sessions_RemoveTaskConfirmTitle"],
+                string.Format(L["Sessions_RemoveTaskConfirmText"], task.Title, task.AgreedEstimate),
+                yesText: L["Sessions_RemoveTask"],
+                cancelText: L["Sessions_Cancel"]);
+
+            if (confirmed != true)
+            {
+                return;
+            }
         }
 
         try
@@ -462,6 +602,7 @@ public partial class Sessions
                 updated = await SessionService.AddTaskAsync(_selected.Id, new NewSessionTaskDto
                 {
                     Title = item.Title,
+                    Description = item.Description,
                     Source = TaskSourceDto.AzureDevOps,
                     AdoWorkItemId = item.Id,
                     AdoRevision = item.Revision,
@@ -526,6 +667,32 @@ public partial class Sessions
         (raw ?? string.Empty)
             .Split([',', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
+
+    private static List<NewSessionTaskDto> ParseBulkTasks(string raw)
+    {
+        var result = new List<NewSessionTaskDto>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var line in (raw ?? string.Empty).Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = line.IndexOf('|');
+            var title = (separator >= 0 ? line[..separator] : line).Trim();
+            if (title.Length == 0 || !seen.Add(title))
+            {
+                continue;
+            }
+
+            var description = separator >= 0 ? line[(separator + 1)..].Trim() : string.Empty;
+            result.Add(new NewSessionTaskDto
+            {
+                Title = title,
+                Description = description.Length == 0 ? null : description,
+                Source = TaskSourceDto.AdHoc
+            });
+        }
+
+        return result;
+    }
 
     private string StatusLabel(SessionStatusDto status) =>
         status == SessionStatusDto.Active ? L["Sessions_Active"] : L["Sessions_Draft"];

@@ -316,4 +316,49 @@
   <data name="Voting_NotVoted" xml:space="preserve">
     <value>Not voted</value>
   </data>
+  <data name="Sessions_SelectPrompt" xml:space="preserve">
+    <value>Select a session to view and configure it.</value>
+  </data>
+  <data name="Sessions_HasDescription" xml:space="preserve">
+    <value>Has a description</value>
+  </data>
+  <data name="Sessions_EditTask" xml:space="preserve">
+    <value>Edit task</value>
+  </data>
+  <data name="Sessions_EditAdoWarning" xml:space="preserve">
+    <value>Changes are local to this session only and are not written back to Azure DevOps.</value>
+  </data>
+  <data name="Sessions_Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Sessions_DescriptionHint" xml:space="preserve">
+    <value>Markdown is supported.</value>
+  </data>
+  <data name="Sessions_Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Sessions_BulkPaste" xml:space="preserve">
+    <value>Paste multiple tasks</value>
+  </data>
+  <data name="Sessions_BulkPasteHint" xml:space="preserve">
+    <value>One task per line. Use 'Title | Description' to add a description.</value>
+  </data>
+  <data name="Sessions_BulkPastePlaceholder" xml:space="preserve">
+    <value>Login screen | Build the sign-in page&#10;Logout&#10;Dashboard | Overview widgets</value>
+  </data>
+  <data name="Sessions_BulkAdd" xml:space="preserve">
+    <value>Add pasted tasks</value>
+  </data>
+  <data name="Sessions_BulkEmpty" xml:space="preserve">
+    <value>No tasks found in the pasted text.</value>
+  </data>
+  <data name="Sessions_RemoveTaskConfirmTitle" xml:space="preserve">
+    <value>Remove estimated task?</value>
+  </data>
+  <data name="Sessions_RemoveTaskConfirmText" xml:space="preserve">
+    <value>'{0}' already has an agreed estimate ({1}). Remove it anyway?</value>
+  </data>
+  <data name="Voting_Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
 </root>

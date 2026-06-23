@@ -7,7 +7,11 @@ using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
 
-public sealed class SessionGrpcService(ISessionRepository repository, IPlanningRoomNotifier roomNotifier) : ISessionService
+public sealed class SessionGrpcService(
+    ISessionRepository repository,
+    ISessionMemberRepository memberRepository,
+    ICurrentUserContext currentUser,
+    IPlanningRoomNotifier roomNotifier) : ISessionService
 {
     private static readonly string[] FibonacciFaces = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -42,7 +46,27 @@ public sealed class SessionGrpcService(ISessionRepository repository, IPlanningR
         }
 
         var created = await repository.CreateSessionAsync(session, context.CancellationToken);
+        await AddCreatorAsMemberAsync(created.Id, context.CancellationToken);
         return new CreateSessionReply { Session = ToDto(created) };
+    }
+
+    private async Task AddCreatorAsMemberAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        var email = currentUser.Email?.Trim();
+        if (string.IsNullOrEmpty(email) || !EmailValidator.IsValid(email))
+        {
+            return;
+        }
+
+        var displayName = string.IsNullOrWhiteSpace(currentUser.DisplayName) ? null : currentUser.DisplayName.Trim();
+        try
+        {
+            await memberRepository.AssignMemberAsync(sessionId, email, displayName, cancellationToken);
+        }
+        catch (DuplicateSessionMemberException)
+        {
+            // Creator already present as a member; nothing to do.
+        }
     }
 
     public async Task<ListSessionsReply> ListSessionsAsync(ListSessionsRequest request, CallContext context = default)

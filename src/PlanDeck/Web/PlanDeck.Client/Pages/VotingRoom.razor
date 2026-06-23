@@ -58,7 +58,8 @@
                                                      Style="@(isActive ? "font-weight:600" : null)">@task.Title</MudText>
                                             @if (!string.IsNullOrWhiteSpace(task.AgreedEstimate))
                                             {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Success">@task.AgreedEstimate</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Success"
+                                                         Class="pd-pop" @key="@($"{task.TaskId}-{task.AgreedEstimate}")">@task.AgreedEstimate</MudChip>
                                             }
                                         </MudStack>
                                     </MudListItem>
@@ -81,6 +82,20 @@
                                     <MudText Typo="Typo.body2" Class="mb-3" data-testid="agreed-estimate">
                                         @L["Voting_Agreed"]: <strong>@_activeTask.AgreedEstimate</strong>
                                     </MudText>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(_activeTask.Description))
+                                {
+                                    <MudButton Variant="Variant.Text" Size="Size.Small"
+                                               StartIcon="@(_descExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                               OnClick="@(() => _descExpanded = !_descExpanded)" Class="mb-1">
+                                        @L["Voting_Description"]
+                                    </MudButton>
+                                    <MudCollapse Expanded="_descExpanded">
+                                        <MudPaper Class="pa-3 mb-3" Outlined="true" data-testid="task-description">
+                                            <MarkdownView Markdown="@_activeTask.Description" />
+                                        </MudPaper>
+                                    </MudCollapse>
                                 }
 
                                 <MudText Typo="Typo.subtitle2" Class="mb-2">@L["Voting_YourVote"]</MudText>
@@ -150,15 +165,18 @@
                                                 <MudText Typo="Typo.body2">@participant.DisplayName</MudText>
                                                 @if (_state.IsRevealed && participant.HasVoted)
                                                 {
-                                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" data-testid="revealed-vote">@participant.Vote</MudChip>
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Class="pd-pop"
+                                                             @key="@($"r-{participant.ParticipantId}-{participant.Vote}")" data-testid="revealed-vote">@participant.Vote</MudChip>
                                                 }
                                                 else if (participant.HasVoted)
                                                 {
-                                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" data-testid="voted-status">@L["Voting_Voted"]</MudChip>
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="pd-pop"
+                                                             @key="@($"v-{participant.ParticipantId}")" data-testid="voted-status">@L["Voting_Voted"]</MudChip>
                                                 }
                                                 else
                                                 {
-                                                    <MudChip T="string" Size="Size.Small" Color="Color.Default" data-testid="notvoted-status">@L["Voting_NotVoted"]</MudChip>
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Default"
+                                                             @key="@($"n-{participant.ParticipantId}")" data-testid="notvoted-status">@L["Voting_NotVoted"]</MudChip>
                                                 }
                                             </MudStack>
                                         </MudListItem>

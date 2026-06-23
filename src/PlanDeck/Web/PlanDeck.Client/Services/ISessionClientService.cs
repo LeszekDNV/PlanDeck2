@@ -24,6 +24,10 @@ public interface ISessionClientService
 
     Task<SessionDto> AddTaskAsync(Guid sessionId, NewSessionTaskDto task);
 
+    Task<SessionDto> AddTasksAsync(Guid sessionId, IReadOnlyList<NewSessionTaskDto> tasks);
+
+    Task<SessionDto> UpdateTaskAsync(Guid sessionId, Guid taskId, string title, string? description);
+
     Task<SessionDto> RemoveTaskAsync(Guid sessionId, Guid taskId);
 
     Task<SessionDto> ActivateSessionAsync(Guid id);

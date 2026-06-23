@@ -14,6 +14,7 @@ public partial class VotingRoom : IAsyncDisposable
 
     private bool _loading = true;
     private bool _busy;
+    private bool _descExpanded = true;
     private string? _errorKey;
     private string? _myParticipantId;
     private string? _myVote;

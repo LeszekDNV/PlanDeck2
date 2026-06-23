@@ -21,7 +21,8 @@ public sealed class AzureDevOpsWorkItemGrpcService(IAzureDevOpsWorkItemClient cl
                 State = workItem.State,
                 WorkItemType = workItem.WorkItemType,
                 Revision = workItem.Revision,
-                Estimate = workItem.Estimate
+                Estimate = workItem.Estimate,
+                Description = workItem.Description
             }).ToList()
         };
     }

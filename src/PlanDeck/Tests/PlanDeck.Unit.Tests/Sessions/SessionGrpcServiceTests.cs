@@ -10,6 +10,8 @@ namespace PlanDeck.Unit.Tests.Sessions;
 public sealed class SessionGrpcServiceTests
 {
     private FakeSessionRepository _repository = null!;
+    private FakeSessionMemberRepository _memberRepository = null!;
+    private FakeCurrentUserContext _currentUser = null!;
     private RecordingPlanningRoomNotifier _notifier = null!;
     private SessionGrpcService _service = null!;
 
@@ -17,8 +19,10 @@ public sealed class SessionGrpcServiceTests
     public void SetUp()
     {
         _repository = new FakeSessionRepository();
+        _memberRepository = new FakeSessionMemberRepository();
+        _currentUser = new FakeCurrentUserContext();
         _notifier = new RecordingPlanningRoomNotifier();
-        _service = new SessionGrpcService(_repository, _notifier);
+        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier);
     }
 
     [Test]
@@ -368,6 +372,88 @@ public sealed class SessionGrpcServiceTests
 
         Assert.That(reply.Session.Status, Is.EqualTo(SessionStatusDto.Active));
         Assert.That(session.Status, Is.EqualTo(SessionStatus.Active));
+    }
+
+    [Test]
+    public async Task CreateSession_AddsCreatorAsMember()
+    {
+        _currentUser.Email = "creator@example.com";
+        _currentUser.DisplayName = "Creator";
+
+        var reply = await _service.CreateSessionAsync(new CreateSessionRequest
+        {
+            Name = "Sprint 1",
+            ScaleType = VotingScaleTypeDto.Fibonacci
+        });
+
+        Assert.That(_memberRepository.Members, Has.Count.EqualTo(1));
+        var member = _memberRepository.Members[0];
+        Assert.That(member.SessionId, Is.EqualTo(reply.Session.Id));
+        Assert.That(member.Email, Is.EqualTo("creator@example.com"));
+        Assert.That(member.DisplayName, Is.EqualTo("Creator"));
+    }
+
+    [Test]
+    public async Task CreateSession_WithoutEmail_DoesNotAddMember()
+    {
+        _currentUser.Email = null;
+
+        await _service.CreateSessionAsync(new CreateSessionRequest
+        {
+            Name = "Sprint 1",
+            ScaleType = VotingScaleTypeDto.Fibonacci
+        });
+
+        Assert.That(_memberRepository.Members, Is.Empty);
+    }
+
+    [Test]
+    public async Task CreateSession_WhenCreatorAlreadyMember_SwallowsDuplicate()
+    {
+        _currentUser.Email = "creator@example.com";
+        _memberRepository.ThrowDuplicateOnce = true;
+
+        Assert.DoesNotThrowAsync(() => _service.CreateSessionAsync(new CreateSessionRequest
+        {
+            Name = "Sprint 1",
+            ScaleType = VotingScaleTypeDto.Fibonacci
+        }));
+
+        await Task.CompletedTask;
+    }
+
+    private sealed class FakeCurrentUserContext : ICurrentUserContext
+    {
+        public Guid TenantId { get; } = Guid.NewGuid();
+        public Guid UserId { get; } = Guid.NewGuid();
+        public bool IsAuthenticated { get; set; } = true;
+        public string? DisplayName { get; set; }
+        public string? Email { get; set; } = "creator@example.com";
+    }
+
+    private sealed class FakeSessionMemberRepository : ISessionMemberRepository
+    {
+        public List<SessionMember> Members { get; } = [];
+        public bool ThrowDuplicateOnce { get; set; }
+
+        public Task<SessionMember> AssignMemberAsync(Guid sessionId, string email, string? displayName, CancellationToken cancellationToken)
+        {
+            if (ThrowDuplicateOnce)
+            {
+                ThrowDuplicateOnce = false;
+                throw new DuplicateSessionMemberException(sessionId, email);
+            }
+
+            var member = new SessionMember { SessionId = sessionId, Email = email, DisplayName = displayName };
+            Members.Add(member);
+            return Task.FromResult(member);
+        }
+
+        public Task<bool> RemoveMemberAsync(Guid sessionId, Guid memberId, CancellationToken cancellationToken)
+            => Task.FromResult(false);
+
+        public Task<IReadOnlyList<SessionMember>> GetMembersAsync(Guid sessionId, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<SessionMember>>(Members);
     }
 
     private sealed class RecordingPlanningRoomNotifier : IPlanningRoomNotifier

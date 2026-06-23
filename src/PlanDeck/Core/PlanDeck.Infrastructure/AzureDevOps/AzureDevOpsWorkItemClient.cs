@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using PlanDeck.Application.Abstractions;
 
@@ -58,7 +59,9 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             "System.Title",
             "System.State",
             "System.WorkItemType",
-            _options.EstimateField
+            _options.EstimateField,
+            _options.DescriptionField,
+            _options.AcceptanceCriteriaField
         };
 
         using var batchRequest = CreateRequest(HttpMethod.Post, $"{OrganizationBaseUrl}/_apis/wit/workitemsbatch?api-version=7.2-preview.1");
@@ -110,7 +113,50 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             GetFieldString(fields, "System.State"),
             GetFieldString(fields, "System.WorkItemType"),
             item.TryGetProperty("rev", out var rev) ? rev.GetInt32() : 0,
-            GetFieldDouble(fields, _options.EstimateField));
+            GetFieldDouble(fields, _options.EstimateField),
+            BuildDescription(fields));
+    }
+
+    private string? BuildDescription(JsonElement fields)
+    {
+        var description = HtmlToText(GetFieldString(fields, _options.DescriptionField));
+        var acceptance = HtmlToText(GetFieldString(fields, _options.AcceptanceCriteriaField));
+
+        var builder = new StringBuilder();
+        if (description.Length > 0)
+        {
+            builder.Append(description);
+        }
+
+        if (acceptance.Length > 0)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append("\n\n");
+            }
+
+            builder.Append("**Acceptance Criteria**\n\n").Append(acceptance);
+        }
+
+        return builder.Length == 0 ? null : builder.ToString();
+    }
+
+    private static string HtmlToText(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return string.Empty;
+        }
+
+        var text = html;
+        text = Regex.Replace(text, "<li[^>]*>", "- ", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, "<br\\s*/?>", "\n", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, "</(p|div|li|ul|ol|tr|h[1-6])>", "\n", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, "<[^>]+>", string.Empty);
+        text = WebUtility.HtmlDecode(text);
+        text = Regex.Replace(text, "[ \\t]+\n", "\n");
+        text = Regex.Replace(text, "\n{3,}", "\n\n");
+        return text.Trim();
     }
 
     private static string GetFieldString(JsonElement fields, string name)

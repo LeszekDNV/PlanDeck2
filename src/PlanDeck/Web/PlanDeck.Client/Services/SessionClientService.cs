@@ -65,6 +65,26 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
         return reply.Session;
     }
 
+    public async Task<SessionDto> AddTasksAsync(Guid sessionId, IReadOnlyList<NewSessionTaskDto> tasks)
+    {
+        var service = channel.CreateGrpcService<ISessionService>();
+        var reply = await service.AddTasksAsync(new AddTasksRequest { SessionId = sessionId, Tasks = tasks.ToList() });
+        return reply.Session;
+    }
+
+    public async Task<SessionDto> UpdateTaskAsync(Guid sessionId, Guid taskId, string title, string? description)
+    {
+        var service = channel.CreateGrpcService<ISessionService>();
+        var reply = await service.UpdateTaskAsync(new UpdateTaskRequest
+        {
+            SessionId = sessionId,
+            TaskId = taskId,
+            Title = title,
+            Description = description
+        });
+        return reply.Session;
+    }
+
     public async Task<SessionDto> RemoveTaskAsync(Guid sessionId, Guid taskId)
     {
         var service = channel.CreateGrpcService<ISessionService>();

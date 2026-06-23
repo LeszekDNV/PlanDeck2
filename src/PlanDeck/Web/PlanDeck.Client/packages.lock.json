@@ -18,6 +18,12 @@
         "resolved": "2.80.0",
         "contentHash": "NPsOKY+4B3GaEvohryA1bJncU/HBdEuAG/6Cg0+IBs1CH8XuM33/p2UuihL6NO1cNyzuSmuTvBEejw1jgXEeCg=="
       },
+      "Markdig": {
+        "type": "Direct",
+        "requested": "[0.*, )",
+        "resolved": "0.45.0",
+        "contentHash": "ObNLcA1b+0lpNNoEg256g9faMeJZi35wZW0AnKJ4nGPJe+5qkwnV26kUvQTHuanFnSX9SdvPzOO41BVJ6XarAg=="
+      },
       "Microsoft.AspNetCore.App.Internal.Assets": {
         "type": "Direct",
         "requested": "[10.0.9, )",

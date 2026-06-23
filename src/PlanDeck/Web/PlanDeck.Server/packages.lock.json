@@ -130,6 +130,11 @@
         "resolved": "2.14.1",
         "contentHash": "lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw=="
       },
+      "Markdig": {
+        "type": "Transitive",
+        "resolved": "0.45.0",
+        "contentHash": "ObNLcA1b+0lpNNoEg256g9faMeJZi35wZW0AnKJ4nGPJe+5qkwnV26kUvQTHuanFnSX9SdvPzOO41BVJ6XarAg=="
+      },
       "Microsoft.AspNetCore.Components.WebAssembly": {
         "type": "Transitive",
         "resolved": "10.0.9",
@@ -670,6 +675,7 @@
         "dependencies": {
           "Grpc.Net.Client": "[2.80.0, )",
           "Grpc.Net.Client.Web": "[2.80.0, )",
+          "Markdig": "[0.*, )",
           "Microsoft.AspNetCore.Components.WebAssembly": "[10.*, )",
           "Microsoft.AspNetCore.SignalR.Client": "[10.*-*, )",
           "MudBlazor": "[9.*, )",

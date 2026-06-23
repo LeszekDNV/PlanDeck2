@@ -105,3 +105,22 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+@keyframes pd-pop {
+    0% { transform: scale(0.55); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+.pd-pop {
+    animation: pd-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pd-flash {
+    0% { box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.55); }
+    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.pd-flash {
+    animation: pd-flash 0.9s ease-out;
+}

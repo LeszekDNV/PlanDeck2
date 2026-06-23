@@ -401,9 +401,9 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 
 #### Automated
 
-- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 3.2 PlanningRoomServiceTests cover SyncTasks add/update/remove, votes preserved, current-task reset only on deletion
-- [x] 3.3 Realtime integration tests still green
+- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx` — a6db3a6
+- [x] 3.2 PlanningRoomServiceTests cover SyncTasks add/update/remove, votes preserved, current-task reset only on deletion — a6db3a6
+- [x] 3.3 Realtime integration tests still green — a6db3a6
 
 #### Manual
 
@@ -413,9 +413,9 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 
 #### Automated
 
-- [ ] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 4.2 Every new L["..."] key exists in both resx (key parity)
-- [ ] 4.3 Full unit suite green
+- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 4.2 Every new L["..."] key exists in both resx (key parity)
+- [x] 4.3 Full unit suite green
 
 #### Manual
 

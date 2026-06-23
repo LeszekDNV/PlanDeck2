@@ -15,7 +15,8 @@ public sealed record AzureDevOpsWorkItem(
     string State,
     string WorkItemType,
     int Revision,
-    double? Estimate);
+    double? Estimate,
+    string? Description = null);
 
 public sealed record AzureDevOpsWriteEstimateRequest(int WorkItemId, int? ExpectedRevision, double Estimate);
 

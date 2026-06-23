@@ -10,5 +10,9 @@ public sealed class AzureDevOpsOptions
 
     public string EstimateField { get; set; } = "Microsoft.VSTS.Scheduling.StoryPoints";
 
+    public string DescriptionField { get; set; } = "System.Description";
+
+    public string AcceptanceCriteriaField { get; set; } = "Microsoft.VSTS.Common.AcceptanceCriteria";
+
     public string PersonalAccessToken { get; set; } = string.Empty;
 }

@@ -51,6 +51,9 @@ public sealed class AzureDevOpsWorkItemDto
 
     [DataMember(Order = 6)]
     public double? Estimate { get; set; }
+
+    [DataMember(Order = 7)]
+    public string? Description { get; set; }
 }
 
 [DataContract]
