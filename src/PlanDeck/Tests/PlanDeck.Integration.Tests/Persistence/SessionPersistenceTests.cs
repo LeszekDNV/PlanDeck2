@@ -133,6 +133,47 @@ public sealed class SessionPersistenceTests
         Assert.That(() => context.SaveChanges(), Throws.TypeOf<InvalidOperationException>());
     }
 
+    [Test]
+    public async Task SessionTask_Description_RoundTripsAndIsTenantIsolated()
+    {
+        var userId = Guid.NewGuid();
+        var description = $"## Notes\n\nMarkdown **body** {Guid.NewGuid():N}";
+        Guid sessionId;
+
+        await using (var write = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true)))
+        {
+            var session = new PlanningSession
+            {
+                Name = $"session-{Guid.NewGuid():N}",
+                CreatedByUserId = userId,
+                Tasks =
+                {
+                    new SessionTask { Title = "Described task", Source = TaskSource.AdHoc, Description = description }
+                }
+            };
+            write.Sessions.Add(session);
+            await write.SaveChangesAsync();
+            sessionId = session.Id;
+        }
+
+        await using (var read = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true)))
+        {
+            var task = await read.SessionTasks
+                .AsNoTracking()
+                .SingleAsync(t => t.SessionId == sessionId);
+
+            Assert.That(task.Description, Is.EqualTo(description));
+        }
+
+        await using var otherTenant = CreateContext(new FakeCurrentUserContext(TenantB, Guid.NewGuid(), authenticated: true));
+        var leaked = await otherTenant.SessionTasks
+            .AsNoTracking()
+            .Where(t => t.SessionId == sessionId)
+            .ToListAsync();
+
+        Assert.That(leaked, Is.Empty);
+    }
+
     private static async Task<Guid> CreateSessionAsync(Guid tenantId, string name)
     {
         await using var context = CreateContext(new FakeCurrentUserContext(tenantId, Guid.NewGuid(), authenticated: true));

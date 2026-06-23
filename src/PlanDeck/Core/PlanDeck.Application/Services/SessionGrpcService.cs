@@ -118,6 +118,78 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         }
     }
 
+    public async Task<AddTasksReply> AddTasksAsync(AddTasksRequest request, CallContext context = default)
+    {
+        try
+        {
+            var session = await LoadDraftAsync(request.SessionId, context.CancellationToken);
+
+            var sortOrder = session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1;
+            var added = false;
+            foreach (var task in request.Tasks)
+            {
+                var mapped = MapNewTask(task, sortOrder);
+                if (IsDuplicateAdoTask(session.Tasks, mapped.AdoWorkItemId))
+                {
+                    continue;
+                }
+
+                session.Tasks.Add(mapped);
+                sortOrder++;
+                added = true;
+            }
+
+            if (added)
+            {
+                await repository.UpdateSessionAsync(session, context.CancellationToken);
+            }
+
+            return new AddTasksReply { Session = ToDto(session) };
+        }
+        catch (SessionNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (SessionNotDraftException ex)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
+        }
+    }
+
+    public async Task<UpdateTaskReply> UpdateTaskAsync(UpdateTaskRequest request, CallContext context = default)
+    {
+        var title = request.Title?.Trim() ?? string.Empty;
+        if (title.Length == 0)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, SessionValidationMessages.TaskTitleRequired));
+        }
+
+        try
+        {
+            var session = await LoadDraftAsync(request.SessionId, context.CancellationToken);
+            var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId)
+                ?? throw new SessionTaskNotFoundException(request.TaskId);
+
+            task.Title = title;
+            task.Description = NormalizeDescription(request.Description);
+
+            await repository.UpdateSessionAsync(session, context.CancellationToken);
+            return new UpdateTaskReply { Session = ToDto(session) };
+        }
+        catch (SessionNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (SessionTaskNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (SessionNotDraftException ex)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
+        }
+    }
+
     public async Task<RemoveTaskReply> RemoveTaskAsync(RemoveTaskRequest request, CallContext context = default)
     {
         try
@@ -232,6 +304,12 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
     private static bool IsDuplicateAdoTask(IEnumerable<SessionTask> tasks, int? adoWorkItemId) =>
         adoWorkItemId is int id && tasks.Any(t => t.AdoWorkItemId == id);
 
+    private static string? NormalizeDescription(string? description)
+    {
+        var trimmed = description?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
+
     private static SessionTask MapNewTask(NewSessionTaskDto task, int sortOrder)
     {
         var title = task.Title?.Trim() ?? string.Empty;
@@ -243,6 +321,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         return new SessionTask
         {
             Title = title,
+            Description = NormalizeDescription(task.Description),
             Source = (TaskSource)(int)task.Source,
             SortOrder = sortOrder,
             AdoWorkItemId = task.AdoWorkItemId,
@@ -268,6 +347,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
     {
         Id = task.Id,
         Title = task.Title,
+        Description = task.Description,
         Source = (TaskSourceDto)(int)task.Source,
         SortOrder = task.SortOrder,
         AdoWorkItemId = task.AdoWorkItemId,

@@ -23,6 +23,12 @@ public interface ISessionService
     Task<AddTaskReply> AddTaskAsync(AddTaskRequest request, CallContext context = default);
 
     [Operation]
+    Task<AddTasksReply> AddTasksAsync(AddTasksRequest request, CallContext context = default);
+
+    [Operation]
+    Task<UpdateTaskReply> UpdateTaskAsync(UpdateTaskRequest request, CallContext context = default);
+
+    [Operation]
     Task<RemoveTaskReply> RemoveTaskAsync(RemoveTaskRequest request, CallContext context = default);
 
     [Operation]
@@ -111,6 +117,9 @@ public sealed class SessionTaskDto
 
     [DataMember(Order = 9)]
     public string? AgreedEstimate { get; set; }
+
+    [DataMember(Order = 10)]
+    public string? Description { get; set; }
 }
 
 [DataContract]
@@ -133,6 +142,9 @@ public sealed class NewSessionTaskDto
 
     [DataMember(Order = 6)]
     public string? State { get; set; }
+
+    [DataMember(Order = 7)]
+    public string? Description { get; set; }
 }
 
 [DataContract]
@@ -225,6 +237,46 @@ public sealed class AddTaskRequest
 
 [DataContract]
 public sealed class AddTaskReply
+{
+    [DataMember(Order = 1)]
+    public SessionDto Session { get; set; } = new();
+}
+
+[DataContract]
+public sealed class AddTasksRequest
+{
+    [DataMember(Order = 1)]
+    public Guid SessionId { get; set; }
+
+    [DataMember(Order = 2)]
+    public List<NewSessionTaskDto> Tasks { get; set; } = [];
+}
+
+[DataContract]
+public sealed class AddTasksReply
+{
+    [DataMember(Order = 1)]
+    public SessionDto Session { get; set; } = new();
+}
+
+[DataContract]
+public sealed class UpdateTaskRequest
+{
+    [DataMember(Order = 1)]
+    public Guid SessionId { get; set; }
+
+    [DataMember(Order = 2)]
+    public Guid TaskId { get; set; }
+
+    [DataMember(Order = 3)]
+    public string Title { get; set; } = string.Empty;
+
+    [DataMember(Order = 4)]
+    public string? Description { get; set; }
+}
+
+[DataContract]
+public sealed class UpdateTaskReply
 {
     [DataMember(Order = 1)]
     public SessionDto Session { get; set; } = new();

@@ -28,3 +28,9 @@ public sealed class SessionNotDraftException(Guid sessionId)
 {
     public Guid SessionId { get; } = sessionId;
 }
+
+public sealed class SessionTaskNotFoundException(Guid taskId)
+    : Exception($"Task '{taskId}' was not found in the session.")
+{
+    public Guid TaskId { get; } = taskId;
+}

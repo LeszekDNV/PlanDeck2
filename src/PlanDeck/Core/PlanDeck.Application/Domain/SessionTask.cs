@@ -6,6 +6,8 @@ public sealed class SessionTask : TenantEntity
 
     public required string Title { get; set; }
 
+    public string? Description { get; set; }
+
     public TaskSource Source { get; set; } = TaskSource.AdHoc;
 
     public int SortOrder { get; set; }
