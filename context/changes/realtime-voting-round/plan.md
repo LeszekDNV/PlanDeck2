@@ -413,9 +413,9 @@ One additive, nullable column (`SessionTasks.AgreedEstimate`) — backward compa
 
 #### Automated
 
-- [x] 5.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 5.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --filter "FullyQualifiedName~VotingRoom"`
+- [x] 5.1 Solution builds: `dotnet build PlanDeck.slnx` — 8a00f74
+- [x] 5.2 E2E test passes locally: `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --filter "FullyQualifiedName~VotingRoom"` — 8a00f74
 
 #### Manual
 
-- [x] 5.3 The E2E run is observed green locally (Aspire boots, two contexts complete the flow)
+- [x] 5.3 The E2E run is observed green locally (Aspire boots, two contexts complete the flow) — 8a00f74
