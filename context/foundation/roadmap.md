@@ -33,7 +33,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | F-02 | realtime-vote-integrity | (foundation) authoritative hidden-vote/reveal contract with consistency guarantees | F-01 | Guardrails (vote consistency, hidden-until-reveal), Business Logic Changes | proposed |
 | F-03 | deploy-realtime-validation-skeleton | (foundation) pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL stack | — | Constraints & Compatibility; infrastructure.md (ACA + Azure SQL) | ready |
 | S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | done |
-| S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | proposed |
+| S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | done |
 | S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | proposed |
 | S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | done |
 | S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | done |
@@ -134,7 +134,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The simplest task source and an explicit de-risk for demos when the Azure DevOps integration is unavailable; it lets the session/voting slices proceed without depending on the external integration. Low risk.
-- **Status:** proposed
+- **Status:** done
 
 ### S-03: Azure DevOps import
 
@@ -250,5 +250,6 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-01: (foundation) the EF Core domain-persistence pattern and the per-user/tenant data-scoping convention are established, with a real migration applied on startup against the configured SQL database.** — Archived 2026-06-18 → `context/archive/2026-06-18-multitenant-persistence-baseline/`. Lesson: —.
 - **S-01: a signed-in user can create a team and add members to it.** — Archived 2026-06-18 → `context/archive/2026-06-18-team-and-members/`. Lesson: —.
 - **S-04: a user can create a planning session from a set of selected tasks and configure it (task selection and voting scale only).** — Archived 2026-06-19 → `context/archive/2026-06-18-create-configure-session/`. Lesson: —.
+- **S-02: a user can create ad-hoc tasks manually within PlanDeck.** — Archived 2026-06-23 → `context/archive/2026-06-23-adhoc-tasks/`. Lesson: —.
 - **S-05: a user can assign/invite team members to a session.** — Archived 2026-06-22 → `context/archive/2026-06-22-assign-session-members/`. Lesson: —.
 - **S-06: assigned members join a session and vote on each task in real time; participants see who has voted as it happens, values stay hidden until the round is revealed and then appear together, and the user manually selects the agreed estimate, which is persisted.** — Archived 2026-06-23 → `context/archive/2026-06-22-realtime-voting-round/`. Lesson: —.
