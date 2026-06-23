@@ -341,7 +341,7 @@ public sealed class PlanningRoomServiceTests
     }
 
     [Test]
-    public void ApplyAgreedEstimate_SurfacesOnTask_AndSurvivesReset()
+    public void ApplyAgreedEstimate_SurfacesOnTask_AndResetClearsIt()
     {
         _service.Join(_key, "alice", "Alice", "conn-a");
         _service.CastVote(_key, "alice", "5");
@@ -351,7 +351,7 @@ public sealed class PlanningRoomServiceTests
         Assert.That(picked.Tasks.Single(t => t.TaskId == _taskId).AgreedEstimate, Is.EqualTo("5"));
 
         var afterReset = _service.ResetRound(_key);
-        Assert.That(afterReset.Tasks.Single(t => t.TaskId == _taskId).AgreedEstimate, Is.EqualTo("5"));
+        Assert.That(afterReset.Tasks.Single(t => t.TaskId == _taskId).AgreedEstimate, Is.Null);
         Assert.That(afterReset.IsRevealed, Is.False);
         Assert.That(Participant(afterReset, "alice").HasVoted, Is.False);
     }

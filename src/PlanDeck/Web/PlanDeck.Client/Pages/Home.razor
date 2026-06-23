@@ -23,11 +23,3 @@
     </MudLink>
 </MudAlert>
 
-@code {
-    private string? _serverResponse;
-
-    private async Task CallServerAsync()
-    {
-        _serverResponse = await HelloService.GetHelloAsync();
-    }
-}

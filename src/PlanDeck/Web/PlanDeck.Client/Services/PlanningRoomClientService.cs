@@ -67,6 +67,16 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
         return _hubConnection.InvokeAsync("ResetRound", sessionId);
     }
 
+    public Task SetActiveTaskAsync(string sessionId, string taskId)
+    {
+        return _hubConnection.InvokeAsync("SetActiveTask", sessionId, taskId);
+    }
+
+    public Task SelectEstimateAsync(string sessionId, string taskId, string value)
+    {
+        return _hubConnection.InvokeAsync("SelectEstimate", sessionId, taskId, value);
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _hubConnection.DisposeAsync();

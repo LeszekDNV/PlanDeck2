@@ -160,6 +160,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
 
             task.IsRevealed = false;
             task.Votes.Clear();
+            task.AgreedEstimate = null;
             return ToState(key, room);
         }
     }

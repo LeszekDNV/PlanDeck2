@@ -1,0 +1,173 @@
+@page "/voting/{SessionId:guid}"
+@using Grpc.Core
+@using Microsoft.AspNetCore.SignalR
+@using PlanDeck.Client.Services
+@using PlanDeck.Core.Shared.Contracts
+@using PlanDeck.Core.Shared.Realtime
+@inject IPlanningRoomClientService RoomService
+@inject ISessionClientService SessionService
+@inject AuthenticationStateProvider AuthState
+@inject IStringLocalizer<SharedResource> L
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>@L["Voting_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
+    <AuthorizeView>
+        <Authorized>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                <MudText Typo="Typo.h5">@L["Voting_Title"]</MudText>
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                           OnClick="@(() => Navigation.NavigateTo("/sessions"))">
+                    @L["Voting_Back"]
+                </MudButton>
+            </MudStack>
+
+            @if (_loading)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_errorKey is not null)
+            {
+                <MudAlert Severity="Severity.Warning">@L[_errorKey]</MudAlert>
+            }
+            else if (_state is null)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_state.Tasks.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info">@L["Voting_NoTasks"]</MudAlert>
+            }
+            else
+            {
+                <MudGrid>
+                    <MudItem xs="12" md="4">
+                        <MudPaper Class="pa-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">@L["Voting_Tasks"]</MudText>
+                            <MudList T="Guid" Dense="true">
+                                @foreach (var task in _state.Tasks)
+                                {
+                                    var isActive = _state.CurrentTaskId == task.TaskId;
+                                    <MudListItem T="Guid" Value="@task.TaskId"
+                                                 Icon="@(isActive ? Icons.Material.Filled.RadioButtonChecked : Icons.Material.Filled.RadioButtonUnchecked)"
+                                                 OnClick="@(() => SetActiveTaskAsync(task.TaskId))">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                            <MudText Typo="Typo.body2"
+                                                     Style="@(isActive ? "font-weight:600" : null)">@task.Title</MudText>
+                                            @if (!string.IsNullOrWhiteSpace(task.AgreedEstimate))
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Success">@task.AgreedEstimate</MudChip>
+                                            }
+                                        </MudStack>
+                                    </MudListItem>
+                                }
+                            </MudList>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" md="8">
+                        @if (_activeTask is null)
+                        {
+                            <MudAlert Severity="Severity.Info">@L["Voting_NoActiveTask"]</MudAlert>
+                        }
+                        else
+                        {
+                            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                                <MudText Typo="Typo.h6" Class="mb-1">@_activeTask.Title</MudText>
+                                @if (!string.IsNullOrWhiteSpace(_activeTask.AgreedEstimate))
+                                {
+                                    <MudText Typo="Typo.body2" Class="mb-3">
+                                        @L["Voting_Agreed"]: <strong>@_activeTask.AgreedEstimate</strong>
+                                    </MudText>
+                                }
+
+                                <MudText Typo="Typo.subtitle2" Class="mb-2">@L["Voting_YourVote"]</MudText>
+                                @if (_state.IsRevealed)
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2 d-block">@L["Voting_VotingLocked"]</MudText>
+                                }
+                                <MudStack Row="true" Wrap="Wrap.Wrap" Class="mb-4">
+                                    @foreach (var value in _state.ScaleValues)
+                                    {
+                                        <MudButton Variant="@(_myVote == value ? Variant.Filled : Variant.Outlined)"
+                                                   Color="Color.Primary" Disabled="@(_busy || _state.IsRevealed)"
+                                                   OnClick="@(() => CastVoteAsync(value))">
+                                            @value
+                                        </MudButton>
+                                    }
+                                </MudStack>
+
+                                <MudStack Row="true" Spacing="2" Class="mb-2">
+                                    <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                                               StartIcon="@Icons.Material.Filled.Visibility" Disabled="@(_busy || _state.IsRevealed)"
+                                               OnClick="RevealVotesAsync">
+                                        @L["Voting_Reveal"]
+                                    </MudButton>
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                               StartIcon="@Icons.Material.Filled.Refresh" Disabled="_busy"
+                                               OnClick="ResetRoundAsync">
+                                        @L["Voting_Reset"]
+                                    </MudButton>
+                                </MudStack>
+
+                                @if (_state.IsRevealed)
+                                {
+                                    <MudDivider Class="my-3" />
+                                    <MudText Typo="Typo.subtitle2" Class="mb-2">@L["Voting_PickEstimate"]</MudText>
+                                    <MudStack Row="true" Wrap="Wrap.Wrap">
+                                        @foreach (var value in _state.ScaleValues)
+                                        {
+                                            <MudButton Variant="@(_activeTask.AgreedEstimate == value ? Variant.Filled : Variant.Text)"
+                                                       Color="Color.Success" Size="Size.Small" Disabled="_busy"
+                                                       OnClick="@(() => SelectEstimateAsync(value))">
+                                                @value
+                                            </MudButton>
+                                        }
+                                    </MudStack>
+                                }
+                            </MudPaper>
+                        }
+
+                        <MudPaper Class="pa-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">@L["Voting_Participants"]</MudText>
+                            @if (_state.Participants.Count == 0)
+                            {
+                                <MudText Typo="Typo.body2">@L["Voting_NoParticipants"]</MudText>
+                            }
+                            else
+                            {
+                                <MudList T="string" Dense="true">
+                                    @foreach (var participant in _state.Participants)
+                                    {
+                                        <MudListItem T="string" Value="@participant.ParticipantId">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                <MudText Typo="Typo.body2">@participant.DisplayName</MudText>
+                                                @if (_state.IsRevealed && participant.HasVoted)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Info">@participant.Vote</MudChip>
+                                                }
+                                                else if (participant.HasVoted)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Success">@L["Voting_Voted"]</MudChip>
+                                                }
+                                                else
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Default">@L["Voting_NotVoted"]</MudChip>
+                                                }
+                                            </MudStack>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            }
+        </Authorized>
+        <NotAuthorized>
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        </NotAuthorized>
+    </AuthorizeView>
+</MudContainer>

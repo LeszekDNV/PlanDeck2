@@ -102,6 +102,26 @@ public sealed class PlanningRoomHubTests
     }
 
     [Test]
+    public async Task Creator_IsAuthorized_WithoutExplicitMembership()
+    {
+        // Session created by the connecting user (oid), with no SessionMember row for them.
+        var (sessionId, _, _) = SeedSession(assignTestUser: false, createdByUserId: Guid.Parse(TestObjectId));
+
+        var connection = CreateConnection();
+        await connection.StartAsync();
+
+        try
+        {
+            Assert.DoesNotThrowAsync(
+                async () => await connection.InvokeAsync("JoinRoom", sessionId.ToString()));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Test]
     public async Task PerTaskFlow_HidesVotesUntilReveal_AndPersistsSelectedEstimate()
     {
         var (sessionId, firstTaskId, secondTaskId) = SeedSession(assignTestUser: true);
@@ -165,7 +185,7 @@ public sealed class PlanningRoomHubTests
             "Selected estimate must be persisted to the database.");
     }
 
-    private (Guid SessionId, Guid FirstTaskId, Guid SecondTaskId) SeedSession(bool assignTestUser)
+    private (Guid SessionId, Guid FirstTaskId, Guid SecondTaskId) SeedSession(bool assignTestUser, Guid? createdByUserId = null)
     {
         using var scope = _factory.Services.CreateScope();
         scope.ServiceProvider.GetRequiredService<RequestPrincipalAccessor>().Principal = BuildTestPrincipal();
@@ -181,7 +201,8 @@ public sealed class PlanningRoomHubTests
             Name = "Hub Test Session",
             Status = SessionStatus.Active,
             ScaleType = VotingScaleType.Custom,
-            ScaleValues = ["1", "2", "3", "5"]
+            ScaleValues = ["1", "2", "3", "5"],
+            CreatedByUserId = createdByUserId ?? Guid.Empty
         });
 
         db.SessionTasks.Add(new SessionTask { Id = firstTaskId, SessionId = sessionId, Title = "Task A", SortOrder = 0 });

@@ -387,27 +387,27 @@ One additive, nullable column (`SessionTasks.AgreedEstimate`) — backward compa
 
 #### Automated
 
-- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 3.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 3.3 Hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx` — c7dbe62
+- [x] 3.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — c7dbe62
+- [x] 3.3 Hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"` — c7dbe62
 
 #### Manual
 
-- [x] 3.4 A non-assigned authenticated user cannot join the room (rejected)
+- [x] 3.4 A non-assigned authenticated user cannot join the room (rejected) — c7dbe62
 
 ### Phase 4: Client Service & Voting Screen
 
 #### Automated
 
-- [ ] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 4.2 Unit + integration tests still pass (unit project + hub integration filter)
+- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 4.2 Unit + integration tests still pass (unit project + hub integration filter)
 
 #### Manual
 
-- [ ] 4.3 Two assigned members join an Active session; presence + "has voted" update live without value leakage
-- [ ] 4.4 Reveal shows votes together; reset clears and allows re-vote on the active task
-- [ ] 4.5 Picking an estimate updates both tabs live and persists after reloading `/voting/{sessionId}`
-- [ ] 4.6 Switching the active task carries independent votes; strings render in `en` and `pl`
+- [x] 4.3 Two assigned members join an Active session; presence + "has voted" update live without value leakage
+- [x] 4.4 Reveal shows votes together; reset clears and allows re-vote on the active task
+- [x] 4.5 Picking an estimate updates both tabs live and persists after reloading `/voting/{sessionId}`
+- [x] 4.6 Switching the active task carries independent votes; strings render in `en` and `pl`
 
 ### Phase 5: End-to-End Test (Playwright, two browsers)
 

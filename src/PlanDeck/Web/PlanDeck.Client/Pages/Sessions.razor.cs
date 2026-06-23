@@ -1,0 +1,560 @@
+using Grpc.Core;
+using MudBlazor;
+using PlanDeck.Core.Shared.Contracts;
+using PlanDeck.Core.Shared.Validation;
+
+namespace PlanDeck.Client.Pages;
+
+public partial class Sessions
+{
+    private bool _loading = true;
+    private bool _createOpen;
+    private bool _createSubmitting;
+    private bool _savingConfig;
+    private bool _addingTask;
+    private bool _activating;
+    private bool _adoLoading;
+
+    private List<SessionDto> _sessions = [];
+    private List<TeamDto> _teams = [];
+    private SessionDto? _selected;
+
+    private string _newName = string.Empty;
+    private Guid? _newTeamId;
+    private VotingScaleTypeDto _newScaleType = VotingScaleTypeDto.Fibonacci;
+    private string _newCustomValues = string.Empty;
+    private string _adHocTitle = string.Empty;
+    private readonly List<NewSessionTaskDto> _stagedTasks = [];
+
+    private List<AzureDevOpsWorkItemDto> _adoItems = [];
+    private readonly HashSet<int> _selectedAdo = [];
+
+    private string _configName = string.Empty;
+    private Guid? _configTeamId;
+    private List<TeamMemberDto> _teamMembers = [];
+    private VotingScaleTypeDto _configScaleType = VotingScaleTypeDto.Fibonacci;
+    private string _configCustomValues = string.Empty;
+    private string _configTaskTitle = string.Empty;
+
+    private List<SessionMemberDto> _members = [];
+    private string _memberEmail = string.Empty;
+    private string _memberDisplayName = string.Empty;
+    private bool _assigningMember;
+
+    private bool _configAdoLoading;
+    private List<AzureDevOpsWorkItemDto> _configAdoItems = [];
+    private readonly HashSet<int> _configSelectedAdo = [];
+
+    private bool _isLocked => _selected?.Status == SessionStatusDto.Active;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            await LoadSessionsAsync();
+            await LoadTeamsAsync();
+        }
+
+        _loading = false;
+    }
+
+    private async Task LoadSessionsAsync()
+    {
+        try
+        {
+            _sessions = (await SessionService.GetSessionsAsync()).ToList();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task LoadTeamsAsync()
+    {
+        try
+        {
+            _teams = (await TeamService.GetTeamsAsync()).ToList();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private void OpenCreate()
+    {
+        _newName = string.Empty;
+        _newTeamId = null;
+        _newScaleType = VotingScaleTypeDto.Fibonacci;
+        _newCustomValues = string.Empty;
+        _adHocTitle = string.Empty;
+        _stagedTasks.Clear();
+        _adoItems = [];
+        _selectedAdo.Clear();
+        _createOpen = true;
+    }
+
+    private void StageAdHocTask()
+    {
+        var title = _adHocTitle?.Trim() ?? string.Empty;
+        if (title.Length == 0)
+        {
+            Snackbar.Add(L["Sessions_TaskTitleRequired"], Severity.Error);
+            return;
+        }
+
+        _stagedTasks.Add(new NewSessionTaskDto { Title = title, Source = TaskSourceDto.AdHoc });
+        _adHocTitle = string.Empty;
+    }
+
+    private async Task LoadAdoAsync()
+    {
+        _adoLoading = true;
+        try
+        {
+            _adoItems = (await AdoService.ImportWorkItemsAsync()).ToList();
+            _selectedAdo.Clear();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _adoLoading = false;
+        }
+    }
+
+    private void ToggleAdo(int id, bool selected)
+    {
+        if (selected)
+        {
+            _selectedAdo.Add(id);
+        }
+        else
+        {
+            _selectedAdo.Remove(id);
+        }
+    }
+
+    private void StageSelectedAdo()
+    {
+        foreach (var item in _adoItems.Where(i => _selectedAdo.Contains(i.Id)))
+        {
+            if (_stagedTasks.Any(t => t.AdoWorkItemId == item.Id))
+            {
+                continue;
+            }
+
+            _stagedTasks.Add(new NewSessionTaskDto
+            {
+                Title = item.Title,
+                Source = TaskSourceDto.AzureDevOps,
+                AdoWorkItemId = item.Id,
+                AdoRevision = item.Revision,
+                WorkItemType = item.WorkItemType,
+                State = item.State
+            });
+        }
+
+        _selectedAdo.Clear();
+    }
+
+    private async Task SubmitCreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName))
+        {
+            Snackbar.Add(L["Sessions_NameRequired"], Severity.Error);
+            return;
+        }
+
+        // Fold in any ADO work items that were checked but not explicitly staged yet.
+        StageSelectedAdo();
+
+        _createSubmitting = true;
+        try
+        {
+            var session = await SessionService.CreateSessionAsync(
+                _newName.Trim(),
+                _newTeamId,
+                _newScaleType,
+                ParseCustomValues(_newCustomValues),
+                _stagedTasks);
+
+            _sessions.Insert(0, session);
+            _createOpen = false;
+            await SelectAsync(session);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _createSubmitting = false;
+        }
+    }
+
+    private async Task SelectAsync(SessionDto session)
+    {
+        try
+        {
+            _selected = await SessionService.GetSessionAsync(session.Id);
+            _configName = _selected.Name;
+            _configTeamId = _selected.TeamId;
+            _configScaleType = _selected.ScaleType;
+            _configCustomValues = string.Join(", ", _selected.ScaleValues);
+            _configTaskTitle = string.Empty;
+            _configAdoItems = [];
+            _configSelectedAdo.Clear();
+            await LoadMembersAsync();
+            await LoadTeamMembersAsync();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task OnConfigTeamChangedAsync()
+    {
+        await LoadTeamMembersAsync();
+    }
+
+    private async Task LoadTeamMembersAsync()
+    {
+        if (_configTeamId is null)
+        {
+            _teamMembers = [];
+            return;
+        }
+
+        try
+        {
+            _teamMembers = (await TeamService.GetMembersAsync(_configTeamId.Value)).ToList();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task LoadMembersAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _memberEmail = string.Empty;
+        _memberDisplayName = string.Empty;
+        _members = (await MemberService.GetMembersAsync(_selected.Id)).ToList();
+    }
+
+    private async Task AssignMemberAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var email = _memberEmail?.Trim() ?? string.Empty;
+        if (!EmailValidator.IsValid(email))
+        {
+            Snackbar.Add(L["Sessions_MemberInvalidEmail"], Severity.Error);
+            return;
+        }
+
+        _assigningMember = true;
+        try
+        {
+            var displayName = string.IsNullOrWhiteSpace(_memberDisplayName) ? null : _memberDisplayName.Trim();
+            var member = await MemberService.AssignMemberAsync(_selected.Id, email, displayName);
+            _members.Add(member);
+            _memberEmail = string.Empty;
+            _memberDisplayName = string.Empty;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _assigningMember = false;
+        }
+    }
+
+    private async Task RemoveMemberAsync(SessionMemberDto member)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var confirmed = await Dialog.ShowMessageBoxAsync(
+            L["Sessions_RemoveMemberConfirmTitle"],
+            string.Format(L["Sessions_RemoveMemberConfirmText"], member.Email),
+            yesText: L["Sessions_RemoveMember"],
+            cancelText: L["Sessions_Cancel"]);
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var removed = await MemberService.RemoveMemberAsync(_selected.Id, member.Id);
+            if (removed)
+            {
+                _members.Remove(member);
+            }
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task SaveConfigAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_configName))
+        {
+            Snackbar.Add(L["Sessions_NameRequired"], Severity.Error);
+            return;
+        }
+
+        _savingConfig = true;
+        try
+        {
+            var updated = await SessionService.UpdateSessionConfigAsync(
+                _selected.Id,
+                _configName.Trim(),
+                _configTeamId,
+                _configScaleType,
+                ParseCustomValues(_configCustomValues));
+
+            ReplaceSelected(updated);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _savingConfig = false;
+        }
+    }
+
+    private async Task AddTaskAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var title = _configTaskTitle?.Trim() ?? string.Empty;
+        if (title.Length == 0)
+        {
+            Snackbar.Add(L["Sessions_TaskTitleRequired"], Severity.Error);
+            return;
+        }
+
+        _addingTask = true;
+        try
+        {
+            var updated = await SessionService.AddTaskAsync(
+                _selected.Id,
+                new NewSessionTaskDto { Title = title, Source = TaskSourceDto.AdHoc });
+
+            ReplaceSelected(updated);
+            _configTaskTitle = string.Empty;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _addingTask = false;
+        }
+    }
+
+    private async Task RemoveTaskAsync(SessionTaskDto task)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var updated = await SessionService.RemoveTaskAsync(_selected.Id, task.Id);
+            ReplaceSelected(updated);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private async Task LoadConfigAdoAsync()
+    {
+        _configAdoLoading = true;
+        try
+        {
+            _configAdoItems = (await AdoService.ImportWorkItemsAsync()).ToList();
+            _configSelectedAdo.Clear();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _configAdoLoading = false;
+        }
+    }
+
+    private void ToggleConfigAdo(int id, bool selected)
+    {
+        if (selected)
+        {
+            _configSelectedAdo.Add(id);
+        }
+        else
+        {
+            _configSelectedAdo.Remove(id);
+        }
+    }
+
+    private async Task AddSelectedAdoTasksAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var toAdd = _configAdoItems.Where(i => _configSelectedAdo.Contains(i.Id)).ToList();
+        if (toAdd.Count == 0)
+        {
+            return;
+        }
+
+        _addingTask = true;
+        SessionDto? updated = null;
+        try
+        {
+            foreach (var item in toAdd)
+            {
+                if (_selected.Tasks.Any(t => t.AdoWorkItemId == item.Id))
+                {
+                    continue;
+                }
+
+                updated = await SessionService.AddTaskAsync(_selected.Id, new NewSessionTaskDto
+                {
+                    Title = item.Title,
+                    Source = TaskSourceDto.AzureDevOps,
+                    AdoWorkItemId = item.Id,
+                    AdoRevision = item.Revision,
+                    WorkItemType = item.WorkItemType,
+                    State = item.State
+                });
+            }
+
+            _configSelectedAdo.Clear();
+            _configAdoItems = [];
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            if (updated is not null)
+            {
+                ReplaceSelected(updated);
+            }
+
+            _addingTask = false;
+        }
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _activating = true;
+        try
+        {
+            var updated = await SessionService.ActivateSessionAsync(_selected.Id);
+            ReplaceSelected(updated);
+            Snackbar.Add(L["Sessions_Activated"], Severity.Success);
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _activating = false;
+        }
+    }
+
+    private void ReplaceSelected(SessionDto updated)
+    {
+        _selected = updated;
+        var index = _sessions.FindIndex(s => s.Id == updated.Id);
+        if (index >= 0)
+        {
+            _sessions[index] = updated;
+        }
+    }
+
+    private static List<string> ParseCustomValues(string raw) =>
+        (raw ?? string.Empty)
+            .Split([',', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+    private string StatusLabel(SessionStatusDto status) =>
+        status == SessionStatusDto.Active ? L["Sessions_Active"] : L["Sessions_Draft"];
+
+    private void Login() =>
+        Navigation.NavigateTo(
+            $"/auth/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",
+            forceLoad: true);
+
+    private void ShowError(RpcException ex)
+    {
+        var message = ex.StatusCode switch
+        {
+            StatusCode.InvalidArgument => MapInvalidArgument(ex.Status.Detail),
+            StatusCode.AlreadyExists => L["Sessions_MemberDuplicate"],
+            StatusCode.FailedPrecondition => L["Sessions_ActiveLocked"],
+            StatusCode.NotFound => L["Error_Generic"],
+            _ => L["Error_Generic"]
+        };
+
+        Snackbar.Add(message, Severity.Error);
+    }
+
+    private string MapInvalidArgument(string detail) => detail switch
+    {
+        SessionValidationMessages.NameRequired => L["Sessions_NameRequired"],
+        SessionValidationMessages.CustomScaleRequired => L["Sessions_CustomScaleRequired"],
+        SessionValidationMessages.TaskTitleRequired => L["Sessions_TaskTitleRequired"],
+        SessionMemberValidationMessages.EmailRequired => L["Sessions_MemberInvalidEmail"],
+        _ => L["Error_Generic"]
+    };
+}

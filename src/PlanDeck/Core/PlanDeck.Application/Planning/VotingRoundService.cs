@@ -6,8 +6,20 @@ public sealed class VotingRoundService(
     ISessionRepository sessionRepository,
     ISessionMemberRepository sessionMemberRepository) : IVotingRoundService
 {
-    public async Task<bool> IsAssignedMemberAsync(Guid sessionId, string email, CancellationToken cancellationToken)
+    public async Task<bool> IsAuthorizedParticipantAsync(Guid sessionId, Guid userId, string? email, CancellationToken cancellationToken)
     {
+        var session = await sessionRepository.GetSessionAsync(sessionId, cancellationToken);
+        if (session is null)
+        {
+            return false;
+        }
+
+        // The session creator/organizer is always authorized, even without an explicit membership row.
+        if (userId != Guid.Empty && session.CreatedByUserId == userId)
+        {
+            return true;
+        }
+
         if (string.IsNullOrWhiteSpace(email))
         {
             return false;

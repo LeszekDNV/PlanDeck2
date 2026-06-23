@@ -256,4 +256,64 @@
   <data name="Sessions_NoTeamMembers" xml:space="preserve">
     <value>Ten zespół nie ma jeszcze członków.</value>
   </data>
+  <data name="Voting_Title" xml:space="preserve">
+    <value>Planning poker</value>
+  </data>
+  <data name="Voting_Back" xml:space="preserve">
+    <value>Powrót do sesji</value>
+  </data>
+  <data name="Voting_JoinVoting" xml:space="preserve">
+    <value>Dołącz do głosowania</value>
+  </data>
+  <data name="Voting_NotAvailable" xml:space="preserve">
+    <value>Ta sesja nie jest dostępna do głosowania.</value>
+  </data>
+  <data name="Voting_LoadError" xml:space="preserve">
+    <value>Nie udało się wczytać sesji.</value>
+  </data>
+  <data name="Voting_ConnectionError" xml:space="preserve">
+    <value>Nie udało się połączyć z pokojem głosowania.</value>
+  </data>
+  <data name="Voting_ActionError" xml:space="preserve">
+    <value>Nie udało się wykonać akcji.</value>
+  </data>
+  <data name="Voting_NoTasks" xml:space="preserve">
+    <value>Brak zadań do głosowania.</value>
+  </data>
+  <data name="Voting_Tasks" xml:space="preserve">
+    <value>Zadania</value>
+  </data>
+  <data name="Voting_NoActiveTask" xml:space="preserve">
+    <value>Wybierz zadanie, aby rozpocząć głosowanie.</value>
+  </data>
+  <data name="Voting_Agreed" xml:space="preserve">
+    <value>Ustalona estymata</value>
+  </data>
+  <data name="Voting_YourVote" xml:space="preserve">
+    <value>Twój głos</value>
+  </data>
+  <data name="Voting_VotingLocked" xml:space="preserve">
+    <value>Głosowanie jest zablokowane, ponieważ głosy zostały odsłonięte. Zresetuj rundę, aby zagłosować ponownie.</value>
+  </data>
+  <data name="Voting_Reveal" xml:space="preserve">
+    <value>Odkryj</value>
+  </data>
+  <data name="Voting_Reset" xml:space="preserve">
+    <value>Resetuj</value>
+  </data>
+  <data name="Voting_PickEstimate" xml:space="preserve">
+    <value>Wybierz ustaloną estymatę</value>
+  </data>
+  <data name="Voting_Participants" xml:space="preserve">
+    <value>Uczestnicy</value>
+  </data>
+  <data name="Voting_NoParticipants" xml:space="preserve">
+    <value>Nikt jeszcze nie dołączył.</value>
+  </data>
+  <data name="Voting_Voted" xml:space="preserve">
+    <value>Zagłosował(a)</value>
+  </data>
+  <data name="Voting_NotVoted" xml:space="preserve">
+    <value>Brak głosu</value>
+  </data>
 </root>

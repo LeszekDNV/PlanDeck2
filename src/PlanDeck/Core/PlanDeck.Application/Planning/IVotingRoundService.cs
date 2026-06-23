@@ -2,7 +2,7 @@ namespace PlanDeck.Application.Planning;
 
 public interface IVotingRoundService
 {
-    Task<bool> IsAssignedMemberAsync(Guid sessionId, string email, CancellationToken cancellationToken);
+    Task<bool> IsAuthorizedParticipantAsync(Guid sessionId, Guid userId, string? email, CancellationToken cancellationToken);
 
     Task<RoomSeed?> LoadRoomSeedAsync(Guid sessionId, CancellationToken cancellationToken);
 

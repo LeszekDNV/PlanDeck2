@@ -17,4 +17,8 @@ public interface IPlanningRoomClientService : IAsyncDisposable
     Task RevealVotesAsync(string sessionId);
 
     Task ResetRoundAsync(string sessionId);
+
+    Task SetActiveTaskAsync(string sessionId, string taskId);
+
+    Task SelectEstimateAsync(string sessionId, string taskId, string value);
 }

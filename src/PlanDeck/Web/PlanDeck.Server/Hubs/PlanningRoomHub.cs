@@ -53,6 +53,13 @@ public sealed class PlanningRoomHub(
     {
         var key = await AuthorizeAsync(sessionId);
         var state = planningRoomService.ResetRound(key);
+
+        // Reset clears the active task's agreed estimate; persist the clear so it survives a reload.
+        if (state.CurrentTaskId is { } taskId)
+        {
+            await votingRoundService.SelectEstimateAsync(key.SessionId, taskId, null, Context.ConnectionAborted);
+        }
+
         await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }
 
@@ -96,12 +103,11 @@ public sealed class PlanningRoomHub(
         principalAccessor.Principal = Context.User;
 
         var key = BuildKey(sessionId);
-        var email = Email
-            ?? throw new HubException("Authenticated 'email' claim is required.");
+        var email = Email;
 
-        var isMember = await votingRoundService.IsAssignedMemberAsync(
-            key.SessionId, email, Context.ConnectionAborted);
-        if (!isMember)
+        var isAuthorized = await votingRoundService.IsAuthorizedParticipantAsync(
+            key.SessionId, UserId, email, Context.ConnectionAborted);
+        if (!isAuthorized)
         {
             throw new HubException("You are not an assigned member of this session.");
         }
@@ -110,6 +116,19 @@ public sealed class PlanningRoomHub(
     }
 
     private string ParticipantId => ReadRequiredClaim("oid");
+
+    private Guid UserId
+    {
+        get
+        {
+            if (!Guid.TryParse(ReadRequiredClaim("oid"), out var userId))
+            {
+                throw new HubException("Authenticated 'oid' claim is missing or invalid.");
+            }
+
+            return userId;
+        }
+    }
 
     private string DisplayName
     {
