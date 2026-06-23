@@ -381,21 +381,21 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Migration created and model snapshot updated
-- [x] 1.3 Integration test proves Description round-trips and is tenant-isolated
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — 2734a3d
+- [x] 1.2 Migration created and model snapshot updated — 2734a3d
+- [x] 1.3 Integration test proves Description round-trips and is tenant-isolated — 2734a3d
 
 #### Manual
 
-- [x] 1.4 App starts and applies the migration cleanly
-- [x] 1.5 New column is nvarchar(max) and nullable in the created schema
+- [x] 1.4 App starts and applies the migration cleanly — 2734a3d
+- [x] 1.5 New column is nvarchar(max) and nullable in the created schema — 2734a3d
 
 ### Phase 2: Application Service Logic
 
 #### Automated
 
-- [ ] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 Unit tests cover update, bulk add, Active-task-edit allowed, config-edit-while-Active rejected, empty-title reject
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 2.2 Unit tests cover update, bulk add, Active-task-edit allowed, config-edit-while-Active rejected, empty-title reject
 
 ### Phase 3: Real-time Propagation to the Live Voting Room
 

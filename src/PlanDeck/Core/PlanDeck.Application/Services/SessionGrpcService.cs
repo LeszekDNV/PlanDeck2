@@ -7,7 +7,7 @@ using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
 
-public sealed class SessionGrpcService(ISessionRepository repository) : ISessionService
+public sealed class SessionGrpcService(ISessionRepository repository, IPlanningRoomNotifier roomNotifier) : ISessionService
 {
     private static readonly string[] FibonacciFaces = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -95,7 +95,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
     {
         try
         {
-            var session = await LoadDraftAsync(request.SessionId, context.CancellationToken);
+            var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
 
             var mapped = MapNewTask(request.Task, session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1);
             if (IsDuplicateAdoTask(session.Tasks, mapped.AdoWorkItemId))
@@ -106,15 +106,12 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
             session.Tasks.Add(mapped);
 
             await repository.UpdateSessionAsync(session, context.CancellationToken);
+            await NotifyIfActiveAsync(session, context.CancellationToken);
             return new AddTaskReply { Session = ToDto(session) };
         }
         catch (SessionNotFoundException ex)
         {
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
-        }
-        catch (SessionNotDraftException ex)
-        {
-            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
         }
     }
 
@@ -122,7 +119,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
     {
         try
         {
-            var session = await LoadDraftAsync(request.SessionId, context.CancellationToken);
+            var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
 
             var sortOrder = session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1;
             var added = false;
@@ -142,6 +139,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
             if (added)
             {
                 await repository.UpdateSessionAsync(session, context.CancellationToken);
+                await NotifyIfActiveAsync(session, context.CancellationToken);
             }
 
             return new AddTasksReply { Session = ToDto(session) };
@@ -149,10 +147,6 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         catch (SessionNotFoundException ex)
         {
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
-        }
-        catch (SessionNotDraftException ex)
-        {
-            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
         }
     }
 
@@ -166,7 +160,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
 
         try
         {
-            var session = await LoadDraftAsync(request.SessionId, context.CancellationToken);
+            var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId)
                 ?? throw new SessionTaskNotFoundException(request.TaskId);
 
@@ -174,6 +168,7 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
             task.Description = NormalizeDescription(request.Description);
 
             await repository.UpdateSessionAsync(session, context.CancellationToken);
+            await NotifyIfActiveAsync(session, context.CancellationToken);
             return new UpdateTaskReply { Session = ToDto(session) };
         }
         catch (SessionNotFoundException ex)
@@ -184,22 +179,19 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         {
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
         }
-        catch (SessionNotDraftException ex)
-        {
-            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
-        }
     }
 
     public async Task<RemoveTaskReply> RemoveTaskAsync(RemoveTaskRequest request, CallContext context = default)
     {
         try
         {
-            var session = await LoadDraftAsync(request.SessionId, context.CancellationToken);
+            var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId);
             if (task is not null)
             {
                 session.Tasks.Remove(task);
                 await repository.UpdateSessionAsync(session, context.CancellationToken);
+                await NotifyIfActiveAsync(session, context.CancellationToken);
             }
 
             return new RemoveTaskReply { Session = ToDto(session) };
@@ -207,10 +199,6 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         catch (SessionNotFoundException ex)
         {
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
-        }
-        catch (SessionNotDraftException ex)
-        {
-            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
         }
     }
 
@@ -254,6 +242,24 @@ public sealed class SessionGrpcService(ISessionRepository repository) : ISession
         }
 
         return session;
+    }
+
+    private async Task<PlanningSession> LoadEditableAsync(Guid id, CancellationToken cancellationToken)
+        => await LoadAsync(id, cancellationToken);
+
+    private async Task NotifyIfActiveAsync(PlanningSession session, CancellationToken cancellationToken)
+    {
+        if (session.Status != SessionStatus.Active)
+        {
+            return;
+        }
+
+        var snapshots = session.Tasks
+            .OrderBy(t => t.SortOrder)
+            .Select(t => new PlanningRoomTaskSnapshot(t.Id, t.Title, t.Description, t.SortOrder, t.AgreedEstimate))
+            .ToList();
+
+        await roomNotifier.NotifyTasksChangedAsync(session.Id, snapshots, cancellationToken);
     }
 
     private static string NormalizeName(string? name)

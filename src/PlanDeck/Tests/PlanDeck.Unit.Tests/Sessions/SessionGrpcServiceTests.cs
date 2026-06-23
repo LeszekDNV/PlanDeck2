@@ -10,13 +10,15 @@ namespace PlanDeck.Unit.Tests.Sessions;
 public sealed class SessionGrpcServiceTests
 {
     private FakeSessionRepository _repository = null!;
+    private RecordingPlanningRoomNotifier _notifier = null!;
     private SessionGrpcService _service = null!;
 
     [SetUp]
     public void SetUp()
     {
         _repository = new FakeSessionRepository();
-        _service = new SessionGrpcService(_repository);
+        _notifier = new RecordingPlanningRoomNotifier();
+        _service = new SessionGrpcService(_repository, _notifier);
     }
 
     [Test]
@@ -178,7 +180,7 @@ public sealed class SessionGrpcServiceTests
     }
 
     [Test]
-    public void AddTask_OnActiveSession_ThrowsFailedPrecondition()
+    public async Task AddTask_OnActiveSession_IsAllowedAndNotifiesRoom()
     {
         var session = _repository.Seed(SessionStatus.Active);
 
@@ -188,8 +190,159 @@ public sealed class SessionGrpcServiceTests
             Task = new NewSessionTaskDto { Title = "Late task" }
         };
 
-        var ex = Assert.ThrowsAsync<RpcException>(() => _service.AddTaskAsync(request));
-        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.FailedPrecondition));
+        var reply = await _service.AddTaskAsync(request);
+
+        Assert.That(reply.Session.Tasks.Select(t => t.Title), Does.Contain("Late task"));
+        Assert.That(_notifier.Calls, Has.Count.EqualTo(1));
+        Assert.That(_notifier.LastSessionId, Is.EqualTo(session.Id));
+        Assert.That(_notifier.LastTasks.Select(t => t.Title), Does.Contain("Late task"));
+    }
+
+    [Test]
+    public async Task AddTask_OnDraftSession_DoesNotNotifyRoom()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+
+        await _service.AddTaskAsync(new AddTaskRequest
+        {
+            SessionId = session.Id,
+            Task = new NewSessionTaskDto { Title = "Draft task" }
+        });
+
+        Assert.That(_notifier.Calls, Is.Empty);
+    }
+
+    [Test]
+    public async Task UpdateTask_SetsTitleAndDescription()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+        await _service.AddTaskAsync(new AddTaskRequest
+        {
+            SessionId = session.Id,
+            Task = new NewSessionTaskDto { Title = "Original" }
+        });
+        var taskId = session.Tasks.Single().Id;
+
+        var reply = await _service.UpdateTaskAsync(new UpdateTaskRequest
+        {
+            SessionId = session.Id,
+            TaskId = taskId,
+            Title = "  Renamed  ",
+            Description = "  ## Notes  "
+        });
+
+        var task = reply.Session.Tasks.Single();
+        Assert.That(task.Title, Is.EqualTo("Renamed"));
+        Assert.That(task.Description, Is.EqualTo("## Notes"));
+    }
+
+    [Test]
+    public async Task UpdateTask_WithBlankDescription_StoresNull()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+        await _service.AddTaskAsync(new AddTaskRequest
+        {
+            SessionId = session.Id,
+            Task = new NewSessionTaskDto { Title = "Original", Description = "old" }
+        });
+        var taskId = session.Tasks.Single().Id;
+
+        var reply = await _service.UpdateTaskAsync(new UpdateTaskRequest
+        {
+            SessionId = session.Id,
+            TaskId = taskId,
+            Title = "Kept",
+            Description = "   "
+        });
+
+        Assert.That(reply.Session.Tasks.Single().Description, Is.Null);
+    }
+
+    [Test]
+    public void UpdateTask_WithBlankTitle_ThrowsInvalidArgument()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.UpdateTaskAsync(new UpdateTaskRequest
+        {
+            SessionId = session.Id,
+            TaskId = Guid.NewGuid(),
+            Title = "   "
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+    }
+
+    [Test]
+    public void UpdateTask_WithUnknownTask_ThrowsNotFound()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.UpdateTaskAsync(new UpdateTaskRequest
+        {
+            SessionId = session.Id,
+            TaskId = Guid.NewGuid(),
+            Title = "Renamed"
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
+    }
+
+    [Test]
+    public async Task UpdateTask_OnActiveSession_IsAllowedAndNotifiesRoom()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        session.Tasks.Add(new SessionTask { Title = "Original", SortOrder = 0 });
+        var taskId = session.Tasks.Single().Id;
+
+        var reply = await _service.UpdateTaskAsync(new UpdateTaskRequest
+        {
+            SessionId = session.Id,
+            TaskId = taskId,
+            Title = "Renamed",
+            Description = "desc"
+        });
+
+        Assert.That(reply.Session.Tasks.Single().Title, Is.EqualTo("Renamed"));
+        Assert.That(_notifier.Calls, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task AddTasks_AppendsWithSortContinuationAndDedupesAdo()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+        session.Tasks.Add(new SessionTask { Title = "Existing", SortOrder = 0, Source = TaskSource.AdHoc });
+
+        var reply = await _service.AddTasksAsync(new AddTasksRequest
+        {
+            SessionId = session.Id,
+            Tasks =
+            [
+                new NewSessionTaskDto { Title = "Bulk A" },
+                new NewSessionTaskDto { Title = "Bulk B", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 55 },
+                new NewSessionTaskDto { Title = "Bulk B dup", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 55 }
+            ]
+        });
+
+        Assert.That(reply.Session.Tasks.Select(t => t.Title), Is.EqualTo(new[] { "Existing", "Bulk A", "Bulk B" }));
+        Assert.That(reply.Session.Tasks.Select(t => t.SortOrder), Is.EqualTo(new[] { 0, 1, 2 }));
+    }
+
+    [Test]
+    public async Task AddTasks_OnActiveSession_NotifiesRoomOnce()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+
+        await _service.AddTasksAsync(new AddTasksRequest
+        {
+            SessionId = session.Id,
+            Tasks =
+            [
+                new NewSessionTaskDto { Title = "A" },
+                new NewSessionTaskDto { Title = "B" }
+            ]
+        });
+
+        Assert.That(_notifier.Calls, Has.Count.EqualTo(1));
+        Assert.That(_notifier.LastTasks.Select(t => t.Title), Is.EqualTo(new[] { "A", "B" }));
     }
 
     [Test]
@@ -215,6 +368,24 @@ public sealed class SessionGrpcServiceTests
 
         Assert.That(reply.Session.Status, Is.EqualTo(SessionStatusDto.Active));
         Assert.That(session.Status, Is.EqualTo(SessionStatus.Active));
+    }
+
+    private sealed class RecordingPlanningRoomNotifier : IPlanningRoomNotifier
+    {
+        public List<Guid> Calls { get; } = [];
+        public Guid LastSessionId { get; private set; }
+        public IReadOnlyList<PlanningRoomTaskSnapshot> LastTasks { get; private set; } = [];
+
+        public Task NotifyTasksChangedAsync(
+            Guid sessionId,
+            IReadOnlyList<PlanningRoomTaskSnapshot> tasks,
+            CancellationToken cancellationToken)
+        {
+            Calls.Add(sessionId);
+            LastSessionId = sessionId;
+            LastTasks = tasks;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FakeSessionRepository : ISessionRepository

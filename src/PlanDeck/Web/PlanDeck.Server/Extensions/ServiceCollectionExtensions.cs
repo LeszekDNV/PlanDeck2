@@ -119,6 +119,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<RequestPrincipalAccessor>();
             services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
+            services.AddScoped<IPlanningRoomNotifier, NoOpPlanningRoomNotifier>();
             services.AddScoped<IVotingRoundService, VotingRoundService>();
             services.AddScoped<HelloGrpcService>();
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();
