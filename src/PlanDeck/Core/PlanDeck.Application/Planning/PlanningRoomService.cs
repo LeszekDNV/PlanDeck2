@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using PlanDeck.Application.Abstractions;
 using PlanDeck.Core.Shared.Realtime;
 
 namespace PlanDeck.Application.Planning;
@@ -10,7 +11,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
 
     public PlanningRoomState EnsureSeeded(
         RoomKey key,
-        IReadOnlyList<(Guid TaskId, string Title, int SortOrder, string? AgreedEstimate)> tasks,
+        IReadOnlyList<PlanningRoomTaskSnapshot> tasks,
         IReadOnlyList<string> scaleValues)
     {
         ArgumentNullException.ThrowIfNull(tasks);
@@ -26,12 +27,60 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 {
                     room.Tasks.Add(new RoomTask(task.TaskId, task.Title, task.SortOrder)
                     {
+                        Description = task.Description,
                         AgreedEstimate = task.AgreedEstimate
                     });
                 }
 
                 room.CurrentTaskId = room.Tasks.OrderBy(t => t.SortOrder).FirstOrDefault()?.TaskId;
                 room.Seeded = true;
+            }
+
+            return ToState(key, room);
+        }
+    }
+
+    public PlanningRoomState SyncTasks(RoomKey key, IReadOnlyList<PlanningRoomTaskSnapshot> tasks)
+    {
+        ArgumentNullException.ThrowIfNull(tasks);
+
+        var room = GetRoom(key);
+        lock (room)
+        {
+            // An unseeded room has no connected participants: skip reconciliation so the
+            // first JoinRoom seeds fresh from the database without duplicating tasks.
+            if (!room.Seeded)
+            {
+                return ToState(key, room);
+            }
+
+            var incomingIds = tasks.Select(t => t.TaskId).ToHashSet();
+            var activeRemoved = room.CurrentTaskId is Guid current && !incomingIds.Contains(current);
+            room.Tasks.RemoveAll(t => !incomingIds.Contains(t.TaskId));
+
+            foreach (var snapshot in tasks)
+            {
+                var existing = room.Tasks.FirstOrDefault(t => t.TaskId == snapshot.TaskId);
+                if (existing is null)
+                {
+                    room.Tasks.Add(new RoomTask(snapshot.TaskId, snapshot.Title, snapshot.SortOrder)
+                    {
+                        Description = snapshot.Description,
+                        AgreedEstimate = snapshot.AgreedEstimate
+                    });
+                }
+                else
+                {
+                    // Preserve in-flight Votes/IsRevealed/AgreedEstimate; only metadata changes.
+                    existing.Title = snapshot.Title;
+                    existing.Description = snapshot.Description;
+                    existing.SortOrder = snapshot.SortOrder;
+                }
+            }
+
+            if (activeRemoved)
+            {
+                room.CurrentTaskId = room.Tasks.OrderBy(t => t.SortOrder).FirstOrDefault()?.TaskId;
             }
 
             return ToState(key, room);
@@ -263,7 +312,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
 
         var tasks = room.Tasks
             .OrderBy(task => task.SortOrder)
-            .Select(task => new PlanningTaskState(task.TaskId, task.Title, task.SortOrder, task.AgreedEstimate))
+            .Select(task => new PlanningTaskState(task.TaskId, task.Title, task.Description, task.SortOrder, task.AgreedEstimate))
             .ToArray();
 
         return new PlanningRoomState(
@@ -294,9 +343,11 @@ public sealed class PlanningRoomService : IPlanningRoomService
     {
         public Guid TaskId { get; } = taskId;
 
-        public string Title { get; } = title;
+        public string Title { get; set; } = title;
 
-        public int SortOrder { get; } = sortOrder;
+        public string? Description { get; set; }
+
+        public int SortOrder { get; set; } = sortOrder;
 
         public string? AgreedEstimate { get; set; }
 

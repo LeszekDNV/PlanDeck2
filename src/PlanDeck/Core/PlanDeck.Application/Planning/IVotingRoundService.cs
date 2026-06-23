@@ -1,3 +1,5 @@
+using PlanDeck.Application.Abstractions;
+
 namespace PlanDeck.Application.Planning;
 
 public interface IVotingRoundService
@@ -10,5 +12,5 @@ public interface IVotingRoundService
 }
 
 public sealed record RoomSeed(
-    IReadOnlyList<(Guid TaskId, string Title, int SortOrder, string? AgreedEstimate)> Tasks,
+    IReadOnlyList<PlanningRoomTaskSnapshot> Tasks,
     IReadOnlyList<string> ScaleValues);

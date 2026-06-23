@@ -29,7 +29,7 @@ public sealed class VotingRoundService(
 
         var tasks = session.Tasks
             .OrderBy(task => task.SortOrder)
-            .Select(task => (task.Id, task.Title, task.SortOrder, task.AgreedEstimate))
+            .Select(task => new PlanningRoomTaskSnapshot(task.Id, task.Title, task.Description, task.SortOrder, task.AgreedEstimate))
             .ToArray();
 
         return new RoomSeed(tasks, [.. session.ScaleValues]);

@@ -9,6 +9,7 @@ using PlanDeck.Application.Services;
 using PlanDeck.Infrastructure.AzureDevOps;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Identity;
+using PlanDeck.Server.Realtime;
 
 namespace PlanDeck.Server.Extensions;
 
@@ -119,7 +120,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<RequestPrincipalAccessor>();
             services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
-            services.AddScoped<IPlanningRoomNotifier, NoOpPlanningRoomNotifier>();
+            services.AddScoped<IPlanningRoomNotifier, SignalRPlanningRoomNotifier>();
             services.AddScoped<IVotingRoundService, VotingRoundService>();
             services.AddScoped<HelloGrpcService>();
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();

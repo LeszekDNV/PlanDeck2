@@ -1,3 +1,4 @@
+using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Planning;
 using PlanDeck.Core.Shared.Realtime;
 
@@ -18,8 +19,11 @@ public sealed class PlanningRoomServiceTests
         _service = new PlanningRoomService();
         _key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
         _taskId = Guid.NewGuid();
-        _service.EnsureSeeded(_key, [(_taskId, "Task 1", 0, null)], Scale);
+        _service.EnsureSeeded(_key, [Task(_taskId, "Task 1", 0)], Scale);
     }
+
+    private static PlanningRoomTaskSnapshot Task(Guid id, string title, int sortOrder, string? agreedEstimate = null, string? description = null)
+        => new(id, title, description, sortOrder, agreedEstimate);
 
     private static PlanningParticipantState Participant(PlanningRoomState state, string participantId)
     {
@@ -220,7 +224,7 @@ public sealed class PlanningRoomServiceTests
         const int participantCount = 50;
         var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
         var scale = Enumerable.Range(0, participantCount).Select(i => i.ToString()).ToArray();
-        _service.EnsureSeeded(key, [(Guid.NewGuid(), "Task", 0, null)], scale);
+        _service.EnsureSeeded(key, [Task(Guid.NewGuid(), "Task", 0)], scale);
 
         for (var i = 0; i < participantCount; i++)
         {
@@ -246,7 +250,7 @@ public sealed class PlanningRoomServiceTests
 
         var state = _service.EnsureSeeded(
             key,
-            [(second, "Second", 1, null), (first, "First", 0, null)],
+            [Task(second, "Second", 1), Task(first, "First", 0)],
             ["1", "2", "3"]);
 
         Assert.That(state.CurrentTaskId, Is.EqualTo(first));
@@ -260,12 +264,12 @@ public sealed class PlanningRoomServiceTests
         var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
         var first = Guid.NewGuid();
         var second = Guid.NewGuid();
-        _service.EnsureSeeded(key, [(first, "Task 1", 0, null), (second, "Task 2", 1, null)], Scale);
+        _service.EnsureSeeded(key, [Task(first, "Task 1", 0), Task(second, "Task 2", 1)], Scale);
         _service.SetActiveTask(key, second);
         _service.Join(key, "alice", "Alice", "conn-a");
         _service.CastVote(key, "alice", "5");
 
-        var state = _service.EnsureSeeded(key, [(Guid.NewGuid(), "Ignored", 0, null)], ["99"]);
+        var state = _service.EnsureSeeded(key, [Task(Guid.NewGuid(), "Ignored", 0)], ["99"]);
 
         Assert.That(state.CurrentTaskId, Is.EqualTo(second));
         Assert.That(Participant(state, "alice").HasVoted, Is.True);
@@ -286,7 +290,7 @@ public sealed class PlanningRoomServiceTests
         var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
         var first = Guid.NewGuid();
         var second = Guid.NewGuid();
-        _service.EnsureSeeded(key, [(first, "Task 1", 0, null), (second, "Task 2", 1, null)], Scale);
+        _service.EnsureSeeded(key, [Task(first, "Task 1", 0), Task(second, "Task 2", 1)], Scale);
         _service.Join(key, "alice", "Alice", "conn-a");
 
         _service.CastVote(key, "alice", "5");
@@ -318,7 +322,7 @@ public sealed class PlanningRoomServiceTests
         var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
         var first = Guid.NewGuid();
         var second = Guid.NewGuid();
-        _service.EnsureSeeded(key, [(first, "Task 1", 0, null), (second, "Task 2", 1, null)], Scale);
+        _service.EnsureSeeded(key, [Task(first, "Task 1", 0), Task(second, "Task 2", 1)], Scale);
         _service.Join(key, "alice", "Alice", "conn-a");
 
         _service.CastVote(key, "alice", "5");
@@ -354,5 +358,80 @@ public sealed class PlanningRoomServiceTests
         Assert.That(afterReset.Tasks.Single(t => t.TaskId == _taskId).AgreedEstimate, Is.Null);
         Assert.That(afterReset.IsRevealed, Is.False);
         Assert.That(Participant(afterReset, "alice").HasVoted, Is.False);
+    }
+
+    [Test]
+    public void SyncTasks_AddsNewTask_KeepingExistingActiveTaskAndVotes()
+    {
+        _service.Join(_key, "alice", "Alice", "conn-a");
+        _service.CastVote(_key, "alice", "5");
+        var added = Guid.NewGuid();
+
+        var state = _service.SyncTasks(_key,
+        [
+            Task(_taskId, "Task 1", 0),
+            Task(added, "Task 2", 1)
+        ]);
+
+        Assert.That(state.Tasks.Select(t => t.TaskId), Is.EqualTo(new[] { _taskId, added }));
+        Assert.That(state.CurrentTaskId, Is.EqualTo(_taskId));
+        Assert.That(Participant(state, "alice").HasVoted, Is.True);
+    }
+
+    [Test]
+    public void SyncTasks_UpdatesTitleAndDescription_PreservingVotesAndAgreedEstimate()
+    {
+        _service.Join(_key, "alice", "Alice", "conn-a");
+        _service.CastVote(_key, "alice", "5");
+        _service.RevealVotes(_key);
+        _service.ApplyAgreedEstimate(_key, _taskId, "5");
+
+        var state = _service.SyncTasks(_key,
+        [
+            Task(_taskId, "Renamed", 0, agreedEstimate: "ignored-on-update", description: "## Spec")
+        ]);
+
+        var task = state.Tasks.Single(t => t.TaskId == _taskId);
+        Assert.That(task.Title, Is.EqualTo("Renamed"));
+        Assert.That(task.Description, Is.EqualTo("## Spec"));
+        Assert.That(task.AgreedEstimate, Is.EqualTo("5"));
+        Assert.That(state.IsRevealed, Is.True);
+        Assert.That(Participant(state, "alice").Vote, Is.EqualTo("5"));
+    }
+
+    [Test]
+    public void SyncTasks_RemovesMissingTask_AndKeepsActiveWhenSurvivorRemains()
+    {
+        var second = Guid.NewGuid();
+        _service.SyncTasks(_key, [Task(_taskId, "Task 1", 0), Task(second, "Task 2", 1)]);
+        _service.SetActiveTask(_key, second);
+
+        var state = _service.SyncTasks(_key, [Task(second, "Task 2", 1)]);
+
+        Assert.That(state.Tasks.Select(t => t.TaskId), Is.EqualTo(new[] { second }));
+        Assert.That(state.CurrentTaskId, Is.EqualTo(second));
+    }
+
+    [Test]
+    public void SyncTasks_ResetsActiveTask_OnlyWhenActiveTaskRemoved()
+    {
+        var second = Guid.NewGuid();
+        _service.SyncTasks(_key, [Task(_taskId, "Task 1", 0), Task(second, "Task 2", 1)]);
+        Assert.That(_service.GetState(_key).CurrentTaskId, Is.EqualTo(_taskId));
+
+        var state = _service.SyncTasks(_key, [Task(second, "Task 2", 0)]);
+
+        Assert.That(state.CurrentTaskId, Is.EqualTo(second));
+    }
+
+    [Test]
+    public void SyncTasks_OnUnseededRoom_DoesNotPopulateTasks()
+    {
+        var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
+
+        var state = _service.SyncTasks(key, [Task(Guid.NewGuid(), "Phantom", 0)]);
+
+        Assert.That(state.Tasks, Is.Empty);
+        Assert.That(state.CurrentTaskId, Is.Null);
     }
 }

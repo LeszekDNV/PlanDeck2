@@ -11,6 +11,7 @@ public sealed record PlanningRoomState(
 public sealed record PlanningTaskState(
     Guid TaskId,
     string Title,
+    string? Description,
     int SortOrder,
     string? AgreedEstimate);
 

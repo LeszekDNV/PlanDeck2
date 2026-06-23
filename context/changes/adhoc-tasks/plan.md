@@ -394,16 +394,16 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 
 #### Automated
 
-- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 2.2 Unit tests cover update, bulk add, Active-task-edit allowed, config-edit-while-Active rejected, empty-title reject
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx` — 529a0a9
+- [x] 2.2 Unit tests cover update, bulk add, Active-task-edit allowed, config-edit-while-Active rejected, empty-title reject — 529a0a9
 
 ### Phase 3: Real-time Propagation to the Live Voting Room
 
 #### Automated
 
-- [ ] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 3.2 PlanningRoomServiceTests cover SyncTasks add/update/remove, votes preserved, current-task reset only on deletion
-- [ ] 3.3 Realtime integration tests still green
+- [x] 3.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 3.2 PlanningRoomServiceTests cover SyncTasks add/update/remove, votes preserved, current-task reset only on deletion
+- [x] 3.3 Realtime integration tests still green
 
 #### Manual
 

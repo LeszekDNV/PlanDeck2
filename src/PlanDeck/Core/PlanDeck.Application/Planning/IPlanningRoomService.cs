@@ -1,3 +1,4 @@
+using PlanDeck.Application.Abstractions;
 using PlanDeck.Core.Shared.Realtime;
 
 namespace PlanDeck.Application.Planning;
@@ -6,8 +7,10 @@ public interface IPlanningRoomService
 {
     PlanningRoomState EnsureSeeded(
         RoomKey key,
-        IReadOnlyList<(Guid TaskId, string Title, int SortOrder, string? AgreedEstimate)> tasks,
+        IReadOnlyList<PlanningRoomTaskSnapshot> tasks,
         IReadOnlyList<string> scaleValues);
+
+    PlanningRoomState SyncTasks(RoomKey key, IReadOnlyList<PlanningRoomTaskSnapshot> tasks);
 
     PlanningRoomState Join(RoomKey key, string participantId, string displayName, string connectionId);
 
