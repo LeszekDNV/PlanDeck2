@@ -3,7 +3,7 @@ project: "PlanDeck"
 version: 1
 status: draft
 created: 2026-06-18
-updated: 2026-06-22
+updated: 2026-06-23
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -37,7 +37,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | proposed |
 | S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | done |
 | S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | done |
-| S-06 | realtime-voting-round | run a hidden-vote → reveal → manual-pick round in a session | F-02, S-04, S-05 | FR-008, FR-009, US-01 | proposed |
+| S-06 | realtime-voting-round | run a hidden-vote → reveal → manual-pick round in a session | F-02, S-04, S-05 | FR-008, FR-009, US-01 | done |
 | S-07 | guest-link-voting | join a session's vote via a share link with only a temporary username | S-04, F-02 | FR-013 | proposed |
 | S-08 | ado-estimate-writeback | write the agreed estimate back to the originating Azure DevOps task | S-03, S-06 | FR-010, US-01 | proposed |
 
@@ -185,7 +185,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - The result is selected manually (no auto-compute in v1) — confirm the UI affordance for picking the agreed value after divergence. — Owner: user. Block: no.
 - **Risk:** The heart of the product and the slice the `quality` goal most protects (vote consistency + hidden reveal). Built on the F-02 integrity contract so correctness is not re-derived here. Main risk is the real-time UX under reconnection; mitigated by F-02 owning reconnection semantics.
-- **Status:** proposed
+- **Status:** done
 
 ### S-07: Guest-link voting
 
@@ -251,3 +251,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-01: a signed-in user can create a team and add members to it.** — Archived 2026-06-18 → `context/archive/2026-06-18-team-and-members/`. Lesson: —.
 - **S-04: a user can create a planning session from a set of selected tasks and configure it (task selection and voting scale only).** — Archived 2026-06-19 → `context/archive/2026-06-18-create-configure-session/`. Lesson: —.
 - **S-05: a user can assign/invite team members to a session.** — Archived 2026-06-22 → `context/archive/2026-06-22-assign-session-members/`. Lesson: —.
+- **S-06: assigned members join a session and vote on each task in real time; participants see who has voted as it happens, values stay hidden until the round is revealed and then appear together, and the user manually selects the agreed estimate, which is persisted.** — Archived 2026-06-23 → `context/archive/2026-06-22-realtime-voting-round/`. Lesson: —.
