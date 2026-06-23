@@ -47,6 +47,7 @@
                                     {
                                         <MudListItem T="Guid" Value="@session.Id"
                                                      OnClick="@(() => SelectAsync(session))"
+                                                     data-testid="session-entry"
                                                      Class="@(_selected?.Id == session.Id ? "mud-selected-item rounded" : "rounded")">
                                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                                 <MudText Typo="Typo.body2"
@@ -188,7 +189,7 @@
                                         <MudList T="SessionTaskDto" Dense="true">
                                             @foreach (var task in _selected.Tasks)
                                             {
-                                                <MudListItem T="SessionTaskDto">
+                                                <MudListItem T="SessionTaskDto" data-testid="config-task">
                                                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                                         <div>
                                                             <MudText Typo="Typo.body1">

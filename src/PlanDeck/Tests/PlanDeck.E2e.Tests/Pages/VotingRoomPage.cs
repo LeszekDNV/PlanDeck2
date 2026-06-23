@@ -23,6 +23,14 @@ public class VotingRoomPage
 
     public ILocator VoteButton(string value) => _page.Locator($"[data-testid='vote-{value}']");
 
+    public ILocator TaskListItem(string title) =>
+        _page.Locator(".mud-list-item").Filter(new() { HasText = title });
+
+    public ILocator TaskDescription => _page.Locator("[data-testid=task-description]");
+
+    public ILocator DescriptionToggle =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Description" });
+
     public async Task GotoAsync(Guid sessionId)
     {
         await _page.GotoAsync(

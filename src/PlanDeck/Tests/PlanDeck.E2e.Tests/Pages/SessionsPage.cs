@@ -14,7 +14,7 @@ public class SessionsPage
         _baseUrl = baseUrl;
     }
 
-    private ILocator CreateSessionButton =>
+    public ILocator CreateSessionButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Create session" });
 
     private ILocator NameField =>
@@ -23,11 +23,23 @@ public class SessionsPage
     private ILocator TaskTitleField =>
         _page.GetByLabel("Task title", new() { Exact = true });
 
+    private ILocator DescriptionField =>
+        _page.GetByLabel("Description", new() { Exact = true });
+
     private ILocator AddTaskButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Add task" });
 
     private ILocator SaveButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true });
+
+    private ILocator BulkToggle =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Paste multiple tasks" });
+
+    private ILocator BulkTextField =>
+        _page.GetByLabel("Paste multiple tasks");
+
+    private ILocator BulkAddButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Add pasted tasks" });
 
     public async Task GotoAsync()
     {
@@ -52,7 +64,22 @@ public class SessionsPage
 
         await SaveButton.ClickAsync();
 
-        // The created session appears in the list as a selectable button.
+        // The created session appears in the list and is auto-selected.
+        await SessionEntry(name).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task CreateSessionWithBulkAsync(string name, string bulkText)
+    {
+        await CreateSessionButton.ClickAsync();
+        await NameField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await NameField.FillAsync(name);
+
+        await BulkToggle.ClickAsync();
+        await BulkTextField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await BulkTextField.FillAsync(bulkText);
+        await BulkAddButton.ClickAsync();
+
+        await SaveButton.ClickAsync();
         await SessionEntry(name).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
@@ -66,7 +93,7 @@ public class SessionsPage
     {
         await ActivateButton.ClickAsync();
 
-        // Activation locks the session and reveals the "Join voting" entry.
+        // Activation locks the config and reveals the "Join voting" entry.
         await JoinVotingButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
@@ -81,8 +108,55 @@ public class SessionsPage
         return Guid.Parse(match.Groups[1].Value);
     }
 
-    public ILocator SessionEntry(string name) =>
-        _page.GetByRole(AriaRole.Button, new() { Name = name });
+    public async Task SelectSessionAsync(string name)
+    {
+        await SessionEntry(name).ClickAsync();
 
-    public ILocator TaskEntry(string title) => _page.GetByText(title);
+        // The config + tasks panel renders for the selected session.
+        await AddTaskButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task AddTaskToSelectedAsync(string title, string? description = null)
+    {
+        await TaskTitleField.FillAsync(title);
+        if (!string.IsNullOrEmpty(description))
+        {
+            await DescriptionField.FillAsync(description);
+        }
+
+        await AddTaskButton.ClickAsync();
+        await TaskEntry(title).First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task EditTaskAsync(string currentTitle, string newTitle, string newDescription)
+    {
+        await ConfigTask(currentTitle)
+            .GetByRole(AriaRole.Button, new() { Name = "Edit task" })
+            .ClickAsync();
+
+        var dialog = _page.Locator(".mud-dialog").Filter(new() { HasText = "Edit task" });
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+
+        var titleField = dialog.GetByLabel("Task title", new() { Exact = true });
+        await titleField.FillAsync(newTitle);
+        await titleField.BlurAsync();
+
+        var descriptionField = dialog.GetByLabel("Description", new() { Exact = true });
+        await descriptionField.FillAsync(newDescription);
+        await descriptionField.BlurAsync();
+
+        await dialog.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true }).ClickAsync();
+
+        // Success is the renamed task surfacing in the (re-rendered) task list.
+        await ConfigTask(newTitle).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public ILocator SessionEntry(string name) =>
+        _page.Locator("[data-testid=session-entry]").Filter(new() { HasText = name });
+
+    public ILocator ConfigTask(string title) =>
+        _page.Locator("[data-testid=config-task]").Filter(new() { HasText = title });
+
+    public ILocator TaskEntry(string title) =>
+        _page.Locator("[data-testid=config-task]").Filter(new() { HasText = title });
 }

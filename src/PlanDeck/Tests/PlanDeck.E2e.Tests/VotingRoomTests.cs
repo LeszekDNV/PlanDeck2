@@ -85,4 +85,54 @@ public class VotingRoomTests : PageTest
         await votingB.SelectTaskAsync(taskTitle);
         await Expect(votingB.AgreedEstimate).ToContainTextAsync("5", new() { Timeout = 15_000 });
     }
+
+    [Test]
+    public async Task TaskAddedInSessions_PropagatesToOpenVotingRoomLive()
+    {
+        var sessionName = $"E2E Live {Guid.NewGuid():N}";
+        var seedTask = $"Seed {Guid.NewGuid():N}";
+        var liveTask = $"Live {Guid.NewGuid():N}";
+
+        // --- Context A (owner) creates + activates the session, then joins the room. ---
+        var sessionsA = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var membersA = new SessionMembersPage(Page);
+
+        await sessionsA.GotoAsync();
+        await sessionsA.CreateSessionAsync(sessionName, seedTask);
+        await membersA.AssignMemberAsync(UserBEmail);
+        await sessionsA.ActivateAsync();
+
+        var sessionId = await sessionsA.JoinVotingAsync();
+        var votingA = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
+        await votingA.WaitForLoadedAsync();
+
+        // --- Context B (assigned member) opens the same room. ---
+        await using var contextB = await Browser.NewContextAsync(ContextOptions());
+        await contextB.AddCookiesAsync(
+        [
+            new Cookie
+            {
+                Name = UserSelectionCookie,
+                Value = "b",
+                Url = AspireAppFixture.BaseUrl
+            }
+        ]);
+
+        var pageB = await contextB.NewPageAsync();
+        var votingB = new VotingRoomPage(pageB, AspireAppFixture.BaseUrl);
+        await votingB.GotoAsync(sessionId);
+
+        await Expect(votingB.TaskListItem(seedTask)).ToBeVisibleAsync(new() { Timeout = 15_000 });
+
+        // --- A second page in context A adds a task to the Active session via /sessions. ---
+        var adderPage = await Page.Context.NewPageAsync();
+        var sessionsAdder = new SessionsPage(adderPage, AspireAppFixture.BaseUrl);
+        await sessionsAdder.GotoAsync();
+        await sessionsAdder.SelectSessionAsync(sessionName);
+        await sessionsAdder.AddTaskToSelectedAsync(liveTask);
+
+        // The new task propagates live to both open voting rooms.
+        await Expect(votingA.TaskListItem(liveTask)).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await Expect(votingB.TaskListItem(liveTask)).ToBeVisibleAsync(new() { Timeout = 15_000 });
+    }
 }

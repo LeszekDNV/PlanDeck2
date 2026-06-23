@@ -407,32 +407,32 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 
 #### Manual
 
-- [ ] 3.4 Two-browser Active session: task add/edit/delete from /sessions updates both rooms live; in-flight votes survive
+- [x] 3.4 Two-browser Active session: task add/edit/delete from /sessions updates both rooms live; in-flight votes survive
 
 ### Phase 4: Client UI — Redesign & Features
 
 #### Automated
 
-- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 4.2 Every new L["..."] key exists in both resx (key parity)
-- [x] 4.3 Full unit suite green
+- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx` — 534ae7c
+- [x] 4.2 Every new L["..."] key exists in both resx (key parity) — 534ae7c
+- [x] 4.3 Full unit suite green — 534ae7c
 
 #### Manual
 
-- [ ] 4.4 /sessions full-width and responsive (desktop two-column, mobile single-column), modern look
-- [ ] 4.5 Edit dialog updates title+description; description shows as collapsible section in voting room
-- [ ] 4.6 Description renders as Markdown (display-only) in voting room + edit preview; raw HTML/script not executed (XSS-safe)
-- [ ] 4.7 Bulk paste adds multiple tasks; title|description split correct; empty lines skipped
-- [ ] 4.8 Task add/edit/delete work while Active; delete-with-estimate confirms; ADO edit shows local-only warning
-- [ ] 4.9 Animations subtle; en and pl both render
+- [x] 4.4 /sessions full-width and responsive (desktop two-column, mobile single-column), modern look — 534ae7c
+- [x] 4.5 Edit dialog updates title+description; description shows as collapsible section in voting room — 534ae7c
+- [x] 4.6 Description renders as Markdown (display-only) in voting room + edit preview; raw HTML/script not executed (XSS-safe) — 534ae7c
+- [x] 4.7 Bulk paste adds multiple tasks; title|description split correct; empty lines skipped — 534ae7c
+- [x] 4.8 Task add/edit/delete work while Active; delete-with-estimate confirms; ADO edit shows local-only warning — 534ae7c
+- [x] 4.9 Animations subtle; en and pl both render — 534ae7c
 
 ### Phase 5: E2E & Full Verification
 
 #### Automated
 
-- [ ] 5.1 Whole solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 5.2 Full suite green (unit + integration + E2E): `dotnet test PlanDeck.slnx`
+- [x] 5.1 Whole solution builds: `dotnet build PlanDeck.slnx`
+- [x] 5.2 Full suite green (unit + integration + E2E): `dotnet test PlanDeck.slnx`
 
 #### Manual
 
-- [ ] 5.3 E2E run stable across a couple of runs (no flakiness in two-client realtime test)
+- [x] 5.3 E2E run stable across a couple of runs (no flakiness in two-client realtime test)
