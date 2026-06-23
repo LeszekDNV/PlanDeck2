@@ -1,4 +1,8 @@
+@using System.IO
 @using Markdig
+@using Markdig.Renderers
+@using Markdig.Syntax
+@using Markdig.Syntax.Inlines
 
 @if (!string.IsNullOrWhiteSpace(Markdown))
 {
@@ -20,6 +24,53 @@
     {
         _rendered = string.IsNullOrWhiteSpace(Markdown)
             ? default
-            : (MarkupString)Markdig.Markdown.ToHtml(Markdown, Pipeline);
+            : (MarkupString)Render(Markdown);
+    }
+
+    private static string Render(string markdown)
+    {
+        var document = Markdig.Markdown.Parse(markdown, Pipeline);
+        foreach (var link in document.Descendants<LinkInline>())
+        {
+            if (!IsSafeUrl(link.Url))
+            {
+                link.Url = "#";
+            }
+        }
+
+        using var writer = new StringWriter();
+        var renderer = new Markdig.Renderers.HtmlRenderer(writer);
+        Pipeline.Setup(renderer);
+        renderer.Render(document);
+        writer.Flush();
+        return writer.ToString();
+    }
+
+    // Allow only relative URLs and a small allow-list of schemes so authored
+    // descriptions cannot smuggle javascript:/data: links past .DisableHtml().
+    private static bool IsSafeUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return false;
+        }
+
+        var trimmed = url.TrimStart();
+        var colon = trimmed.IndexOf(':');
+        if (colon < 0)
+        {
+            return true;
+        }
+
+        var slash = trimmed.IndexOf('/');
+        var question = trimmed.IndexOf('?');
+        var hash = trimmed.IndexOf('#');
+        if ((slash >= 0 && slash < colon) || (question >= 0 && question < colon) || (hash >= 0 && hash < colon))
+        {
+            return true;
+        }
+
+        var scheme = trimmed[..colon].ToLowerInvariant();
+        return scheme is "http" or "https" or "mailto";
     }
 }

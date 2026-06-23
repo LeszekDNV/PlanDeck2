@@ -373,6 +373,13 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 - Live room: `src/PlanDeck/Core/PlanDeck.Application/Planning/PlanningRoomService.cs`, `src/PlanDeck/Web/PlanDeck.Server/Hubs/PlanningRoomHub.cs`
 - Prior slice (S-04) brief: `context/archive/2026-06-18-create-configure-session/plan-brief.md`
 
+## Addendum (post-plan scope, added during implementation)
+
+Two coherent additions were delivered on top of the original five phases at the user's request during implementation. They are tested and committed, recorded here so the plan stays the source of truth:
+
+1. **ADO import carries the work-item description.** Azure DevOps import now fetches the work item `Description` joined with `Acceptance Criteria` (when present) and maps it into the task `Description`. Touches `AzureDevOpsOptions`, `AzureDevOpsWorkItemClient`, `IAzureDevOpsWorkItemClient`, `AzureDevOpsWorkItemGrpcService`, and `IAzureDevOpsWorkItemService`.
+2. **Session creator auto-added as a member.** `SessionGrpcService` now takes `ISessionMemberRepository` + `ICurrentUserContext` and calls `AddCreatorAsMemberAsync` after `CreateSessionAsync` (guards empty/invalid email, swallows duplicate). This does **not** affect voting-room participant counts (the roster is SignalR-connection-based, not DB-member-based).
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
