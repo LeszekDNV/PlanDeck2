@@ -407,7 +407,7 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 
 #### Manual
 
-- [x] 3.4 Two-browser Active session: task add/edit/delete from /sessions updates both rooms live; in-flight votes survive
+- [x] 3.4 Two-browser Active session: task add/edit/delete from /sessions updates both rooms live; in-flight votes survive — 95e22b8
 
 ### Phase 4: Client UI — Redesign & Features
 
@@ -430,9 +430,9 @@ Single additive, nullable column (`Description nvarchar(max)` on `SessionTasks`)
 
 #### Automated
 
-- [x] 5.1 Whole solution builds: `dotnet build PlanDeck.slnx`
-- [x] 5.2 Full suite green (unit + integration + E2E): `dotnet test PlanDeck.slnx`
+- [x] 5.1 Whole solution builds: `dotnet build PlanDeck.slnx` — 95e22b8
+- [x] 5.2 Full suite green (unit + integration + E2E): `dotnet test PlanDeck.slnx` — 95e22b8
 
 #### Manual
 
-- [x] 5.3 E2E run stable across a couple of runs (no flakiness in two-client realtime test)
+- [x] 5.3 E2E run stable across a couple of runs (no flakiness in two-client realtime test) — 95e22b8
