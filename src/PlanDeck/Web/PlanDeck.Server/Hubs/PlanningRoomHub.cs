@@ -14,13 +14,19 @@ public sealed class PlanningRoomHub(
 {
     public async Task JoinRoom(string sessionId)
     {
-        var key = await AuthorizeAsync(sessionId);
+        // Establish the caller for tenant-scoped data access within this hub invocation's DI scope.
+        principalAccessor.Principal = Context.User;
+        var key = BuildKey(sessionId);
 
-        var seed = await votingRoundService.LoadRoomSeedAsync(key.SessionId, Context.ConnectionAborted);
-        if (seed is not null)
+        // One DB load authorizes the caller and returns the seed; null means missing session or not a member.
+        var seed = await votingRoundService.AuthorizeAndLoadSeedAsync(
+            key.SessionId, UserId, Email, Context.ConnectionAborted);
+        if (seed is null)
         {
-            planningRoomService.EnsureSeeded(key, seed.Tasks, seed.ScaleValues);
+            throw new HubException("You are not an assigned member of this session.");
         }
+
+        planningRoomService.EnsureSeeded(key, seed.Tasks, seed.ScaleValues);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, key.GroupName, Context.ConnectionAborted);
         var state = planningRoomService.Join(key, ParticipantId, DisplayName, Context.ConnectionId);
@@ -52,14 +58,20 @@ public sealed class PlanningRoomHub(
     public async Task ResetRound(string sessionId)
     {
         var key = await AuthorizeAsync(sessionId);
-        var state = planningRoomService.ResetRound(key);
 
-        // Reset clears the active task's agreed estimate; persist the clear so it survives a reload.
-        if (state.CurrentTaskId is { } taskId)
+        // Persist the agreed-estimate clear BEFORE mutating in-memory state so a DB failure
+        // cannot leave memory and the database out of sync (mirrors SelectEstimate's persist-first order).
+        if (planningRoomService.GetState(key).CurrentTaskId is { } taskId)
         {
-            await votingRoundService.SelectEstimateAsync(key.SessionId, taskId, null, Context.ConnectionAborted);
+            var persisted = await votingRoundService.SelectEstimateAsync(
+                key.SessionId, taskId, null, Context.ConnectionAborted);
+            if (!persisted)
+            {
+                throw new HubException("The agreed estimate could not be cleared.");
+            }
         }
 
+        var state = planningRoomService.ResetRound(key);
         await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }
 
@@ -74,6 +86,11 @@ public sealed class PlanningRoomHub(
     {
         var key = await AuthorizeAsync(sessionId);
         var taskGuid = ParseTaskId(taskId);
+
+        if (!planningRoomService.IsValidEstimate(key, value))
+        {
+            throw new HubException("The agreed estimate is not a valid value for the session scale.");
+        }
 
         var persisted = await votingRoundService.SelectEstimateAsync(
             key.SessionId, taskGuid, value, Context.ConnectionAborted);

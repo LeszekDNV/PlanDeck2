@@ -19,7 +19,7 @@ builder.Services.AddSignalR();
 builder.Services
     .AddSqlDatabase(builder.Configuration)
     .AddLocalServices()
-    .AddExternalServices(builder.Configuration);
+    .AddExternalServices(builder.Configuration, builder.Environment);
 
 builder.Services.AddCodeFirstGrpc(config =>
 {

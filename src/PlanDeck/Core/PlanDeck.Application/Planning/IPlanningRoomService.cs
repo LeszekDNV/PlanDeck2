@@ -25,5 +25,7 @@ public interface IPlanningRoomService
 
     PlanningRoomState ApplyAgreedEstimate(RoomKey key, Guid taskId, string? estimate);
 
+    bool IsValidEstimate(RoomKey key, string? estimate);
+
     PlanningRoomState GetState(RoomKey key);
 }

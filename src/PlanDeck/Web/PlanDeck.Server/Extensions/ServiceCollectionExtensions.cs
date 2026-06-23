@@ -49,9 +49,15 @@ public static class ServiceCollectionExtensions
             return services;
         }
 
-        public IServiceCollection AddExternalServices(IConfiguration configuration)
+        public IServiceCollection AddExternalServices(IConfiguration configuration, IHostEnvironment environment)
         {
             var useTestScheme = configuration.GetValue<bool>("Authentication:UseTestScheme");
+            if (useTestScheme && !environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
+            {
+                throw new InvalidOperationException(
+                    "Authentication:UseTestScheme is only permitted in the Development or Testing environments.");
+            }
+
             if (useTestScheme)
             {
                 services

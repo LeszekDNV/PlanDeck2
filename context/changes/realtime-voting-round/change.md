@@ -1,7 +1,7 @@
 ---
 change_id: realtime-voting-round
 title: Real-time voting round — hidden vote, reveal, manual pick
-status: implemented
+status: impl_reviewed
 created: 2026-06-22
 updated: 2026-06-23
 archived_at: null

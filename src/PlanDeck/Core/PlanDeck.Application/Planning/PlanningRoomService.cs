@@ -193,6 +193,21 @@ public sealed class PlanningRoomService : IPlanningRoomService
         }
     }
 
+    public bool IsValidEstimate(RoomKey key, string? estimate)
+    {
+        // A null estimate clears the agreed value (e.g. on reset) and is always allowed.
+        if (estimate is null)
+        {
+            return true;
+        }
+
+        var room = GetRoom(key);
+        lock (room)
+        {
+            return room.ScaleValues.Contains(estimate, StringComparer.Ordinal);
+        }
+    }
+
     public PlanningRoomState GetState(RoomKey key)
     {
         var room = GetRoom(key);

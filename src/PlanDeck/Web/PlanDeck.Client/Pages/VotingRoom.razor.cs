@@ -15,7 +15,7 @@ public partial class VotingRoom : IAsyncDisposable
     private bool _loading = true;
     private bool _busy;
     private string? _errorKey;
-    private string? _myDisplayName;
+    private string? _myParticipantId;
     private string? _myVote;
     private Guid? _activeTaskId;
     private PlanningRoomState? _state;
@@ -34,7 +34,9 @@ public partial class VotingRoom : IAsyncDisposable
             return;
         }
 
-        _myDisplayName = authState.User.Identity?.Name;
+        // The participant identity in the room is keyed by the 'oid' claim (see PlanningRoomHub),
+        // so match on it rather than the display name, which can collide between users.
+        _myParticipantId = authState.User.FindFirst("oid")?.Value;
 
         try
         {
@@ -81,7 +83,7 @@ public partial class VotingRoom : IAsyncDisposable
         }
 
         var me = state.Participants.FirstOrDefault(p =>
-            string.Equals(p.DisplayName, _myDisplayName, StringComparison.OrdinalIgnoreCase));
+            string.Equals(p.ParticipantId, _myParticipantId, StringComparison.OrdinalIgnoreCase));
         if (me is not null && !me.HasVoted)
         {
             _myVote = null;
