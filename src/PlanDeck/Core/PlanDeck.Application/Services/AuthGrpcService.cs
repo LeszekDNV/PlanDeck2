@@ -12,7 +12,9 @@ public sealed class AuthGrpcService(ICurrentUserContext currentUser) : IAuthServ
         {
             IsAuthenticated = currentUser.IsAuthenticated,
             DisplayName = currentUser.IsAuthenticated ? currentUser.DisplayName : null,
-            Email = currentUser.IsAuthenticated ? currentUser.Email : null
+            Email = currentUser.IsAuthenticated ? currentUser.Email : null,
+            ParticipantId = currentUser.IsAuthenticated ? currentUser.ParticipantId : null,
+            IsGuest = currentUser.IsAuthenticated && currentUser.IsGuest
         });
     }
 }

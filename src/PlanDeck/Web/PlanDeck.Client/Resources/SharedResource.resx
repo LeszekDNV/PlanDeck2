@@ -376,4 +376,43 @@
   <data name="Voting_Description" xml:space="preserve">
     <value>Description</value>
   </data>
+  <data name="Join_Title" xml:space="preserve">
+    <value>Join the session</value>
+  </data>
+  <data name="Join_Prompt" xml:space="preserve">
+    <value>Enter a name to join the planning poker as a guest.</value>
+  </data>
+  <data name="Join_NameLabel" xml:space="preserve">
+    <value>Your name</value>
+  </data>
+  <data name="Join_Submit" xml:space="preserve">
+    <value>Join</value>
+  </data>
+  <data name="Join_NameRequired" xml:space="preserve">
+    <value>Please enter a name (up to 40 characters).</value>
+  </data>
+  <data name="Join_UnknownCode" xml:space="preserve">
+    <value>This invitation link is not valid.</value>
+  </data>
+  <data name="Join_Inactive" xml:space="preserve">
+    <value>This session is not open for voting right now.</value>
+  </data>
+  <data name="Join_Error" xml:space="preserve">
+    <value>We couldn't join the session. Please try again.</value>
+  </data>
+  <data name="Join_Or" xml:space="preserve">
+    <value>or</value>
+  </data>
+  <data name="Join_LoginMicrosoft" xml:space="preserve">
+    <value>Sign in with a Microsoft account</value>
+  </data>
+  <data name="Sessions_ShareLink" xml:space="preserve">
+    <value>Guest invitation link</value>
+  </data>
+  <data name="Sessions_ShareCopy" xml:space="preserve">
+    <value>Copy link</value>
+  </data>
+  <data name="Sessions_ShareCopied" xml:space="preserve">
+    <value>Link copied to clipboard.</value>
+  </data>
 </root>

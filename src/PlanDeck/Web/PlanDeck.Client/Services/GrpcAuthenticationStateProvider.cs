@@ -33,6 +33,16 @@ public sealed class GrpcAuthenticationStateProvider(GrpcChannel channel) : Authe
                 claims.Add(new Claim(ClaimTypes.Email, reply.Email));
             }
 
+            if (!string.IsNullOrWhiteSpace(reply.ParticipantId))
+            {
+                claims.Add(new Claim("oid", reply.ParticipantId));
+            }
+
+            if (reply.IsGuest)
+            {
+                claims.Add(new Claim("is_guest", "true"));
+            }
+
             var identity = new ClaimsIdentity(claims, AuthenticationType);
             return new AuthenticationState(new ClaimsPrincipal(identity));
         }

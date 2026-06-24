@@ -27,4 +27,10 @@ public sealed class CurrentUserReply
 
     [DataMember(Order = 3)]
     public string? Email { get; set; }
+
+    [DataMember(Order = 4)]
+    public string? ParticipantId { get; set; }
+
+    [DataMember(Order = 5)]
+    public bool IsGuest { get; set; }
 }

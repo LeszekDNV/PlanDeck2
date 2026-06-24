@@ -11,6 +11,7 @@
 @inject IDialogService Dialog
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthState
+@inject IJSRuntime JS
 
 <PageTitle>@L["Sessions_Title"]</PageTitle>
 
@@ -96,6 +97,14 @@
                                                    OnClick="@(() => Navigation.NavigateTo($"/voting/{_selected!.Id}"))">
                                             @L["Voting_JoinVoting"]
                                         </MudButton>
+                                        @if (!string.IsNullOrWhiteSpace(_selected.ShareCode))
+                                        {
+                                            <MudField Label="@L["Sessions_ShareLink"]" Variant="Variant.Outlined" Class="mb-3"
+                                                      Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                                                      OnAdornmentClick="CopyShareLinkAsync" AdornmentAriaLabel="@L["Sessions_ShareCopy"]">
+                                                <span data-testid="share-link">@ShareLink(_selected.ShareCode!)</span>
+                                            </MudField>
+                                        }
                                     }
 
                                     <MudGrid Spacing="2">

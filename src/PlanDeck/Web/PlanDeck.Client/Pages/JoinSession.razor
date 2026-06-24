@@ -1,0 +1,40 @@
+@page "/join/{Code}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IStringLocalizer<SharedResource> L
+
+<PageTitle>@L["Join_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-12">
+    <MudPaper Class="pa-6" Elevation="2">
+        <MudText Typo="Typo.h5" Class="mb-2">@L["Join_Title"]</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">@L["Join_Prompt"]</MudText>
+
+        @if (_errorKey is not null)
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-4" data-testid="join-error">@L[_errorKey]</MudAlert>
+        }
+
+        <EditForm Model="this" OnValidSubmit="JoinAsync">
+            <MudTextField @bind-Value="_displayName" Label="@L["Join_NameLabel"]"
+                          Variant="Variant.Outlined" MaxLength="40" Immediate="true"
+                          data-testid="join-name" Class="mb-4" />
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary"
+                       FullWidth="true" Disabled="_busy" data-testid="join-submit">
+                @if (_busy)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                }
+                @L["Join_Submit"]
+            </MudButton>
+        </EditForm>
+
+        <MudDivider Class="my-4" />
+        <MudText Typo="Typo.caption" Align="Align.Center" Class="d-block mb-2">@L["Join_Or"]</MudText>
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true"
+                   StartIcon="@Icons.Custom.Brands.Microsoft" Disabled="_busy"
+                   OnClick="LoginWithMicrosoft" data-testid="join-login-ms">
+            @L["Join_LoginMicrosoft"]
+        </MudButton>
+    </MudPaper>
+</MudContainer>

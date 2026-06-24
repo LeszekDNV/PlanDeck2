@@ -15,6 +15,7 @@ public partial class VotingRoom : IAsyncDisposable
     private bool _loading = true;
     private bool _busy;
     private bool _descExpanded = true;
+    private bool _isGuest;
     private string? _errorKey;
     private string? _myParticipantId;
     private string? _myVote;
@@ -38,6 +39,7 @@ public partial class VotingRoom : IAsyncDisposable
         // The participant identity in the room is keyed by the 'oid' claim (see PlanningRoomHub),
         // so match on it rather than the display name, which can collide between users.
         _myParticipantId = authState.User.FindFirst("oid")?.Value;
+        _isGuest = authState.User.FindFirst("is_guest")?.Value == "true";
 
         try
         {
@@ -106,17 +108,17 @@ public partial class VotingRoom : IAsyncDisposable
     }
 
     private Task SetActiveTaskAsync(Guid taskId) =>
-        RunAsync(() => RoomService.SetActiveTaskAsync(Session, taskId.ToString()));
+        _isGuest ? Task.CompletedTask : RunAsync(() => RoomService.SetActiveTaskAsync(Session, taskId.ToString()));
 
     private Task RevealVotesAsync() =>
-        RunAsync(() => RoomService.RevealVotesAsync(Session));
+        _isGuest ? Task.CompletedTask : RunAsync(() => RoomService.RevealVotesAsync(Session));
 
     private Task ResetRoundAsync() =>
-        RunAsync(() => RoomService.ResetRoundAsync(Session));
+        _isGuest ? Task.CompletedTask : RunAsync(() => RoomService.ResetRoundAsync(Session));
 
     private Task SelectEstimateAsync(string value)
     {
-        if (_activeTaskId is not { } taskId)
+        if (_isGuest || _activeTaskId is not { } taskId)
         {
             return Task.CompletedTask;
         }

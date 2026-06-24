@@ -445,11 +445,11 @@ Add a Playwright E2E for the full guest path and verify the error pages, complet
 
 #### Automated
 
-- [x] 3.1 Build passes: `dotnet build PlanDeck.slnx`
-- [x] 3.2 Guest with `sid` ≠ requested `sessionId` is rejected by the scope guard
-- [x] 3.3 Guest `RevealVotes`/`ResetRound`/`SetActiveTask`/`SelectEstimate` throw; `CastVote` succeeds
-- [x] 3.4 `LoadActiveSessionSeedAsync` returns null for non-active and a seed for active
-- [x] 3.5 Guest join to an active session yields room state including the guest participant
+- [x] 3.1 Build passes: `dotnet build PlanDeck.slnx` — 6a314fa
+- [x] 3.2 Guest with `sid` ≠ requested `sessionId` is rejected by the scope guard — 6a314fa
+- [x] 3.3 Guest `RevealVotes`/`ResetRound`/`SetActiveTask`/`SelectEstimate` throw; `CastVote` succeeds — 6a314fa
+- [x] 3.4 `LoadActiveSessionSeedAsync` returns null for non-active and a seed for active — 6a314fa
+- [x] 3.5 Guest join to an active session yields room state including the guest participant — 6a314fa
 
 #### Manual
 
@@ -460,17 +460,17 @@ Add a Playwright E2E for the full guest path and verify the error pages, complet
 
 #### Automated
 
-- [ ] 4.1 Build passes: `dotnet build PlanDeck.slnx`
-- [ ] 4.2 Full suite still green: `dotnet test PlanDeck.slnx`
-- [ ] 4.3 `_myParticipantId` populated from `oid` for an authenticated member (if component tests exist)
+- [x] 4.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 4.2 Full suite still green: `dotnet test PlanDeck.slnx`
+- [x] 4.3 `_myParticipantId` populated from `oid` for an authenticated member (if component tests exist)
 
 #### Manual
 
-- [ ] 4.4 Organizer copies the join link from an active session
-- [ ] 4.5 Logged-out link opens name prompt; entering a name enters the room
-- [ ] 4.6 Guest can vote and see live state; control buttons absent
-- [ ] 4.7 Member view unchanged with controls; member self-vote highlight works
-- [ ] 4.8 `en`/`pl` strings render correctly
+- [x] 4.4 Organizer copies the join link from an active session
+- [x] 4.5 Logged-out link opens name prompt; entering a name enters the room
+- [x] 4.6 Guest can vote and see live state; control buttons absent
+- [x] 4.7 Member view unchanged with controls; member self-vote highlight works
+- [x] 4.8 `en`/`pl` strings render correctly
 
 ### Phase 5: E2E coverage & guest-facing error states
 

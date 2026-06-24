@@ -115,22 +115,25 @@
                                     }
                                 </MudStack>
 
-                                <MudStack Row="true" Spacing="2" Class="mb-2">
-                                    <MudButton Variant="Variant.Filled" Color="Color.Secondary"
-                                               StartIcon="@Icons.Material.Filled.Visibility" Disabled="@(_busy || _state.IsRevealed)"
-                                               data-testid="reveal"
-                                               OnClick="RevealVotesAsync">
-                                        @L["Voting_Reveal"]
-                                    </MudButton>
-                                    <MudButton Variant="Variant.Outlined" Color="Color.Default"
-                                               StartIcon="@Icons.Material.Filled.Refresh" Disabled="_busy"
-                                               data-testid="reset"
-                                               OnClick="ResetRoundAsync">
-                                        @L["Voting_Reset"]
-                                    </MudButton>
-                                </MudStack>
+                                @if (!_isGuest)
+                                {
+                                    <MudStack Row="true" Spacing="2" Class="mb-2">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                                                   StartIcon="@Icons.Material.Filled.Visibility" Disabled="@(_busy || _state.IsRevealed)"
+                                                   data-testid="reveal"
+                                                   OnClick="RevealVotesAsync">
+                                            @L["Voting_Reveal"]
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                                   StartIcon="@Icons.Material.Filled.Refresh" Disabled="_busy"
+                                                   data-testid="reset"
+                                                   OnClick="ResetRoundAsync">
+                                            @L["Voting_Reset"]
+                                        </MudButton>
+                                    </MudStack>
+                                }
 
-                                @if (_state.IsRevealed)
+                                @if (_state.IsRevealed && !_isGuest)
                                 {
                                     <MudDivider Class="my-3" />
                                     <MudText Typo="Typo.subtitle2" Class="mb-2">@L["Voting_PickEstimate"]</MudText>

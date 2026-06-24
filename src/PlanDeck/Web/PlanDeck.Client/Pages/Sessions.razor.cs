@@ -1,4 +1,5 @@
 using Grpc.Core;
+using Microsoft.JSInterop;
 using MudBlazor;
 using PlanDeck.Client.Components;
 using PlanDeck.Core.Shared.Contracts;
@@ -659,6 +660,26 @@ public partial class Sessions
 
     private string StatusLabel(SessionStatusDto status) =>
         status == SessionStatusDto.Active ? L["Sessions_Active"] : L["Sessions_Draft"];
+
+    private string ShareLink(string code) => $"{Navigation.BaseUri}join/{code}";
+
+    private async Task CopyShareLinkAsync()
+    {
+        if (_selected?.ShareCode is not { Length: > 0 } code)
+        {
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", ShareLink(code));
+            Snackbar.Add(L["Sessions_ShareCopied"], Severity.Success);
+        }
+        catch (JSException)
+        {
+            Snackbar.Add(L["Error_Generic"], Severity.Error);
+        }
+    }
 
     private void Login() =>
         Navigation.NavigateTo(

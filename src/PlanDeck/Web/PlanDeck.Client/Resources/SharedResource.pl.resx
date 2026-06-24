@@ -376,4 +376,43 @@
   <data name="Voting_Description" xml:space="preserve">
     <value>Opis</value>
   </data>
+  <data name="Join_Title" xml:space="preserve">
+    <value>Dołącz do sesji</value>
+  </data>
+  <data name="Join_Prompt" xml:space="preserve">
+    <value>Podaj imię, aby dołączyć do planning pokera jako gość.</value>
+  </data>
+  <data name="Join_NameLabel" xml:space="preserve">
+    <value>Twoje imię</value>
+  </data>
+  <data name="Join_Submit" xml:space="preserve">
+    <value>Dołącz</value>
+  </data>
+  <data name="Join_NameRequired" xml:space="preserve">
+    <value>Podaj imię (maksymalnie 40 znaków).</value>
+  </data>
+  <data name="Join_UnknownCode" xml:space="preserve">
+    <value>Ten link zaproszenia jest nieprawidłowy.</value>
+  </data>
+  <data name="Join_Inactive" xml:space="preserve">
+    <value>Ta sesja nie jest obecnie otwarta do głosowania.</value>
+  </data>
+  <data name="Join_Error" xml:space="preserve">
+    <value>Nie udało się dołączyć do sesji. Spróbuj ponownie.</value>
+  </data>
+  <data name="Join_Or" xml:space="preserve">
+    <value>lub</value>
+  </data>
+  <data name="Join_LoginMicrosoft" xml:space="preserve">
+    <value>Zaloguj się kontem Microsoft</value>
+  </data>
+  <data name="Sessions_ShareLink" xml:space="preserve">
+    <value>Link zaproszenia dla gościa</value>
+  </data>
+  <data name="Sessions_ShareCopy" xml:space="preserve">
+    <value>Kopiuj link</value>
+  </data>
+  <data name="Sessions_ShareCopied" xml:space="preserve">
+    <value>Link skopiowany do schowka.</value>
+  </data>
 </root>

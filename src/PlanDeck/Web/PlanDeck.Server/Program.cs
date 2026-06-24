@@ -57,6 +57,26 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 app.UseStaticFiles();
 
 app.UseAuthentication();
+
+// The member (Cookies/OIDC) scheme is the default, so UseAuthentication only populates
+// HttpContext.User for signed-in members. Guests authenticate via a separate Guest cookie that is
+// never the default scheme; surface that identity here so ordinary gRPC/HTTP requests (e.g.
+// AuthGrpcService.GetCurrentUser) see an authenticated guest instead of an anonymous user and the
+// client stops redirecting guests to the member login.
+app.Use(async (context, next) =>
+{
+    if (context.User?.Identity?.IsAuthenticated != true)
+    {
+        var guest = await context.AuthenticateAsync(GuestAuthentication.SchemeName);
+        if (guest.Succeeded)
+        {
+            context.User = guest.Principal;
+        }
+    }
+
+    await next();
+});
+
 app.UseAuthorization();
 
 var useTestScheme = app.Configuration.GetValue<bool>("Authentication:UseTestScheme");
