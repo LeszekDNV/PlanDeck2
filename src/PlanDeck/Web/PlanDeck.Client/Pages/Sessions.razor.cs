@@ -1,6 +1,7 @@
 using Grpc.Core;
 using Microsoft.JSInterop;
 using MudBlazor;
+using System.Globalization;
 using PlanDeck.Client.Components;
 using PlanDeck.Core.Shared.Contracts;
 using PlanDeck.Core.Shared.Validation;
@@ -47,6 +48,7 @@ public partial class Sessions
     private string _editDescription = string.Empty;
     private bool _editIsAdo;
     private readonly HashSet<Guid> _expandedTaskIds = [];
+    private readonly HashSet<Guid> _writingEstimateTaskIds = [];
 
     private List<SessionMemberDto> _members = [];
     private string _memberEmail = string.Empty;
@@ -528,6 +530,44 @@ public partial class Sessions
         catch (RpcException ex)
         {
             ShowError(ex);
+        }
+    }
+
+    private bool CanWriteEstimate(SessionTaskDto task) =>
+        task.Source == TaskSourceDto.AzureDevOps
+        && task.AdoWorkItemId is not null
+        && !string.IsNullOrWhiteSpace(task.AgreedEstimate)
+        && double.TryParse(task.AgreedEstimate, NumberStyles.Any, CultureInfo.InvariantCulture, out _);
+
+    private bool IsWritingEstimate(Guid taskId) => _writingEstimateTaskIds.Contains(taskId);
+
+    private async Task WriteEstimateToAdoAsync(SessionTaskDto task)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        _writingEstimateTaskIds.Add(task.Id);
+        try
+        {
+            var reply = await SessionService.WriteTaskEstimateToAdoAsync(_selected.Id, task.Id);
+            ReplaceSelected(reply.Session);
+            Snackbar.Add(L["Sessions_WriteEstimateSuccess"], Severity.Success);
+        }
+        catch (RpcException ex)
+        {
+            var message = ex.StatusCode switch
+            {
+                StatusCode.Aborted => L["Sessions_WriteEstimateConflict"],
+                StatusCode.ResourceExhausted => L["Sessions_WriteEstimateRateLimited"],
+                _ => L["Sessions_WriteEstimateFailed"]
+            };
+            Snackbar.Add(message, Severity.Error);
+        }
+        finally
+        {
+            _writingEstimateTaskIds.Remove(task.Id);
         }
     }
 

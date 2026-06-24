@@ -30,6 +30,8 @@ public interface ISessionClientService
 
     Task<SessionDto> RemoveTaskAsync(Guid sessionId, Guid taskId);
 
+    Task<WriteTaskEstimateReply> WriteTaskEstimateToAdoAsync(Guid sessionId, Guid taskId);
+
     Task<SessionDto> ActivateSessionAsync(Guid id);
 
     Task<bool> DeleteSessionAsync(Guid id);

@@ -227,6 +227,15 @@
                                                             }
                                                         </div>
                                                         <MudStack Row="true" Spacing="0" AlignItems="AlignItems.Center">
+                                                            @if (CanWriteEstimate(task))
+                                                            {
+                                                                <MudIconButton Icon="@Icons.Material.Filled.CloudUpload" Color="Color.Success"
+                                                                               Size="Size.Small" data-testid="write-estimate"
+                                                                               aria-label="@L["Sessions_WriteEstimate"]"
+                                                                               Title="@L["Sessions_WriteEstimate"]"
+                                                                               Disabled="@IsWritingEstimate(task.Id)"
+                                                                               OnClick="@(() => WriteEstimateToAdoAsync(task))" />
+                                                            }
                                                             <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
                                                                            Size="Size.Small" aria-label="@L["Sessions_EditTask"]"
                                                                            OnClick="@(() => OpenEditTask(task))" />

@@ -184,6 +184,16 @@ public class SessionsPage
     public ILocator ConfigTask(string title) =>
         _page.Locator("[data-testid=config-task]").Filter(new() { HasText = title });
 
+    public ILocator WriteEstimateButton(string title) =>
+        ConfigTask(title).Locator("[data-testid=write-estimate]");
+
+    public async Task WriteEstimateToAdoAsync(string title)
+    {
+        var button = WriteEstimateButton(title);
+        await button.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await button.ClickAsync();
+    }
+
     public ILocator TaskEntry(string title) =>
         _page.Locator("[data-testid=config-task]").Filter(new() { HasText = title });
 }

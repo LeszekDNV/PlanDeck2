@@ -415,4 +415,19 @@
   <data name="Sessions_ShareCopied" xml:space="preserve">
     <value>Link copied to clipboard.</value>
   </data>
+  <data name="Sessions_WriteEstimate" xml:space="preserve">
+    <value>Write estimate to Azure DevOps</value>
+  </data>
+  <data name="Sessions_WriteEstimateSuccess" xml:space="preserve">
+    <value>Estimate written back to Azure DevOps.</value>
+  </data>
+  <data name="Sessions_WriteEstimateConflict" xml:space="preserve">
+    <value>The work item changed in Azure DevOps. Refresh and try again.</value>
+  </data>
+  <data name="Sessions_WriteEstimateRateLimited" xml:space="preserve">
+    <value>Azure DevOps is rate limiting requests. Please try again shortly.</value>
+  </data>
+  <data name="Sessions_WriteEstimateFailed" xml:space="preserve">
+    <value>Could not write the estimate to Azure DevOps.</value>
+  </data>
 </root>

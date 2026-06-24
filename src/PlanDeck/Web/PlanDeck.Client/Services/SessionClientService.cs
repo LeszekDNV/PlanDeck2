@@ -92,6 +92,16 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
         return reply.Session;
     }
 
+    public async Task<WriteTaskEstimateReply> WriteTaskEstimateToAdoAsync(Guid sessionId, Guid taskId)
+    {
+        var service = channel.CreateGrpcService<ISessionService>();
+        return await service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = sessionId,
+            TaskId = taskId
+        });
+    }
+
     public async Task<SessionDto> ActivateSessionAsync(Guid id)
     {
         var service = channel.CreateGrpcService<ISessionService>();

@@ -90,6 +90,43 @@ public class SessionsTests : PageTest
     }
 
     [Test]
+    public async Task WriteEstimateToAdo_AfterAgreedNumericEstimate_ShowsSuccess()
+    {
+        // The test-scheme fake serves a fixed work item (id 1001) and its WriteEstimateAsync
+        // succeeds (revision + 1), so the full round-trip runs without a real Azure DevOps.
+        const string adoTaskTitle = "Import work items from Azure DevOps";
+        var sessionName = $"E2E WriteBack {Guid.NewGuid():N}";
+        var seedTask = $"Seed {Guid.NewGuid():N}";
+
+        var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+
+        await sessions.GotoAsync();
+        await sessions.CreateSessionAsync(sessionName, seedTask);
+        await sessions.SelectSessionAsync(sessionName);
+        await sessions.ImportAdoWorkItemAsync(1001);
+        await sessions.ActivateAsync();
+
+        // A numeric agreed estimate only exists after a concluded round, so drive a
+        // single-voter round (owner votes, reveals, and picks) on the imported ADO task.
+        await sessions.JoinVotingAsync();
+        var voting = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
+        await voting.WaitForLoadedAsync();
+        await voting.SelectTaskAsync(adoTaskTitle);
+        await voting.VoteAsync("3");
+        await voting.RevealAsync();
+        await voting.PickEstimateAsync("3");
+        await Expect(voting.AgreedEstimate).ToContainTextAsync("3", new() { Timeout = 15_000 });
+
+        // Back in the session config the ADO task now exposes the write-back action.
+        await sessions.GotoAsync();
+        await sessions.SelectSessionAsync(sessionName);
+        await sessions.WriteEstimateToAdoAsync(adoTaskTitle);
+
+        await Expect(Page.GetByText("Estimate written back to Azure DevOps."))
+            .ToBeVisibleAsync(new() { Timeout = 15_000 });
+    }
+
+    [Test]
     public async Task Sessions_RendersOnMobileViewport()
     {
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);

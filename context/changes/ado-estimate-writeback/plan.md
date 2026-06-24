@@ -361,27 +361,27 @@ No schema change. `AdoRevision` already exists; only its value is updated post-w
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 1.3 New write-back unit tests cover all nine branches and pass
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — a067c1f
+- [x] 1.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — a067c1f
+- [x] 1.3 New write-back unit tests cover all nine branches and pass — a067c1f
 
 #### Manual
 
-- [ ] 1.4 Code review confirms tenant-scoping and no write for non-ADO/non-numeric tasks
-- [ ] 1.5 Status mapping matches the table (Aborted / ResourceExhausted / Unavailable / NotFound / FailedPrecondition)
+- [x] 1.4 Code review confirms tenant-scoping and no write for non-ADO/non-numeric tasks
+- [x] 1.5 Status mapping matches the table (Aborted / ResourceExhausted / Unavailable / NotFound / FailedPrecondition)
 
 ### Phase 2: Client action, localization, and E2E round-trip
 
 #### Automated
 
-- [ ] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 Unit tests still pass
-- [ ] 2.3 E2E round-trip test passes locally (Aspire + Podman)
-- [ ] 2.4 Both `.resx` and `.pl.resx` contain every new key
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 2.2 Unit tests still pass
+- [x] 2.3 E2E round-trip test passes locally (Aspire + Podman)
+- [x] 2.4 Both `.resx` and `.pl.resx` contain every new key
 
 #### Manual
 
-- [ ] 2.5 Action shows only for numeric ADO estimates; absent for T-Shirt / `?` / `☕`
-- [ ] 2.6 Success snackbar shown; stored revision advances (no false second-write conflict)
-- [ ] 2.7 Conflict / rate-limit / failure each surface the correct distinct localized message
-- [ ] 2.8 Polish locale shows translated strings for all five keys
+- [x] 2.5 Action shows only for numeric ADO estimates; absent for T-Shirt / `?` / `☕`
+- [x] 2.6 Success snackbar shown; stored revision advances (no false second-write conflict)
+- [x] 2.7 Conflict / rate-limit / failure each surface the correct distinct localized message
+- [x] 2.8 Polish locale shows translated strings for all five keys

@@ -415,4 +415,19 @@
   <data name="Sessions_ShareCopied" xml:space="preserve">
     <value>Link skopiowany do schowka.</value>
   </data>
+  <data name="Sessions_WriteEstimate" xml:space="preserve">
+    <value>Zapisz estymatę do Azure DevOps</value>
+  </data>
+  <data name="Sessions_WriteEstimateSuccess" xml:space="preserve">
+    <value>Estymata zapisana w Azure DevOps.</value>
+  </data>
+  <data name="Sessions_WriteEstimateConflict" xml:space="preserve">
+    <value>Element roboczy zmienił się w Azure DevOps. Odśwież i spróbuj ponownie.</value>
+  </data>
+  <data name="Sessions_WriteEstimateRateLimited" xml:space="preserve">
+    <value>Azure DevOps ogranicza liczbę żądań. Spróbuj ponownie za chwilę.</value>
+  </data>
+  <data name="Sessions_WriteEstimateFailed" xml:space="preserve">
+    <value>Nie udało się zapisać estymaty do Azure DevOps.</value>
+  </data>
 </root>
