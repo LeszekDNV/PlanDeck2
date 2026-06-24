@@ -285,14 +285,14 @@ Author a human-followable runbook that proves the four runtime-contract checks a
 #### Automated
 
 - [x] 2.1 `.github/workflows/azure-dev.yml` exists and is valid YAML
-- [ ] 2.2 Workflow run is green on push to main (provision + deploy + migrate)
-- [ ] 2.3 `az containerapp show` reports Running + external FQDN
+- [x] 2.2 Workflow run is green on push to main (provision + deploy + migrate)
+- [x] 2.3 `az containerapp show` reports Running + external FQDN
 
 #### Manual
 
-- [ ] 2.4 Azure SQL contains EF tables after migration step (__EFMigrationsHistory populated)
-- [ ] 2.5 No Azure auth secrets stored in repo/GitHub Secrets (OIDC federated only)
-- [ ] 2.6 Second push redeploys cleanly; migration step is a no-op
+- [x] 2.4 Azure SQL contains EF tables after migration step (__EFMigrationsHistory populated)
+- [x] 2.5 No Azure auth secrets stored in repo/GitHub Secrets (OIDC federated only)
+- [x] 2.6 Second push redeploys cleanly; migration step is a no-op
 
 ### Phase 3: Manual validation runbook + first run
 
