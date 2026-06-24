@@ -11,4 +11,8 @@ public interface ICurrentUserContext
     string? DisplayName { get; }
 
     string? Email { get; }
+
+    string? ParticipantId => null;
+
+    bool IsGuest => false;
 }

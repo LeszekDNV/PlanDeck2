@@ -416,30 +416,30 @@ Add a Playwright E2E for the full guest path and verify the error pages, complet
 
 #### Automated
 
-- [x] 1.1 Build passes: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Migration applies cleanly on startup / `dotnet ef database update`
-- [x] 1.3 `ShareCodeGenerator` unit tests pass (charset, length, uniqueness)
-- [x] 1.4 Activation assigns a non-null unique `ShareCode`; re-activation does not change it
-- [x] 1.5 `GetActiveSessionByShareCodeAsync` returns null for Draft, the session for Active, ignoring tenant filter
+- [x] 1.1 Build passes: `dotnet build PlanDeck.slnx` — 9818eea
+- [x] 1.2 Migration applies cleanly on startup / `dotnet ef database update` — 9818eea
+- [x] 1.3 `ShareCodeGenerator` unit tests pass (charset, length, uniqueness) — 9818eea
+- [x] 1.4 Activation assigns a non-null unique `ShareCode`; re-activation does not change it — 9818eea
+- [x] 1.5 `GetActiveSessionByShareCodeAsync` returns null for Draft, the session for Active, ignoring tenant filter — 9818eea
 
 #### Manual
 
-- [x] 1.6 Activating a session yields a code populated in the DB
-- [x] 1.7 A Draft session has a null code
+- [x] 1.6 Activating a session yields a code populated in the DB — 9818eea
+- [x] 1.7 A Draft session has a null code — 9818eea
 
 ### Phase 2: Guest credential & anonymous redeem endpoint
 
 #### Automated
 
-- [ ] 2.1 Build passes: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 `POST /guest/join` with valid active code sets `PlanDeck.Guest` cookie and returns session id
-- [ ] 2.3 Unknown code → 404 no cookie; Draft/ended code → 409 no cookie
-- [ ] 2.4 Empty / >40-char name → 400 no cookie; name trimmed in the `name` claim
-- [ ] 2.5 Guest principal resolves `IsGuest == true` and `ParticipantId == oid`
+- [x] 2.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 2.2 `POST /guest/join` with valid active code sets `PlanDeck.Guest` cookie and returns session id
+- [x] 2.3 Unknown code → 404 no cookie; Draft/ended code → 409 no cookie
+- [x] 2.4 Empty / >40-char name → 400 no cookie; name trimmed in the `name` claim
+- [x] 2.5 Guest principal resolves `IsGuest == true` and `ParticipantId == oid`
 
 #### Manual
 
-- [ ] 2.6 `/guest/join` with a real active code sets the guest cookie and returns the session id
+- [x] 2.6 `/guest/join` with a real active code sets the guest cookie and returns the session id
 
 ### Phase 3: Hub guest support, isolation & vote-only enforcement
 

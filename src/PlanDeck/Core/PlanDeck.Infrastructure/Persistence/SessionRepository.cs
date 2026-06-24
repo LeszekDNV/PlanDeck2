@@ -78,4 +78,14 @@ public sealed class SessionRepository(PlanDeckDbContext db, ICurrentUserContext 
 
         return session;
     }
+
+    public Task<bool> ShareCodeExistsAsync(string shareCode, CancellationToken cancellationToken)
+    {
+        // Existence probe across any status (ignoring the tenant filter) so the redeem endpoint can
+        // tell an unknown code (404) apart from a code whose session is no longer active (409).
+        return db.Sessions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .AnyAsync(s => s.ShareCode == shareCode, cancellationToken);
+    }
 }

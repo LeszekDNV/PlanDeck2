@@ -65,7 +65,8 @@ public static class ServiceCollectionExtensions
                 services
                     .AddAuthentication(TestAuthenticationHandler.SchemeName)
                     .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
-                        TestAuthenticationHandler.SchemeName, null);
+                        TestAuthenticationHandler.SchemeName, null)
+                    .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
 
                 services.AddAuthorization();
                 services.AddScoped<IAzureDevOpsWorkItemClient, FakeAzureDevOpsWorkItemClient>();
@@ -88,7 +89,8 @@ public static class ServiceCollectionExtensions
                         ? OpenIdConnectDefaults.AuthenticationScheme
                         : CookieAuthenticationDefaults.AuthenticationScheme;
                 })
-                .AddCookie();
+                .AddCookie()
+                .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
 
             if (isMicrosoftAuthConfigured)
             {

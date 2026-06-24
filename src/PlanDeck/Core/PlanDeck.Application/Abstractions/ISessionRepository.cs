@@ -17,6 +17,8 @@ public interface ISessionRepository
     Task<bool> SetAgreedEstimateAsync(Guid sessionId, Guid taskId, string? estimate, CancellationToken cancellationToken);
 
     Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(string shareCode, CancellationToken cancellationToken);
+
+    Task<bool> ShareCodeExistsAsync(string shareCode, CancellationToken cancellationToken);
 }
 
 public sealed record GuestSessionReference(Guid SessionId, Guid TenantId);

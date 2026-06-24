@@ -579,5 +579,8 @@ public sealed class SessionGrpcServiceTests
                 ? null
                 : new GuestSessionReference(session.Id, session.TenantId));
         }
+
+        public Task<bool> ShareCodeExistsAsync(string shareCode, CancellationToken cancellationToken)
+            => Task.FromResult(_sessions.Any(s => s.ShareCode == shareCode));
     }
 }

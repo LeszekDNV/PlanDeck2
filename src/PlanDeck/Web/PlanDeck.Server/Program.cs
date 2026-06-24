@@ -1,6 +1,8 @@
 using PlanDeck.Server.Extensions;
+using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Services;
 using PlanDeck.Server.Hubs;
+using PlanDeck.Server.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -84,6 +86,43 @@ app.MapGet("/auth/logout", () =>
 
     return Results.SignOut(new AuthenticationProperties { RedirectUri = "/" }, schemes);
 });
+
+// Anonymous guest redeem: exchange a share code + temporary name for a session-scoped guest cookie.
+app.MapPost("/guest/join", async (
+    GuestJoinRequest request,
+    HttpContext httpContext,
+    ISessionRepository sessions,
+    CancellationToken cancellationToken) =>
+{
+    var displayName = request.DisplayName?.Trim();
+    if (string.IsNullOrEmpty(displayName) || displayName.Length > 40)
+    {
+        return Results.BadRequest();
+    }
+
+    var code = request.Code?.Trim();
+    if (string.IsNullOrEmpty(code))
+    {
+        return Results.NotFound();
+    }
+
+    var session = await sessions.GetActiveSessionByShareCodeAsync(code, cancellationToken);
+    if (session is null)
+    {
+        return await sessions.ShareCodeExistsAsync(code, cancellationToken)
+            ? Results.Conflict()
+            : Results.NotFound();
+    }
+
+    var principal = GuestAuthentication.BuildPrincipal(
+        Guid.NewGuid(), session.TenantId, displayName, session.SessionId);
+    await httpContext.SignInAsync(
+        GuestAuthentication.SchemeName,
+        principal,
+        new AuthenticationProperties { IsPersistent = true });
+
+    return Results.Ok(new GuestJoinResponse(session.SessionId));
+}).AllowAnonymous();
 
 
 // Configure the HTTP request pipeline.

@@ -21,6 +21,11 @@ public sealed class HttpContextCurrentUserContext(
 
     public string? Email => ReadStringClaim("email") ?? ReadStringClaim("preferred_username");
 
+    public string? ParticipantId => ReadStringClaim("oid");
+
+    public bool IsGuest =>
+        string.Equals(ReadStringClaim("is_guest"), "true", StringComparison.OrdinalIgnoreCase);
+
     // Prefer an explicitly supplied principal (SignalR hub invocations) and fall back to the
     // ambient HttpContext for HTTP/gRPC requests.
     private ClaimsPrincipal? Principal =>
