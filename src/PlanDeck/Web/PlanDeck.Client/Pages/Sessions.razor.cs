@@ -1,5 +1,6 @@
 using Grpc.Core;
 using MudBlazor;
+using PlanDeck.Client.Components;
 using PlanDeck.Core.Shared.Contracts;
 using PlanDeck.Core.Shared.Validation;
 
@@ -13,7 +14,6 @@ public partial class Sessions
     private bool _savingConfig;
     private bool _addingTask;
     private bool _activating;
-    private bool _adoLoading;
 
     private List<SessionDto> _sessions = [];
     private List<TeamDto> _teams = [];
@@ -28,9 +28,6 @@ public partial class Sessions
     private string _bulkText = string.Empty;
     private bool _bulkExpanded;
     private readonly List<NewSessionTaskDto> _stagedTasks = [];
-
-    private List<AzureDevOpsWorkItemDto> _adoItems = [];
-    private readonly HashSet<int> _selectedAdo = [];
 
     private string _configName = string.Empty;
     private Guid? _configTeamId;
@@ -48,17 +45,20 @@ public partial class Sessions
     private string _editTitle = string.Empty;
     private string _editDescription = string.Empty;
     private bool _editIsAdo;
+    private readonly HashSet<Guid> _expandedTaskIds = [];
 
     private List<SessionMemberDto> _members = [];
     private string _memberEmail = string.Empty;
     private string _memberDisplayName = string.Empty;
     private bool _assigningMember;
 
-    private bool _configAdoLoading;
-    private List<AzureDevOpsWorkItemDto> _configAdoItems = [];
-    private readonly HashSet<int> _configSelectedAdo = [];
-
     private bool _isLocked => _selected?.Status == SessionStatusDto.Active;
+
+    private IReadOnlyCollection<int> StagedAdoIds =>
+        _stagedTasks.Where(t => t.AdoWorkItemId.HasValue).Select(t => t.AdoWorkItemId!.Value).ToArray();
+
+    private IReadOnlyCollection<int> SelectedSessionAdoIds =>
+        _selected?.Tasks.Where(t => t.AdoWorkItemId.HasValue).Select(t => t.AdoWorkItemId!.Value).ToArray() ?? [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,8 +107,6 @@ public partial class Sessions
         _bulkText = string.Empty;
         _bulkExpanded = false;
         _stagedTasks.Clear();
-        _adoItems = [];
-        _selectedAdo.Clear();
         _createOpen = true;
     }
 
@@ -153,39 +151,24 @@ public partial class Sessions
         _bulkText = string.Empty;
     }
 
-    private async Task LoadAdoAsync()
+    private async Task OpenAdoImportForCreate()
     {
-        _adoLoading = true;
-        try
+        var parameters = new DialogParameters<AdoImportDialog>
         {
-            _adoItems = (await AdoService.ImportWorkItemsAsync()).ToList();
-            _selectedAdo.Clear();
-        }
-        catch (RpcException ex)
+            { x => x.AlreadyPresentIds, StagedAdoIds }
+        };
+
+        var dialog = await Dialog.ShowAsync<AdoImportDialog>(L["Sessions_ImportAdo"], parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: IReadOnlyList<AzureDevOpsWorkItemDto> items })
         {
-            ShowError(ex);
-        }
-        finally
-        {
-            _adoLoading = false;
+            StageAdoItems(items);
         }
     }
 
-    private void ToggleAdo(int id, bool selected)
+    private void StageAdoItems(IReadOnlyList<AzureDevOpsWorkItemDto> items)
     {
-        if (selected)
-        {
-            _selectedAdo.Add(id);
-        }
-        else
-        {
-            _selectedAdo.Remove(id);
-        }
-    }
-
-    private void StageSelectedAdo()
-    {
-        foreach (var item in _adoItems.Where(i => _selectedAdo.Contains(i.Id)))
+        foreach (var item in items)
         {
             if (_stagedTasks.Any(t => t.AdoWorkItemId == item.Id))
             {
@@ -203,8 +186,6 @@ public partial class Sessions
                 State = item.State
             });
         }
-
-        _selectedAdo.Clear();
     }
 
     private async Task SubmitCreateAsync()
@@ -214,9 +195,6 @@ public partial class Sessions
             Snackbar.Add(L["Sessions_NameRequired"], Severity.Error);
             return;
         }
-
-        // Fold in any ADO work items that were checked but not explicitly staged yet.
-        StageSelectedAdo();
 
         _createSubmitting = true;
         try
@@ -255,8 +233,7 @@ public partial class Sessions
             _configTaskDescription = string.Empty;
             _configBulkText = string.Empty;
             _configBulkExpanded = false;
-            _configAdoItems = [];
-            _configSelectedAdo.Clear();
+            _expandedTaskIds.Clear();
             await LoadMembersAsync();
             await LoadTeamMembersAsync();
         }
@@ -472,6 +449,14 @@ public partial class Sessions
         }
     }
 
+    private void ToggleDescription(Guid taskId)
+    {
+        if (!_expandedTaskIds.Add(taskId))
+        {
+            _expandedTaskIds.Remove(taskId);
+        }
+    }
+
     private void OpenEditTask(SessionTaskDto task)
     {
         _editTaskId = task.Id;
@@ -545,74 +530,57 @@ public partial class Sessions
         }
     }
 
-    private async Task LoadConfigAdoAsync()
-    {
-        _configAdoLoading = true;
-        try
-        {
-            _configAdoItems = (await AdoService.ImportWorkItemsAsync()).ToList();
-            _configSelectedAdo.Clear();
-        }
-        catch (RpcException ex)
-        {
-            ShowError(ex);
-        }
-        finally
-        {
-            _configAdoLoading = false;
-        }
-    }
-
-    private void ToggleConfigAdo(int id, bool selected)
-    {
-        if (selected)
-        {
-            _configSelectedAdo.Add(id);
-        }
-        else
-        {
-            _configSelectedAdo.Remove(id);
-        }
-    }
-
-    private async Task AddSelectedAdoTasksAsync()
+    private async Task OpenAdoImportForConfig()
     {
         if (_selected is null)
         {
             return;
         }
 
-        var toAdd = _configAdoItems.Where(i => _configSelectedAdo.Contains(i.Id)).ToList();
-        if (toAdd.Count == 0)
+        var parameters = new DialogParameters<AdoImportDialog>
+        {
+            { x => x.AlreadyPresentIds, SelectedSessionAdoIds }
+        };
+
+        var dialog = await Dialog.ShowAsync<AdoImportDialog>(L["Sessions_ImportAdo"], parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: IReadOnlyList<AzureDevOpsWorkItemDto> items })
+        {
+            await AddAdoItemsAsync(items);
+        }
+    }
+
+    private async Task AddAdoItemsAsync(IReadOnlyList<AzureDevOpsWorkItemDto> items)
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        var newTasks = items
+            .Where(item => _selected.Tasks.All(t => t.AdoWorkItemId != item.Id))
+            .Select(item => new NewSessionTaskDto
+            {
+                Title = item.Title,
+                Description = item.Description,
+                Source = TaskSourceDto.AzureDevOps,
+                AdoWorkItemId = item.Id,
+                AdoRevision = item.Revision,
+                WorkItemType = item.WorkItemType,
+                State = item.State
+            })
+            .ToList();
+
+        if (newTasks.Count == 0)
         {
             return;
         }
 
         _addingTask = true;
-        SessionDto? updated = null;
         try
         {
-            foreach (var item in toAdd)
-            {
-                if (_selected.Tasks.Any(t => t.AdoWorkItemId == item.Id))
-                {
-                    continue;
-                }
-
-                updated = await SessionService.AddTaskAsync(_selected.Id, new NewSessionTaskDto
-                {
-                    Title = item.Title,
-                    Description = item.Description,
-                    Source = TaskSourceDto.AzureDevOps,
-                    AdoWorkItemId = item.Id,
-                    AdoRevision = item.Revision,
-                    WorkItemType = item.WorkItemType,
-                    State = item.State
-                });
-            }
-
-            _configSelectedAdo.Clear();
-            _configAdoItems = [];
+            var updated = await SessionService.AddTasksAsync(_selected.Id, newTasks);
+            ReplaceSelected(updated);
         }
         catch (RpcException ex)
         {
@@ -620,11 +588,6 @@ public partial class Sessions
         }
         finally
         {
-            if (updated is not null)
-            {
-                ReplaceSelected(updated);
-            }
-
             _addingTask = false;
         }
     }

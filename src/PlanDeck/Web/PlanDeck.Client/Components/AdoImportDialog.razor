@@ -1,0 +1,15 @@
+@using PlanDeck.Core.Shared.Contracts
+@inject IStringLocalizer<SharedResource> L
+
+<MudDialog>
+    <DialogContent>
+        <AdoImportPanel @ref="_panel" AlreadyPresentIds="AlreadyPresentIds" SelectedCountChanged="OnCountChanged" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">@L["Sessions_Cancel"]</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   Disabled="@(_selectedCount == 0)" OnClick="Add">
+            @($"{L["Sessions_AddSelected"]} ({_selectedCount})")
+        </MudButton>
+    </DialogActions>
+</MudDialog>

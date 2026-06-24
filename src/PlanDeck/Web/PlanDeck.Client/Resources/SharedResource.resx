@@ -181,6 +181,21 @@
   <data name="Sessions_AddSelected" xml:space="preserve">
     <value>Add selected</value>
   </data>
+  <data name="Sessions_AdoWorkItemType" xml:space="preserve">
+    <value>Work item type</value>
+  </data>
+  <data name="Sessions_AdoState" xml:space="preserve">
+    <value>State</value>
+  </data>
+  <data name="Sessions_AdoLimit" xml:space="preserve">
+    <value>Max items</value>
+  </data>
+  <data name="Sessions_AdoNoResults" xml:space="preserve">
+    <value>No work items found</value>
+  </data>
+  <data name="Sessions_AdoFilter" xml:space="preserve">
+    <value>Search by ID or title</value>
+  </data>
   <data name="Sessions_Activate" xml:space="preserve">
     <value>Activate</value>
   </data>

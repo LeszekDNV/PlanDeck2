@@ -1,0 +1,64 @@
+@using PlanDeck.Client.Services
+@using PlanDeck.Core.Shared.Contracts
+@inject IAzureDevOpsClientService AdoService
+@inject IStringLocalizer<SharedResource> L
+@inject ISnackbar Snackbar
+
+<div class="d-flex flex-column gap-2 mb-2">
+    <MudSelect T="string" Label="@L["Sessions_AdoWorkItemType"]" MultiSelection="true"
+               @bind-SelectedValues="_selectedTypes" Dense="true">
+        @foreach (var type in WorkItemTypes)
+        {
+            <MudSelectItem T="string" Value="@type">@type</MudSelectItem>
+        }
+    </MudSelect>
+    <MudSelect T="string" Label="@L["Sessions_AdoState"]" MultiSelection="true"
+               @bind-SelectedValues="_selectedStates" Dense="true">
+        @foreach (var state in States)
+        {
+            <MudSelectItem T="string" Value="@state">@state</MudSelectItem>
+        }
+    </MudSelect>
+    <MudNumericField T="int" Label="@L["Sessions_AdoLimit"]" @bind-Value="_limit" Min="1" Max="200" />
+    <div>
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CloudDownload"
+                   Disabled="_loading" OnClick="LoadAsync">
+            @L["Sessions_ImportAdo"]
+        </MudButton>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+}
+else if (_loaded && _items.Count == 0)
+{
+    <MudText Typo="Typo.body2">@L["Sessions_AdoNoResults"]</MudText>
+}
+else if (_items.Count > 0)
+{
+    <MudTextField @bind-Value="_filter" Immediate="true" Clearable="true"
+                  Placeholder="@L["Sessions_AdoFilter"]" Margin="Margin.Dense" Class="mb-2"
+                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+
+    <MudPaper Class="pa-2 mb-2" MaxHeight="200px" Style="overflow:auto">
+        @if (!FilteredItems.Any())
+        {
+            <MudText Typo="Typo.body2">@L["Sessions_AdoNoResults"]</MudText>
+        }
+        else
+        {
+            @foreach (var item in FilteredItems)
+            {
+                var id = item.Id;
+                var present = AlreadyPresentIds.Contains(id);
+                <MudCheckBox T="bool" Dense="true" Disabled="@present"
+                             Value="@_selectedIds.Contains(id)"
+                             ValueChanged="@((bool v) => Toggle(id, v))">
+                    <MudHighlighter Text="@($"#{item.Id} {item.Title}")" HighlightedText="@_filter" />
+                </MudCheckBox>
+            }
+        }
+    </MudPaper>
+}

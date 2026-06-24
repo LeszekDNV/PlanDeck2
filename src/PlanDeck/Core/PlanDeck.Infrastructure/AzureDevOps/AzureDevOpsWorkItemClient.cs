@@ -61,6 +61,7 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             "System.WorkItemType",
             _options.EstimateField,
             _options.DescriptionField,
+            _options.ReproStepsField,
             _options.AcceptanceCriteriaField
         };
 
@@ -120,6 +121,11 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
     private string? BuildDescription(JsonElement fields)
     {
         var description = HtmlToText(GetFieldString(fields, _options.DescriptionField));
+        if (description.Length == 0)
+        {
+            description = HtmlToText(GetFieldString(fields, _options.ReproStepsField));
+        }
+
         var acceptance = HtmlToText(GetFieldString(fields, _options.AcceptanceCriteriaField));
 
         var builder = new StringBuilder();

@@ -12,6 +12,8 @@ public sealed class AzureDevOpsOptions
 
     public string DescriptionField { get; set; } = "System.Description";
 
+    public string ReproStepsField { get; set; } = "Microsoft.VSTS.TCM.ReproSteps";
+
     public string AcceptanceCriteriaField { get; set; } = "Microsoft.VSTS.Common.AcceptanceCriteria";
 
     public string PersonalAccessToken { get; set; } = string.Empty;
