@@ -450,6 +450,44 @@ public sealed class SessionGrpcServiceTests
         await Task.CompletedTask;
     }
 
+    [Test]
+    public void ListSessions_AsGuest_ThrowsPermissionDenied()
+    {
+        _currentUser.IsGuest = true;
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.ListSessionsAsync(new ListSessionsRequest()));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
+    public void GetSession_AsGuest_ForForeignSession_ThrowsPermissionDenied()
+    {
+        _currentUser.IsGuest = true;
+        _currentUser.SessionScope = Guid.NewGuid();
+
+        var ex = Assert.ThrowsAsync<RpcException>(
+            () => _service.GetSessionAsync(new GetSessionRequest { Id = Guid.NewGuid() }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
+    public async Task GetSession_AsGuest_ForOwnSession_IsAllowed()
+    {
+        var created = await _service.CreateSessionAsync(new CreateSessionRequest
+        {
+            Name = "Sprint 1",
+            ScaleType = VotingScaleTypeDto.Fibonacci
+        });
+        var sessionId = created.Session.Id;
+
+        _currentUser.IsGuest = true;
+        _currentUser.SessionScope = sessionId;
+
+        var reply = await _service.GetSessionAsync(new GetSessionRequest { Id = sessionId });
+
+        Assert.That(reply.Session.Id, Is.EqualTo(sessionId));
+    }
+
     private sealed class StubShareCodeGenerator : IShareCodeGenerator
     {
         public int CallCount { get; private set; }
@@ -468,6 +506,8 @@ public sealed class SessionGrpcServiceTests
         public bool IsAuthenticated { get; set; } = true;
         public string? DisplayName { get; set; }
         public string? Email { get; set; } = "creator@example.com";
+        public bool IsGuest { get; set; }
+        public Guid? SessionScope { get; set; }
     }
 
     private sealed class FakeSessionMemberRepository : ISessionMemberRepository

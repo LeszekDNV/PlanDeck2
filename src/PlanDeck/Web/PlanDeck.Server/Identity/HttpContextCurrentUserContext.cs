@@ -26,6 +26,9 @@ public sealed class HttpContextCurrentUserContext(
     public bool IsGuest =>
         string.Equals(ReadStringClaim("is_guest"), "true", StringComparison.OrdinalIgnoreCase);
 
+    public Guid? SessionScope =>
+        Guid.TryParse(ReadStringClaim("sid"), CultureInfo.InvariantCulture, out var sid) ? sid : null;
+
     // Prefer an explicitly supplied principal (SignalR hub invocations) and fall back to the
     // ambient HttpContext for HTTP/gRPC requests.
     private ClaimsPrincipal? Principal =>

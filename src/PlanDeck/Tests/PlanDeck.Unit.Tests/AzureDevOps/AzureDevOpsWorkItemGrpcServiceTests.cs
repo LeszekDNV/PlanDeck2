@@ -14,7 +14,7 @@ public sealed class AzureDevOpsWorkItemGrpcServiceTests
     public void SetUp()
     {
         _client = new FakeAzureDevOpsWorkItemClient();
-        _service = new AzureDevOpsWorkItemGrpcService(_client);
+        _service = new AzureDevOpsWorkItemGrpcService(_client, new FakeCurrentUserContext());
     }
 
     [Test]
@@ -111,5 +111,14 @@ public sealed class AzureDevOpsWorkItemGrpcServiceTests
             return Task.FromResult(new AzureDevOpsWriteEstimateResult(
                 request.WorkItemId, request.ExpectedRevision.GetValueOrDefault() + 1));
         }
+    }
+
+    private sealed class FakeCurrentUserContext : ICurrentUserContext
+    {
+        public Guid TenantId { get; } = Guid.NewGuid();
+        public Guid UserId { get; } = Guid.NewGuid();
+        public bool IsAuthenticated => true;
+        public string? DisplayName => null;
+        public string? Email => "member@example.com";
     }
 }

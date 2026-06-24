@@ -15,4 +15,6 @@ public interface ICurrentUserContext
     string? ParticipantId => null;
 
     bool IsGuest => false;
+
+    Guid? SessionScope => null;
 }

@@ -21,6 +21,8 @@ public sealed class SessionGrpcService(
 
     public async Task<CreateSessionReply> CreateSessionAsync(CreateSessionRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var name = NormalizeName(request.Name);
         var scaleType = (VotingScaleType)(int)request.ScaleType;
         var scaleValues = ResolveScaleValues(scaleType, request.CustomScaleValues);
@@ -73,12 +75,21 @@ public sealed class SessionGrpcService(
 
     public async Task<ListSessionsReply> ListSessionsAsync(ListSessionsRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var sessions = await repository.GetSessionsAsync(context.CancellationToken);
         return new ListSessionsReply { Sessions = sessions.Select(ToDto).ToList() };
     }
 
     public async Task<GetSessionReply> GetSessionAsync(GetSessionRequest request, CallContext context = default)
     {
+        // Guests may read only the single session their share-link cookie is scoped to; any other
+        // id in the tenant is off-limits even though the tenant filter would otherwise resolve it.
+        if (currentUser.IsGuest && request.Id != currentUser.SessionScope)
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied, "Guests can only access their own session."));
+        }
+
         try
         {
             var session = await LoadAsync(request.Id, context.CancellationToken);
@@ -92,6 +103,8 @@ public sealed class SessionGrpcService(
 
     public async Task<UpdateSessionConfigReply> UpdateSessionConfigAsync(UpdateSessionConfigRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var name = NormalizeName(request.Name);
         var scaleType = (VotingScaleType)(int)request.ScaleType;
         var scaleValues = ResolveScaleValues(scaleType, request.CustomScaleValues);
@@ -119,6 +132,8 @@ public sealed class SessionGrpcService(
 
     public async Task<AddTaskReply> AddTaskAsync(AddTaskRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         try
         {
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
@@ -143,6 +158,8 @@ public sealed class SessionGrpcService(
 
     public async Task<AddTasksReply> AddTasksAsync(AddTasksRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         try
         {
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
@@ -178,6 +195,8 @@ public sealed class SessionGrpcService(
 
     public async Task<UpdateTaskReply> UpdateTaskAsync(UpdateTaskRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var title = request.Title?.Trim() ?? string.Empty;
         if (title.Length == 0)
         {
@@ -209,6 +228,8 @@ public sealed class SessionGrpcService(
 
     public async Task<RemoveTaskReply> RemoveTaskAsync(RemoveTaskRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         try
         {
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
@@ -230,6 +251,8 @@ public sealed class SessionGrpcService(
 
     public async Task<ActivateSessionReply> ActivateSessionAsync(ActivateSessionRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         try
         {
             var session = await LoadAsync(request.Id, context.CancellationToken);
@@ -237,8 +260,9 @@ public sealed class SessionGrpcService(
             {
                 session.Status = SessionStatus.Active;
                 // Mint the share code on first activation so guests can join via link; once set it
-                // is stable for the life of the session.
-                session.ShareCode ??= shareCodeGenerator.Generate();
+                // is stable for the life of the session. Regenerate on the rare collision so a clash
+                // surfaces as a fresh code rather than a failed activation.
+                session.ShareCode ??= await GenerateUniqueShareCodeAsync(context.CancellationToken);
                 await repository.UpdateSessionAsync(session, context.CancellationToken);
             }
 
@@ -252,6 +276,8 @@ public sealed class SessionGrpcService(
 
     public async Task<DeleteSessionReply> DeleteSessionAsync(DeleteSessionRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var deleted = await repository.DeleteSessionAsync(request.Id, context.CancellationToken);
         return new DeleteSessionReply { Deleted = deleted };
     }
@@ -260,6 +286,23 @@ public sealed class SessionGrpcService(
     {
         return await repository.GetSessionAsync(id, cancellationToken)
             ?? throw new SessionNotFoundException(id);
+    }
+
+    private async Task<string> GenerateUniqueShareCodeAsync(CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 5;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var code = shareCodeGenerator.Generate();
+            if (!await repository.ShareCodeExistsAsync(code, cancellationToken))
+            {
+                return code;
+            }
+        }
+
+        throw new RpcException(new Status(
+            StatusCode.Internal,
+            "Could not allocate a unique share code; please retry."));
     }
 
     private async Task<PlanningSession> LoadDraftAsync(Guid id, CancellationToken cancellationToken)

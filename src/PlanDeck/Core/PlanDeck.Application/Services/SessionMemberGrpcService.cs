@@ -7,10 +7,12 @@ using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
 
-public sealed class SessionMemberGrpcService(ISessionMemberRepository repository) : ISessionMemberService
+public sealed class SessionMemberGrpcService(ISessionMemberRepository repository, ICurrentUserContext currentUser) : ISessionMemberService
 {
     public async Task<AssignSessionMemberReply> AssignMemberAsync(AssignSessionMemberRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         if (request.SessionId == Guid.Empty)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, SessionMemberValidationMessages.SessionIdRequired));
@@ -44,6 +46,8 @@ public sealed class SessionMemberGrpcService(ISessionMemberRepository repository
 
     public async Task<RemoveSessionMemberReply> RemoveMemberAsync(RemoveSessionMemberRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         if (request.SessionId == Guid.Empty || request.MemberId == Guid.Empty)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, SessionMemberValidationMessages.SessionIdRequired));
@@ -55,6 +59,8 @@ public sealed class SessionMemberGrpcService(ISessionMemberRepository repository
 
     public async Task<ListSessionMembersReply> ListMembersAsync(ListSessionMembersRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         if (request.SessionId == Guid.Empty)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, SessionMemberValidationMessages.SessionIdRequired));

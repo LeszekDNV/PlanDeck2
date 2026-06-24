@@ -16,7 +16,7 @@ public sealed class SessionMemberGrpcServiceTests
     public void SetUp()
     {
         _repository = new FakeSessionMemberRepository();
-        _service = new SessionMemberGrpcService(_repository);
+        _service = new SessionMemberGrpcService(_repository, new FakeCurrentUserContext());
     }
 
     [Test]
@@ -125,7 +125,6 @@ public sealed class SessionMemberGrpcServiceTests
         public List<SessionMember> Members { get; } = [];
 
         public bool SessionNotFound { get; set; }
-
         public bool Duplicate { get; set; }
 
         public bool RemoveResult { get; set; }
@@ -157,5 +156,14 @@ public sealed class SessionMemberGrpcServiceTests
 
         public Task<IReadOnlyList<SessionMember>> GetMembersAsync(Guid sessionId, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<SessionMember>>(Members);
+    }
+
+    private sealed class FakeCurrentUserContext : ICurrentUserContext
+    {
+        public Guid TenantId { get; } = Guid.NewGuid();
+        public Guid UserId { get; } = Guid.NewGuid();
+        public bool IsAuthenticated => true;
+        public string? DisplayName => null;
+        public string? Email => "member@example.com";
     }
 }

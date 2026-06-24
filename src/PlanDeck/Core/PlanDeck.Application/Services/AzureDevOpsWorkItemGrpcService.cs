@@ -1,3 +1,4 @@
+using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Core.Shared.AzureDevOps;
 using PlanDeck.Core.Shared.Contracts;
@@ -5,10 +6,12 @@ using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
 
-public sealed class AzureDevOpsWorkItemGrpcService(IAzureDevOpsWorkItemClient client) : IAzureDevOpsWorkItemService
+public sealed class AzureDevOpsWorkItemGrpcService(IAzureDevOpsWorkItemClient client, ICurrentUserContext currentUser) : IAzureDevOpsWorkItemService
 {
     public async Task<ImportWorkItemsReply> ImportWorkItemsAsync(ImportWorkItemsRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var whereClause = AzureDevOpsWiqlBuilder.BuildWhereClause(request.WorkItemTypes, request.States);
 
         var workItems = await client.ImportWorkItemsAsync(
@@ -32,6 +35,8 @@ public sealed class AzureDevOpsWorkItemGrpcService(IAzureDevOpsWorkItemClient cl
 
     public async Task<WriteEstimateReply> WriteEstimateAsync(WriteEstimateRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var result = await client.WriteEstimateAsync(
             new AzureDevOpsWriteEstimateRequest(request.WorkItemId, request.ExpectedRevision, request.Estimate),
             context.CancellationToken);

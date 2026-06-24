@@ -51,6 +51,7 @@
                                 {
                                     var isActive = _state.CurrentTaskId == task.TaskId;
                                     <MudListItem T="Guid" Value="@task.TaskId"
+                                                 Disabled="_isGuest"
                                                  Icon="@(isActive ? Icons.Material.Filled.RadioButtonChecked : Icons.Material.Filled.RadioButtonUnchecked)"
                                                  OnClick="@(() => SetActiveTaskAsync(task.TaskId))">
                                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">

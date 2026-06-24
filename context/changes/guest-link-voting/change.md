@@ -1,7 +1,7 @@
 ---
 change_id: guest-link-voting
 title: Guest-link voting — join a session vote via a share link with a temporary username
-status: implemented
+status: impl_reviewed
 created: 2026-06-24
 updated: 2026-06-24
 archived_at: null

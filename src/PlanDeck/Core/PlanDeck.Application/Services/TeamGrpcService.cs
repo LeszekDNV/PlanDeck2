@@ -7,10 +7,12 @@ using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
 
-public sealed class TeamGrpcService(ITeamRepository repository) : ITeamService
+public sealed class TeamGrpcService(ITeamRepository repository, ICurrentUserContext currentUser) : ITeamService
 {
     public async Task<CreateTeamReply> CreateTeamAsync(CreateTeamRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         if (string.IsNullOrWhiteSpace(request.Name))
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Team name is required."));
@@ -26,12 +28,16 @@ public sealed class TeamGrpcService(ITeamRepository repository) : ITeamService
 
     public async Task<ListTeamsReply> ListTeamsAsync(ListTeamsRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         var teams = await repository.GetTeamsAsync(context.CancellationToken);
         return new ListTeamsReply { Teams = teams.Select(ToDto).ToList() };
     }
 
     public async Task<AddMemberReply> AddMemberAsync(AddMemberRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         if (request.TeamId == Guid.Empty)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "TeamId is required."));
@@ -65,6 +71,8 @@ public sealed class TeamGrpcService(ITeamRepository repository) : ITeamService
 
     public async Task<RemoveMemberReply> RemoveMemberAsync(RemoveMemberRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         if (request.TeamId == Guid.Empty || request.MemberId == Guid.Empty)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "TeamId and MemberId are required."));
@@ -76,6 +84,8 @@ public sealed class TeamGrpcService(ITeamRepository repository) : ITeamService
 
     public async Task<ListMembersReply> ListMembersAsync(ListMembersRequest request, CallContext context = default)
     {
+        GuestAccessGuard.RejectGuests(currentUser);
+
         if (request.TeamId == Guid.Empty)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "TeamId is required."));
