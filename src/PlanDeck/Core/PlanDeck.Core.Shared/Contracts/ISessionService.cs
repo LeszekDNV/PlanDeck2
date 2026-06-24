@@ -32,6 +32,9 @@ public interface ISessionService
     Task<RemoveTaskReply> RemoveTaskAsync(RemoveTaskRequest request, CallContext context = default);
 
     [Operation]
+    Task<WriteTaskEstimateReply> WriteTaskEstimateToAdoAsync(WriteTaskEstimateRequest request, CallContext context = default);
+
+    [Operation]
     Task<ActivateSessionReply> ActivateSessionAsync(ActivateSessionRequest request, CallContext context = default);
 
     [Operation]
@@ -300,6 +303,29 @@ public sealed class RemoveTaskReply
 {
     [DataMember(Order = 1)]
     public SessionDto Session { get; set; } = new();
+}
+
+[DataContract]
+public sealed class WriteTaskEstimateRequest
+{
+    [DataMember(Order = 1)]
+    public Guid SessionId { get; set; }
+
+    [DataMember(Order = 2)]
+    public Guid TaskId { get; set; }
+}
+
+[DataContract]
+public sealed class WriteTaskEstimateReply
+{
+    [DataMember(Order = 1)]
+    public SessionDto Session { get; set; } = new();
+
+    [DataMember(Order = 2)]
+    public int WorkItemId { get; set; }
+
+    [DataMember(Order = 3)]
+    public int Revision { get; set; }
 }
 
 [DataContract]

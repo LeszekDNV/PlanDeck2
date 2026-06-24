@@ -82,6 +82,9 @@ public sealed class VotingRoundServiceTests
         public Task<bool> SetAgreedEstimateAsync(Guid sessionId, Guid taskId, string? estimate, CancellationToken cancellationToken)
             => throw new NotSupportedException();
 
+        public Task<bool> SetAdoRevisionAsync(Guid sessionId, Guid taskId, int revision, CancellationToken cancellationToken)
+            => throw new NotSupportedException();
+
         public Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(string shareCode, CancellationToken cancellationToken)
             => throw new NotSupportedException();
 

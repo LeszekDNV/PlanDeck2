@@ -15,6 +15,7 @@ public sealed class SessionGrpcServiceTests
     private FakeCurrentUserContext _currentUser = null!;
     private RecordingPlanningRoomNotifier _notifier = null!;
     private StubShareCodeGenerator _shareCodeGenerator = null!;
+    private FakeAzureDevOpsWorkItemClient _azureDevOpsClient = null!;
     private SessionGrpcService _service = null!;
 
     [SetUp]
@@ -25,7 +26,8 @@ public sealed class SessionGrpcServiceTests
         _currentUser = new FakeCurrentUserContext();
         _notifier = new RecordingPlanningRoomNotifier();
         _shareCodeGenerator = new StubShareCodeGenerator();
-        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier, _shareCodeGenerator);
+        _azureDevOpsClient = new FakeAzureDevOpsWorkItemClient();
+        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier, _shareCodeGenerator, _azureDevOpsClient);
     }
 
     [Test]
@@ -488,6 +490,169 @@ public sealed class SessionGrpcServiceTests
         Assert.That(reply.Session.Id, Is.EqualTo(sessionId));
     }
 
+    private SessionTask SeedAdoTask(PlanningSession session, string? agreedEstimate, int? adoWorkItemId = 1001, int? adoRevision = 4, TaskSource source = TaskSource.AzureDevOps)
+    {
+        var task = new SessionTask
+        {
+            SessionId = session.Id,
+            Title = "Imported work item",
+            Source = source,
+            AdoWorkItemId = adoWorkItemId,
+            AdoRevision = adoRevision,
+            AgreedEstimate = agreedEstimate
+        };
+        session.Tasks.Add(task);
+        return task;
+    }
+
+    [Test]
+    public async Task WriteTaskEstimateToAdo_HappyPath_ForwardsRequestAndPersistsRevision()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, "8", adoWorkItemId: 1001, adoRevision: 4);
+
+        var reply = await _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        });
+
+        Assert.That(_azureDevOpsClient.LastWriteRequest, Is.Not.Null);
+        Assert.That(_azureDevOpsClient.LastWriteRequest!.WorkItemId, Is.EqualTo(1001));
+        Assert.That(_azureDevOpsClient.LastWriteRequest!.ExpectedRevision, Is.EqualTo(4));
+        Assert.That(_azureDevOpsClient.LastWriteRequest!.Estimate, Is.EqualTo(8d));
+        Assert.That(reply.WorkItemId, Is.EqualTo(1001));
+        Assert.That(reply.Revision, Is.EqualTo(5));
+        Assert.That(_repository.LastAdoRevisionSet, Is.EqualTo(5));
+        Assert.That(task.AdoRevision, Is.EqualTo(5));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_WhenTaskMissing_ThrowsNotFound()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = Guid.NewGuid()
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_WhenSessionMissing_ThrowsNotFound()
+    {
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = Guid.NewGuid(),
+            TaskId = Guid.NewGuid()
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_WhenNotAdoTask_ThrowsFailedPrecondition()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, "8", adoWorkItemId: null, source: TaskSource.AdHoc);
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.FailedPrecondition));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_WhenNoAgreedEstimate_ThrowsFailedPrecondition()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, agreedEstimate: null);
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.FailedPrecondition));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_WhenEstimateNotNumeric_ThrowsFailedPrecondition()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, "XL");
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.FailedPrecondition));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_AsGuest_ThrowsPermissionDenied()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, "8");
+        _currentUser.IsGuest = true;
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_OnConcurrencyConflict_ThrowsAborted()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, "8");
+        _azureDevOpsClient.OnWrite = _ => throw new AzureDevOpsConcurrencyException("revision changed");
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Aborted));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_OnRateLimit_ThrowsResourceExhausted()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, "8");
+        _azureDevOpsClient.OnWrite = _ => throw new AzureDevOpsRateLimitException("rate limited");
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.ResourceExhausted));
+    }
+
+    [Test]
+    public void WriteTaskEstimateToAdo_OnGenericFailure_ThrowsUnavailable()
+    {
+        var session = _repository.Seed(SessionStatus.Active);
+        var task = SeedAdoTask(session, "8");
+        _azureDevOpsClient.OnWrite = _ => throw new HttpRequestException("boom");
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.WriteTaskEstimateToAdoAsync(new WriteTaskEstimateRequest
+        {
+            SessionId = session.Id,
+            TaskId = task.Id
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.Unavailable));
+    }
+
     private sealed class StubShareCodeGenerator : IShareCodeGenerator
     {
         public int CallCount { get; private set; }
@@ -611,6 +776,23 @@ public sealed class SessionGrpcServiceTests
             return Task.FromResult(true);
         }
 
+        public int? LastAdoRevisionSet { get; private set; }
+
+        public Task<bool> SetAdoRevisionAsync(Guid sessionId, Guid taskId, int revision, CancellationToken cancellationToken)
+        {
+            var task = _sessions
+                .FirstOrDefault(s => s.Id == sessionId)?.Tasks
+                .FirstOrDefault(t => t.Id == taskId);
+            if (task is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            task.AdoRevision = revision;
+            LastAdoRevisionSet = revision;
+            return Task.FromResult(true);
+        }
+
         public Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(string shareCode, CancellationToken cancellationToken)
         {
             var session = _sessions.FirstOrDefault(s =>
@@ -622,5 +804,23 @@ public sealed class SessionGrpcServiceTests
 
         public Task<bool> ShareCodeExistsAsync(string shareCode, CancellationToken cancellationToken)
             => Task.FromResult(_sessions.Any(s => s.ShareCode == shareCode));
+    }
+
+    private sealed class FakeAzureDevOpsWorkItemClient : IAzureDevOpsWorkItemClient
+    {
+        public AzureDevOpsWriteEstimateRequest? LastWriteRequest { get; private set; }
+
+        public Func<AzureDevOpsWriteEstimateRequest, AzureDevOpsWriteEstimateResult>? OnWrite { get; set; }
+
+        public Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(AzureDevOpsImportRequest request, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyCollection<AzureDevOpsWorkItem>>([]);
+
+        public Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)
+        {
+            LastWriteRequest = request;
+            var result = OnWrite?.Invoke(request)
+                ?? new AzureDevOpsWriteEstimateResult(request.WorkItemId, request.ExpectedRevision.GetValueOrDefault() + 1);
+            return Task.FromResult(result);
+        }
     }
 }

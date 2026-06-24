@@ -1,3 +1,4 @@
+using System.Globalization;
 using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
@@ -13,7 +14,8 @@ public sealed class SessionGrpcService(
     ISessionMemberRepository memberRepository,
     ICurrentUserContext currentUser,
     IPlanningRoomNotifier roomNotifier,
-    IShareCodeGenerator shareCodeGenerator) : ISessionService
+    IShareCodeGenerator shareCodeGenerator,
+    IAzureDevOpsWorkItemClient azureDevOpsClient) : ISessionService
 {
     private static readonly string[] FibonacciFaces = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -247,6 +249,69 @@ public sealed class SessionGrpcService(
         {
             throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
         }
+    }
+
+    public async Task<WriteTaskEstimateReply> WriteTaskEstimateToAdoAsync(WriteTaskEstimateRequest request, CallContext context = default)
+    {
+        GuestAccessGuard.RejectGuests(currentUser);
+
+        PlanningSession session;
+        try
+        {
+            session = await LoadAsync(request.SessionId, context.CancellationToken);
+        }
+        catch (SessionNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+
+        var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId)
+            ?? throw new RpcException(new Status(StatusCode.NotFound, $"Task '{request.TaskId}' was not found in the session."));
+
+        if (task.Source != TaskSource.AzureDevOps || task.AdoWorkItemId is null)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "Task is not linked to an Azure DevOps work item."));
+        }
+
+        if (string.IsNullOrWhiteSpace(task.AgreedEstimate))
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "Task has no agreed estimate to write back."));
+        }
+
+        if (!double.TryParse(task.AgreedEstimate, NumberStyles.Any, CultureInfo.InvariantCulture, out var estimate))
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "Agreed estimate is not numeric and cannot be written to Azure DevOps."));
+        }
+
+        AzureDevOpsWriteEstimateResult result;
+        try
+        {
+            result = await azureDevOpsClient.WriteEstimateAsync(
+                new AzureDevOpsWriteEstimateRequest(task.AdoWorkItemId.Value, task.AdoRevision, estimate),
+                context.CancellationToken);
+        }
+        catch (AzureDevOpsConcurrencyException ex)
+        {
+            throw new RpcException(new Status(StatusCode.Aborted, ex.Message));
+        }
+        catch (AzureDevOpsRateLimitException ex)
+        {
+            throw new RpcException(new Status(StatusCode.ResourceExhausted, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            throw new RpcException(new Status(StatusCode.Unavailable, $"Azure DevOps write-back failed: {ex.Message}"));
+        }
+
+        await repository.SetAdoRevisionAsync(request.SessionId, request.TaskId, result.Revision, context.CancellationToken);
+        task.AdoRevision = result.Revision;
+
+        return new WriteTaskEstimateReply
+        {
+            Session = ToDto(session),
+            WorkItemId = result.WorkItemId,
+            Revision = result.Revision
+        };
     }
 
     public async Task<ActivateSessionReply> ActivateSessionAsync(ActivateSessionRequest request, CallContext context = default)

@@ -193,12 +193,12 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             var retryAfter = response.Headers.RetryAfter?.Delta?.ToString()
                 ?? response.Headers.RetryAfter?.Date?.ToString("O")
                 ?? "unspecified";
-            throw new InvalidOperationException($"Azure DevOps rate limit reached. Retry-After: {retryAfter}.");
+            throw new AzureDevOpsRateLimitException($"Azure DevOps rate limit reached. Retry-After: {retryAfter}.");
         }
 
         if (response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.PreconditionFailed)
         {
-            throw new InvalidOperationException("Azure DevOps work item revision changed before write-back completed.");
+            throw new AzureDevOpsConcurrencyException("Azure DevOps work item revision changed before write-back completed.");
         }
 
         if (!response.IsSuccessStatusCode)

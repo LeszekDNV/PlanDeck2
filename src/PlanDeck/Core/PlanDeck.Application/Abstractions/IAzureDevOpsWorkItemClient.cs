@@ -21,3 +21,7 @@ public sealed record AzureDevOpsWorkItem(
 public sealed record AzureDevOpsWriteEstimateRequest(int WorkItemId, int? ExpectedRevision, double Estimate);
 
 public sealed record AzureDevOpsWriteEstimateResult(int WorkItemId, int Revision);
+
+public sealed class AzureDevOpsConcurrencyException(string message) : Exception(message);
+
+public sealed class AzureDevOpsRateLimitException(string message) : Exception(message);

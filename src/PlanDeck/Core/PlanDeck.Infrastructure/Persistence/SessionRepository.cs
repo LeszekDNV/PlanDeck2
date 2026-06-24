@@ -64,6 +64,20 @@ public sealed class SessionRepository(PlanDeckDbContext db, ICurrentUserContext 
         return true;
     }
 
+    public async Task<bool> SetAdoRevisionAsync(Guid sessionId, Guid taskId, int revision, CancellationToken cancellationToken)
+    {
+        var task = await db.SessionTasks
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.SessionId == sessionId, cancellationToken);
+        if (task is null)
+        {
+            return false;
+        }
+
+        task.AdoRevision = revision;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(string shareCode, CancellationToken cancellationToken)
     {
         // Guest redeem runs before any tenant is known, so the tenant query filter is bypassed
