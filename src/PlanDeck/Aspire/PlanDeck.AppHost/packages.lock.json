@@ -227,34 +227,6 @@
           "Microsoft.SqlServer.DacFx": "170.2.70"
         }
       },
-      "Microsoft.Build": {
-        "type": "Direct",
-        "requested": "[18.7.1, )",
-        "resolved": "18.7.1",
-        "contentHash": "BWFGVuZs9M6eSef12215dFwQUxoXAUW7VluUd2LLqa7nY09U9AzO/6Ms0RziPGmZ9Wa+MrXayOgsX6YjJkPWiw==",
-        "dependencies": {
-          "Microsoft.Build.Framework": "18.7.1",
-          "System.Configuration.ConfigurationManager": "10.0.4",
-          "System.Diagnostics.EventLog": "10.0.4",
-          "System.Reflection.MetadataLoadContext": "10.0.4",
-          "System.Security.Cryptography.ProtectedData": "10.0.4"
-        }
-      },
-      "Microsoft.Build.Framework": {
-        "type": "Direct",
-        "requested": "[18.7.1, )",
-        "resolved": "18.7.1",
-        "contentHash": "OkLtppCHnD0hrfeTQDZNSe6oxYW2/1qKmtE/iyF8ZzsdC541Txv0pUGrDZQTNr0E/OYxzpt5oVHqR26A6mzYnw==",
-        "dependencies": {
-          "Microsoft.NET.StringTools": "18.7.1"
-        }
-      },
-      "Microsoft.NET.StringTools": {
-        "type": "Direct",
-        "requested": "[18.7.1, )",
-        "resolved": "18.7.1",
-        "contentHash": "OhuO9c4ZqYBaqB7INwOpDLa7wX0VkR2T3MhjUSsPebLvZi0/Z7QzeeD5uiINd9L9Wev+EwvNUiF3N2hWVtdFPQ=="
-      },
       "Aspire.Hosting": {
         "type": "Transitive",
         "resolved": "13.4.6",
@@ -902,6 +874,19 @@
         "resolved": "9.0.13",
         "contentHash": "5T+bH3Lb1nEe8Hf/ixMxLmhlrx5wRi53wv7OhVwG2F1ZviW1ejFRS1NHur3uqPpJRGtkQwUchtY6zhVK2R+v+w=="
       },
+      "Microsoft.Build": {
+        "type": "Transitive",
+        "resolved": "15.9.20",
+        "contentHash": "b42hOwbOknlaqSjvmGdBRSgK6uKqsK3SL5977KGXgPkCJPcpb9hUIisjuFygVe9xuCEcKPZx8CRB+q6pf2M4Yg==",
+        "dependencies": {
+          "Microsoft.Build.Framework": "15.9.20"
+        }
+      },
+      "Microsoft.Build.Framework": {
+        "type": "Transitive",
+        "resolved": "15.9.20",
+        "contentHash": "j7KrBtZrD+YQPAu+8K1a0J7HgDf0X18bSnqu5llKXxHZ5Cb1t3eSlEtZPUDFqsv3RCBzByggjIBaxrmdvHxLqA=="
+      },
       "Microsoft.Build.Locator": {
         "type": "Transitive",
         "resolved": "1.10.12",
@@ -1347,6 +1332,11 @@
           "Microsoft.IdentityModel.Logging": "8.16.0"
         }
       },
+      "Microsoft.NET.StringTools": {
+        "type": "Transitive",
+        "resolved": "18.4.0",
+        "contentHash": "iQWOKi3L5QStmWqDjDubcr1KlTDy88qBTe88I0etlUUo1l0zSNebGJXl1Xetyl+ACA+ujP3YUtxo3Nz54JPriw=="
+      },
       "Microsoft.SqlServer.DacFx": {
         "type": "Transitive",
         "resolved": "170.2.70",
@@ -1536,11 +1526,11 @@
       },
       "System.Configuration.ConfigurationManager": {
         "type": "Transitive",
-        "resolved": "10.0.4",
-        "contentHash": "4u3HLMYQqnTIF26VUiKhSuXtjFIvEfnwK9ZBUa4bXEc1koQCCkZx6ss5urKjqqimJMtuPHDKPHDchxkgoDNhjQ==",
+        "resolved": "9.0.13",
+        "contentHash": "GbBrJq9S/gYpHzm7Pxx6Y5tDyfSfyxW6tlP5oiKJV38uf19Wp+GIIAnWfyL1zmNiz1+EjwVapw2WkBFvvqKQzg==",
         "dependencies": {
-          "System.Diagnostics.EventLog": "10.0.4",
-          "System.Security.Cryptography.ProtectedData": "10.0.4"
+          "System.Diagnostics.EventLog": "9.0.13",
+          "System.Security.Cryptography.ProtectedData": "9.0.13"
         }
       },
       "System.Diagnostics.EventLog": {
@@ -1572,11 +1562,6 @@
         "resolved": "10.0.3",
         "contentHash": "MaGhRfGunmrj/nHjtsi9XkhlYJ/ERGWrbA+BiSKNtGnAjc9XlG5EhAvak6VRcX5LYzPF6pBO8nJ613dTgzabig=="
       },
-      "System.Reflection.MetadataLoadContext": {
-        "type": "Transitive",
-        "resolved": "10.0.4",
-        "contentHash": "kVaDOAIi02+yd7AZFNpZ88UZcBESiDI1Ib9l592QvZCYUA/xJloAucRAbyEnuOB+ubrpITGb8cMa3g8NhwLUIA=="
-      },
       "System.Runtime.Caching": {
         "type": "Transitive",
         "resolved": "8.0.1",
@@ -1592,8 +1577,8 @@
       },
       "System.Security.Cryptography.ProtectedData": {
         "type": "Transitive",
-        "resolved": "10.0.4",
-        "contentHash": "LmDnaYkcWkZSlZ07L7YcB6bH8sCiBZ7j28kPbYiXdF6f0iUiN7rxsRORlZGdj5saN/wZIqvF7lDBn/cpjU+e2g=="
+        "resolved": "9.0.13",
+        "contentHash": "t8S9IDpjJKsLpLkeBdW8cWtcPyYqrGu93Dej1RO6WwuL/lkFSqWlan3rMJfortqz1mRIh+sys2AFsSA6jWJ3Jg=="
       },
       "System.Security.Permissions": {
         "type": "Transitive",

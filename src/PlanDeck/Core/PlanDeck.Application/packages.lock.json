@@ -37,6 +37,7 @@
           "protobuf-net.Grpc": "[1.2.2, )"
         }
       }
-    }
+    },
+    "net10.0/linux-x64": {}
   }
 }

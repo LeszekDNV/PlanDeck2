@@ -1,0 +1,118 @@
+# Deploys the PlanDeck pilot to Azure Container Apps + Azure SQL via `azd`.
+#
+# One-time setup (human, requires an Azure subscription) — already provisioned for the `test`
+# environment in `rg-test` (Poland Central):
+#   1. Entra app registration `plandeck-pipeline-oidc` with a GitHub OIDC federated credential
+#      (subject `repo:LeszekDNV/PlanDeck2:ref:refs/heads/main`); RBAC: Owner on `rg-test` +
+#      AcrPush on the container registry.
+#   2. The pipeline service principal is a contained `db_owner` user in `PlanDeckDb` so the
+#      migration step can apply the schema (created once via the SQL Entra admin).
+#   3. The repo variables below are set; SQL_SERVER_FQDN points at the provisioned server.
+#
+# Required repo variables (Settings -> Secrets and variables -> Actions -> Variables):
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_ENV_NAME (= test),
+#   AZURE_LOCATION (= polandcentral), SQL_SERVER_FQDN
+#
+# No long-lived secrets are stored: auth to Azure is OIDC federated.
+
+name: Deploy PlanDeck pilot (ACA)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# OIDC federated auth needs id-token: write.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: Sign in to azd (federated OIDC)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+
+      # az CLI is needed to mint an Azure SQL access token for the migration step.
+      - name: Sign in to Azure CLI (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Provision infrastructure
+        working-directory: src/PlanDeck
+        run: azd provision --no-prompt
+
+      # GitHub-hosted runners have dynamic public IPs that the Azure SQL firewall blocks by
+      # default. Open a temporary, run-scoped firewall rule for this runner's IP before applying
+      # migrations; the cleanup step below removes it even if the migration fails.
+      - name: Open SQL firewall for runner
+        shell: pwsh
+        env:
+          SQL_SERVER_FQDN: ${{ vars.SQL_SERVER_FQDN }}
+        run: |
+          $ip = (Invoke-RestMethod -Uri "https://api.ipify.org").Trim()
+          $server = $env:SQL_SERVER_FQDN.Split('.')[0]
+          $rg = "rg-${{ vars.AZURE_ENV_NAME }}"
+          az sql server firewall-rule create -g $rg -s $server -n "gh-runner-${{ github.run_id }}" `
+            --start-ip-address $ip --end-ip-address $ip -o none
+          "RUNNER_FW_SERVER=$server"  | Out-File $env:GITHUB_ENV -Append
+          "RUNNER_FW_RG=$rg"          | Out-File $env:GITHUB_ENV -Append
+
+      # Apply EF Core migrations as an explicit, idempotent gate BEFORE the app is deployed.
+      # `dotnet ef migrations script` builds SQL from the model offline (no DB connection), so the
+      # design-time factory's local connection string is irrelevant here. The script is applied to
+      # Azure SQL using an AAD access token from the federated identity (a db_owner contained user).
+      - name: Apply EF Core migrations
+        shell: pwsh
+        working-directory: src/PlanDeck
+        env:
+          SQL_SERVER_FQDN: ${{ vars.SQL_SERVER_FQDN }}
+          SQL_DATABASE_NAME: PlanDeckDb
+        run: |
+          dotnet tool install --global dotnet-ef
+          $env:PATH += [IO.Path]::PathSeparator + (Join-Path $HOME ".dotnet/tools")
+          dotnet ef migrations script --idempotent `
+            --project Core/PlanDeck.Infrastructure/PlanDeck.Infrastructure.csproj `
+            --startup-project Web/PlanDeck.Server/PlanDeck.Server.csproj `
+            --output migrate.sql
+          $token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
+          Install-Module SqlServer -Force -Scope CurrentUser -AllowClobber
+          Invoke-Sqlcmd -ServerInstance $env:SQL_SERVER_FQDN -Database $env:SQL_DATABASE_NAME -AccessToken $token -InputFile migrate.sql
+
+      - name: Close SQL firewall for runner
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:RUNNER_FW_SERVER) {
+            az sql server firewall-rule delete -g $env:RUNNER_FW_RG -s $env:RUNNER_FW_SERVER `
+              -n "gh-runner-${{ github.run_id }}" -o none 2>$null
+          }
+
+      - name: Deploy application
+        working-directory: src/PlanDeck
+        run: azd deploy --no-prompt

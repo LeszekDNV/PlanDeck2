@@ -272,19 +272,19 @@ Author a human-followable runbook that proves the four runtime-contract checks a
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Publish manifest generates and shows minReplicas=1, sticky sessions, Testing/test-auth env
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — d6c3778
+- [x] 1.2 Publish manifest generates and shows minReplicas=1, sticky sessions, Testing/test-auth env — d6c3778
 
 #### Manual
 
-- [x] 1.3 Generated manifest shows Azure SQL on serverless auto-pause SKU
-- [x] 1.4 Local non-publish AppHost run unchanged (SQL container + MailPit boot)
+- [x] 1.3 Generated manifest shows Azure SQL on serverless auto-pause SKU — d6c3778
+- [x] 1.4 Local non-publish AppHost run unchanged (SQL container + MailPit boot) — d6c3778
 
 ### Phase 2: GitHub Actions CI/CD pipeline (azd) + EF migration step
 
 #### Automated
 
-- [ ] 2.1 `.github/workflows/azure-dev.yml` exists and is valid YAML
+- [x] 2.1 `.github/workflows/azure-dev.yml` exists and is valid YAML
 - [ ] 2.2 Workflow run is green on push to main (provision + deploy + migrate)
 - [ ] 2.3 `az containerapp show` reports Running + external FQDN
 

@@ -427,7 +427,9 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-/.github
+# Ignore local agent tooling under .github (skills, prompts) but keep CI/CD workflows tracked.
+/.github/*
+!/.github/workflows/
 /.agents/skills
 *.pem
 *.cer

@@ -4,8 +4,7 @@ using Azure.Provisioning.Sql;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var planDeckServer = builder.AddProject<Projects.PlanDeck_Server>("plandeck-server")
-    .WithExternalHttpEndpoints()
-    .WithEndpoint("https", endpoint => endpoint.Port = 7443);
+    .WithExternalHttpEndpoints();
 
 if (builder.ExecutionContext.IsPublishMode)
 {
@@ -59,6 +58,10 @@ if (builder.ExecutionContext.IsPublishMode)
 }
 else
 {
+    // A fixed local https port keeps the dev URL stable; ACA ingress only supports 443 for
+    // https, so this fixed port must not be applied in publish mode.
+    planDeckServer.WithEndpoint("https", endpoint => endpoint.Port = 7443);
+
     var sqlDatabase = builder.AddSqlServer("sql-server", port: 2140)
         .WithImage("mssql/server:2025-latest")
         .WithDataVolume()
