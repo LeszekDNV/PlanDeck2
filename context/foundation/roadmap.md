@@ -3,7 +3,7 @@ project: "PlanDeck"
 version: 1
 status: draft
 created: 2026-06-18
-updated: 2026-06-23
+updated: 2026-06-24
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -34,7 +34,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | F-03 | deploy-realtime-validation-skeleton | (foundation) pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL stack | — | Constraints & Compatibility; infrastructure.md (ACA + Azure SQL) | ready |
 | S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | done |
 | S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | done |
-| S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | proposed |
+| S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | done |
 | S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | done |
 | S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | done |
 | S-06 | realtime-voting-round | run a hidden-vote → reveal → manual-pick round in a session | F-02, S-04, S-05 | FR-008, FR-009, US-01 | done |
@@ -147,7 +147,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Which work-item field is the estimate field per tenant/project, and how is it configured by the user vs. defaulted? — Owner: user. Block: no.
 - **Risk:** The import client (WIQL + batch fetch) already exists in `Infrastructure`; this slice wires it to persisted tasks and a selection UI rather than building the integration. It is on the north-star critical path because S-08 writes back to an ADO-sourced task. Integration/auth (PAT) handling is the main risk; mitigated by the working baseline client.
-- **Status:** proposed
+- **Status:** done
 
 ### S-04: Create & configure session
 
@@ -253,3 +253,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-02: a user can create ad-hoc tasks manually within PlanDeck.** — Archived 2026-06-23 → `context/archive/2026-06-23-adhoc-tasks/`. Lesson: —.
 - **S-05: a user can assign/invite team members to a session.** — Archived 2026-06-22 → `context/archive/2026-06-22-assign-session-members/`. Lesson: —.
 - **S-06: assigned members join a session and vote on each task in real time; participants see who has voted as it happens, values stay hidden until the round is revealed and then appear together, and the user manually selects the agreed estimate, which is persisted.** — Archived 2026-06-23 → `context/archive/2026-06-22-realtime-voting-round/`. Lesson: —.
+- **S-03: a user can connect to Azure DevOps and import selected tasks into PlanDeck.** — Archived 2026-06-24 → `context/archive/2026-06-24-azure-devops-import/`. Lesson: —.
