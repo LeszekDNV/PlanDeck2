@@ -36,6 +36,9 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      # Deploy into the existing resource group (RG-scoped deployment) so the
+      # pipeline SP only needs Owner on rg-test, not subscription-level rights.
+      AZURE_RESOURCE_GROUP: rg-${{ vars.AZURE_ENV_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
