@@ -453,8 +453,8 @@ Add a Playwright E2E for the full guest path and verify the error pages, complet
 
 #### Manual
 
-- [x] 3.6 Guest vote appears live and is hidden until member reveal (two browsers)
-- [x] 3.7 Guest cannot trigger reveal/reset (no UI affordance and forced hub call rejected)
+- [x] 3.6 Guest vote appears live and is hidden until member reveal (two browsers) — 8f5511d
+- [x] 3.7 Guest cannot trigger reveal/reset (no UI affordance and forced hub call rejected) — 8f5511d
 
 ### Phase 4: Client — guest journey, identity, organizer share link
 
@@ -476,11 +476,11 @@ Add a Playwright E2E for the full guest path and verify the error pages, complet
 
 #### Automated
 
-- [x] 5.1 Build passes: `dotnet build PlanDeck.slnx`
-- [x] 5.2 E2E guest-flow test passes locally (Aspire + Podman, Playwright chromium)
-- [x] 5.3 Full suite green: `dotnet test PlanDeck.slnx`
+- [x] 5.1 Build passes: `dotnet build PlanDeck.slnx` — 8f5511d
+- [x] 5.2 E2E guest-flow test passes locally (Aspire + Podman, Playwright chromium) — 8f5511d
+- [x] 5.3 Full suite green: `dotnet test PlanDeck.slnx` — 8f5511d
 
 #### Manual
 
-- [x] 5.4 E2E run observed end-to-end; no flakiness across runs
-- [x] 5.5 Error pages match copy in `en`/`pl`
+- [x] 5.4 E2E run observed end-to-end; no flakiness across runs — 8f5511d
+- [x] 5.5 Error pages match copy in `en`/`pl` — 8f5511d
