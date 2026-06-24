@@ -1,7 +1,6 @@
 using Grpc.Core;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
-using PlanDeck.Core.Shared.AzureDevOps;
 using PlanDeck.Core.Shared.Contracts;
 
 namespace PlanDeck.Client.Components;
@@ -53,10 +52,10 @@ public partial class AdoImportPanel
         _loading = true;
         try
         {
-            var whereClause = AzureDevOpsWiqlBuilder.BuildWhereClause(
+            _items = (await AdoService.ImportWorkItemsAsync(
                 _selectedTypes.ToArray(),
-                _selectedStates.ToArray());
-            _items = (await AdoService.ImportWorkItemsAsync(whereClause, _limit)).ToList();
+                _selectedStates.ToArray(),
+                _limit)).ToList();
             _selectedIds.Clear();
             _filter = string.Empty;
             _loaded = true;
@@ -64,6 +63,10 @@ public partial class AdoImportPanel
         }
         catch (RpcException)
         {
+            _items = [];
+            _selectedIds.Clear();
+            _loaded = true;
+            await SelectedCountChanged.InvokeAsync(0);
             Snackbar.Add(L["Error_Generic"], Severity.Error);
         }
         finally

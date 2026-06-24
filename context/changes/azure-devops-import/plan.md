@@ -295,6 +295,29 @@ None — no schema or data changes.
 - Test scheme injection point: `Web/PlanDeck.Server/Extensions/ServiceCollectionExtensions.cs:55-74`
 - E2E fixture / test-auth wiring: `Tests/PlanDeck.E2e.Tests/AspireAppFixture.cs`, `Aspire/PlanDeck.AppHost/AppHost.cs:43-49`
 
+## Implementation Deviations
+
+Recorded during implementation + impl-review (2026-06-24). These are accepted, user-directed changes that
+diverge from the original Phase 1/2 "Changes Required" contract; the plan is updated so it stays the source of
+truth.
+
+- **Dialog-based import UX**: instead of embedding `AdoImportPanel` inline with a `Busy` + `OnAddSelected`
+  callback, the panel is a pure selector exposing `SelectedItems` + `EventCallback<int> SelectedCountChanged`,
+  hosted by a new `Components/AdoImportDialog.razor(.cs)`. Both Sessions flows open the dialog and read
+  `SelectedItems` on `DialogResult.Ok`. The "Add selected (N)" action lives in the dialog's `DialogActions`.
+- **Filter + highlight**: `AdoImportPanel` gained a client-side text filter (`MudTextField` with search/clear
+  adornments) over the loaded list, with matches highlighted via `MudHighlighter`. Added localization key
+  `Sessions_AdoFilter` (en/pl) beyond the four planned keys.
+- **Collapsible task descriptions + card separation**: the Sessions Tasks list renders outlined `MudPaper`
+  cards with per-task collapsible descriptions (`_expandedTaskIds` + `MudCollapse`).
+- **ADO description fallback**: `AzureDevOpsOptions.ReproStepsField` + a fallback in
+  `AzureDevOpsWorkItemClient.BuildDescription` surface `Microsoft.VSTS.TCM.ReproSteps` when
+  `System.Description` is empty (covers Bug work items across standard ADO processes).
+- **Server-side WIQL (impl-review F1 fix)**: the gRPC `ImportWorkItemsRequest` now carries typed
+  `WorkItemTypes` + `States` lists instead of a free-form `WiqlWhereClause` string;
+  `AzureDevOpsWorkItemGrpcService` builds the WHERE clause server-side via `AzureDevOpsWiqlBuilder`. This
+  closes a WIQL-passthrough vector and keeps the structured-filter intent end-to-end.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.

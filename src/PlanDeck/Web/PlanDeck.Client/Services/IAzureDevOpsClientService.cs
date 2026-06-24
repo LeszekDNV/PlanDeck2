@@ -4,7 +4,8 @@ namespace PlanDeck.Client.Services;
 
 public interface IAzureDevOpsClientService
 {
-    Task<IReadOnlyCollection<AzureDevOpsWorkItemDto>> ImportWorkItemsAsync(string? wiqlWhereClause = null, int limit = 100);
+    Task<IReadOnlyCollection<AzureDevOpsWorkItemDto>> ImportWorkItemsAsync(
+        IReadOnlyCollection<string> workItemTypes, IReadOnlyCollection<string> states, int limit = 100);
 
     Task<WriteEstimateReply> WriteEstimateAsync(int workItemId, int? expectedRevision, double estimate);
 }

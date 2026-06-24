@@ -18,9 +18,12 @@ public interface IAzureDevOpsWorkItemService
 public sealed class ImportWorkItemsRequest
 {
     [DataMember(Order = 1)]
-    public string? WiqlWhereClause { get; set; }
+    public List<string> WorkItemTypes { get; set; } = [];
 
     [DataMember(Order = 2)]
+    public List<string> States { get; set; } = [];
+
+    [DataMember(Order = 3)]
     public int Limit { get; set; } = 100;
 }
 

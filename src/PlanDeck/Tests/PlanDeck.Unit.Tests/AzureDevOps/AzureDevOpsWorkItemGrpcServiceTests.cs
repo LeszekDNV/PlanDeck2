@@ -18,19 +18,31 @@ public sealed class AzureDevOpsWorkItemGrpcServiceTests
     }
 
     [Test]
-    public async Task ImportWorkItemsAsync_ForwardsWhereClauseAndLimit()
+    public async Task ImportWorkItemsAsync_BuildsWhereClauseFromFiltersAndForwardsLimit()
     {
         var request = new ImportWorkItemsRequest
         {
-            WiqlWhereClause = "[System.State] IN ('Active')",
+            WorkItemTypes = ["Bug"],
+            States = ["Active"],
             Limit = 25
         };
 
         await _service.ImportWorkItemsAsync(request);
 
         Assert.That(_client.LastImportRequest, Is.Not.Null);
-        Assert.That(_client.LastImportRequest!.WiqlWhereClause, Is.EqualTo("[System.State] IN ('Active')"));
+        Assert.That(_client.LastImportRequest!.WiqlWhereClause, Is.EqualTo(
+            "[System.WorkItemType] IN ('Bug') AND [System.State] IN ('Active')"));
         Assert.That(_client.LastImportRequest!.Limit, Is.EqualTo(25));
+    }
+
+    [Test]
+    public async Task ImportWorkItemsAsync_WithNoFilters_ForwardsNullWhereClause()
+    {
+        await _service.ImportWorkItemsAsync(new ImportWorkItemsRequest { Limit = 10 });
+
+        Assert.That(_client.LastImportRequest, Is.Not.Null);
+        Assert.That(_client.LastImportRequest!.WiqlWhereClause, Is.Null);
+        Assert.That(_client.LastImportRequest!.Limit, Is.EqualTo(10));
     }
 
     [Test]

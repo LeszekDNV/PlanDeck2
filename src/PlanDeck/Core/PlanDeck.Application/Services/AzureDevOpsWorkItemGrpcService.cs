@@ -1,4 +1,5 @@
 using PlanDeck.Application.Abstractions;
+using PlanDeck.Core.Shared.AzureDevOps;
 using PlanDeck.Core.Shared.Contracts;
 using ProtoBuf.Grpc;
 
@@ -8,8 +9,10 @@ public sealed class AzureDevOpsWorkItemGrpcService(IAzureDevOpsWorkItemClient cl
 {
     public async Task<ImportWorkItemsReply> ImportWorkItemsAsync(ImportWorkItemsRequest request, CallContext context = default)
     {
+        var whereClause = AzureDevOpsWiqlBuilder.BuildWhereClause(request.WorkItemTypes, request.States);
+
         var workItems = await client.ImportWorkItemsAsync(
-            new AzureDevOpsImportRequest(request.WiqlWhereClause, request.Limit),
+            new AzureDevOpsImportRequest(whereClause, request.Limit),
             context.CancellationToken);
 
         return new ImportWorkItemsReply

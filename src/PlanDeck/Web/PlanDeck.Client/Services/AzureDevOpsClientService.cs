@@ -6,12 +6,14 @@ namespace PlanDeck.Client.Services;
 
 public sealed class AzureDevOpsClientService(GrpcChannel channel) : IAzureDevOpsClientService
 {
-    public async Task<IReadOnlyCollection<AzureDevOpsWorkItemDto>> ImportWorkItemsAsync(string? wiqlWhereClause = null, int limit = 100)
+    public async Task<IReadOnlyCollection<AzureDevOpsWorkItemDto>> ImportWorkItemsAsync(
+        IReadOnlyCollection<string> workItemTypes, IReadOnlyCollection<string> states, int limit = 100)
     {
         var service = channel.CreateGrpcService<IAzureDevOpsWorkItemService>();
         var reply = await service.ImportWorkItemsAsync(new ImportWorkItemsRequest
         {
-            WiqlWhereClause = wiqlWhereClause,
+            WorkItemTypes = workItemTypes.ToList(),
+            States = states.ToList(),
             Limit = limit
         });
 
