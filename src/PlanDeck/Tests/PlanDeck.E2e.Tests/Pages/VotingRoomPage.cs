@@ -23,6 +23,10 @@ public class VotingRoomPage
 
     public ILocator VoteButton(string value) => _page.Locator($"[data-testid='vote-{value}']");
 
+    public ILocator RevealButton => _page.Locator("[data-testid=reveal]");
+
+    public ILocator ResetButton => _page.Locator("[data-testid=reset]");
+
     public ILocator TaskListItem(string title) =>
         _page.Locator(".mud-list-item").Filter(new() { HasText = title });
 

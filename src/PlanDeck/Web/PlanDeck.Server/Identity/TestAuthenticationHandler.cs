@@ -27,6 +27,14 @@ public sealed class TestAuthenticationHandler(
     /// </summary>
     public const string GuestSessionHeader = "X-Test-Guest-Sid";
 
+    /// <summary>
+    /// Cookie counterpart of <see cref="GuestSessionHeader"/>. A browser sends cookies on every
+    /// request it initiates — including the SignalR WebSocket handshake, which Playwright's
+    /// per-context extra headers do not reliably reach — so an E2E guest context sets this cookie
+    /// to stay a guest across both ordinary requests and the hub connection.
+    /// </summary>
+    public const string GuestSessionCookie = "e2e-guest-sid";
+
     private const string TestTenantId = "11111111-1111-1111-1111-111111111111";
     private const string TestObjectId = "22222222-2222-2222-2222-222222222222";
     private const string TestDisplayName = "Test User";
@@ -41,15 +49,21 @@ public sealed class TestAuthenticationHandler(
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (Request.Headers.TryGetValue(GuestSessionHeader, out var guestSid)
-            && !string.IsNullOrWhiteSpace(guestSid))
+        var guestSid =
+            Request.Headers.TryGetValue(GuestSessionHeader, out var headerSid) && !string.IsNullOrWhiteSpace(headerSid)
+                ? headerSid.ToString()
+                : Request.Cookies.TryGetValue(GuestSessionCookie, out var cookieSid) && !string.IsNullOrWhiteSpace(cookieSid)
+                    ? cookieSid
+                    : null;
+
+        if (guestSid is not null)
         {
             return Task.FromResult(BuildResult(
             [
                 new Claim("tid", TestTenantId),
                 new Claim("oid", GuestObjectId),
                 new Claim("name", GuestDisplayName),
-                new Claim(GuestAuthentication.SessionIdClaim, guestSid.ToString()),
+                new Claim(GuestAuthentication.SessionIdClaim, guestSid),
                 new Claim(GuestAuthentication.IsGuestClaim, "true")
             ]));
         }

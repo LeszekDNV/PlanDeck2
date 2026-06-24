@@ -453,34 +453,34 @@ Add a Playwright E2E for the full guest path and verify the error pages, complet
 
 #### Manual
 
-- [ ] 3.6 Guest vote appears live and is hidden until member reveal (two browsers)
-- [ ] 3.7 Guest cannot trigger reveal/reset (no UI affordance and forced hub call rejected)
+- [x] 3.6 Guest vote appears live and is hidden until member reveal (two browsers)
+- [x] 3.7 Guest cannot trigger reveal/reset (no UI affordance and forced hub call rejected)
 
 ### Phase 4: Client — guest journey, identity, organizer share link
 
 #### Automated
 
-- [x] 4.1 Build passes: `dotnet build PlanDeck.slnx`
-- [x] 4.2 Full suite still green: `dotnet test PlanDeck.slnx`
-- [x] 4.3 `_myParticipantId` populated from `oid` for an authenticated member (if component tests exist)
+- [x] 4.1 Build passes: `dotnet build PlanDeck.slnx` — cbb79eb
+- [x] 4.2 Full suite still green: `dotnet test PlanDeck.slnx` — cbb79eb
+- [x] 4.3 `_myParticipantId` populated from `oid` for an authenticated member (if component tests exist) — cbb79eb
 
 #### Manual
 
-- [x] 4.4 Organizer copies the join link from an active session
-- [x] 4.5 Logged-out link opens name prompt; entering a name enters the room
-- [x] 4.6 Guest can vote and see live state; control buttons absent
-- [x] 4.7 Member view unchanged with controls; member self-vote highlight works
-- [x] 4.8 `en`/`pl` strings render correctly
+- [x] 4.4 Organizer copies the join link from an active session — cbb79eb
+- [x] 4.5 Logged-out link opens name prompt; entering a name enters the room — cbb79eb
+- [x] 4.6 Guest can vote and see live state; control buttons absent — cbb79eb
+- [x] 4.7 Member view unchanged with controls; member self-vote highlight works — cbb79eb
+- [x] 4.8 `en`/`pl` strings render correctly — cbb79eb
 
 ### Phase 5: E2E coverage & guest-facing error states
 
 #### Automated
 
-- [ ] 5.1 Build passes: `dotnet build PlanDeck.slnx`
-- [ ] 5.2 E2E guest-flow test passes locally (Aspire + Podman, Playwright chromium)
-- [ ] 5.3 Full suite green: `dotnet test PlanDeck.slnx`
+- [x] 5.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 5.2 E2E guest-flow test passes locally (Aspire + Podman, Playwright chromium)
+- [x] 5.3 Full suite green: `dotnet test PlanDeck.slnx`
 
 #### Manual
 
-- [ ] 5.4 E2E run observed end-to-end; no flakiness across runs
-- [ ] 5.5 Error pages match copy in `en`/`pl`
+- [x] 5.4 E2E run observed end-to-end; no flakiness across runs
+- [x] 5.5 Error pages match copy in `en`/`pl`
