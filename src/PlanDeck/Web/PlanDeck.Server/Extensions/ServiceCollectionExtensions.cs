@@ -68,7 +68,15 @@ public static class ServiceCollectionExtensions
                         TestAuthenticationHandler.SchemeName, null)
                     .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
 
-                services.AddAuthorization();
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(GuestAuthentication.RoomParticipantPolicy, policy =>
+                    {
+                        policy.RequireAuthenticatedUser();
+                        policy.AddAuthenticationSchemes(
+                            TestAuthenticationHandler.SchemeName, GuestAuthentication.SchemeName);
+                    });
+                });
                 services.AddScoped<IAzureDevOpsWorkItemClient, FakeAzureDevOpsWorkItemClient>();
 
                 return services;
@@ -109,7 +117,15 @@ public static class ServiceCollectionExtensions
                 });
             }
 
-            services.AddAuthorization();
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy(GuestAuthentication.RoomParticipantPolicy, policy =>
+                {
+                    policy.RequireAuthenticatedUser();
+                    policy.AddAuthenticationSchemes(
+                        CookieAuthenticationDefaults.AuthenticationScheme, GuestAuthentication.SchemeName);
+                });
+            });
             services.Configure<AzureDevOpsOptions>(configuration.GetSection(AzureDevOpsOptions.SectionName));
             services.AddHttpClient<IAzureDevOpsWorkItemClient, AzureDevOpsWorkItemClient>();
 

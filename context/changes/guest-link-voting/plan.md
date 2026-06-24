@@ -431,25 +431,25 @@ Add a Playwright E2E for the full guest path and verify the error pages, complet
 
 #### Automated
 
-- [x] 2.1 Build passes: `dotnet build PlanDeck.slnx`
-- [x] 2.2 `POST /guest/join` with valid active code sets `PlanDeck.Guest` cookie and returns session id
-- [x] 2.3 Unknown code → 404 no cookie; Draft/ended code → 409 no cookie
-- [x] 2.4 Empty / >40-char name → 400 no cookie; name trimmed in the `name` claim
-- [x] 2.5 Guest principal resolves `IsGuest == true` and `ParticipantId == oid`
+- [x] 2.1 Build passes: `dotnet build PlanDeck.slnx` — 7b30384
+- [x] 2.2 `POST /guest/join` with valid active code sets `PlanDeck.Guest` cookie and returns session id — 7b30384
+- [x] 2.3 Unknown code → 404 no cookie; Draft/ended code → 409 no cookie — 7b30384
+- [x] 2.4 Empty / >40-char name → 400 no cookie; name trimmed in the `name` claim — 7b30384
+- [x] 2.5 Guest principal resolves `IsGuest == true` and `ParticipantId == oid` — 7b30384
 
 #### Manual
 
-- [x] 2.6 `/guest/join` with a real active code sets the guest cookie and returns the session id
+- [x] 2.6 `/guest/join` with a real active code sets the guest cookie and returns the session id — 7b30384
 
 ### Phase 3: Hub guest support, isolation & vote-only enforcement
 
 #### Automated
 
-- [ ] 3.1 Build passes: `dotnet build PlanDeck.slnx`
-- [ ] 3.2 Guest with `sid` ≠ requested `sessionId` is rejected by the scope guard
-- [ ] 3.3 Guest `RevealVotes`/`ResetRound`/`SetActiveTask`/`SelectEstimate` throw; `CastVote` succeeds
-- [ ] 3.4 `LoadActiveSessionSeedAsync` returns null for non-active and a seed for active
-- [ ] 3.5 Guest join to an active session yields room state including the guest participant
+- [x] 3.1 Build passes: `dotnet build PlanDeck.slnx`
+- [x] 3.2 Guest with `sid` ≠ requested `sessionId` is rejected by the scope guard
+- [x] 3.3 Guest `RevealVotes`/`ResetRound`/`SetActiveTask`/`SelectEstimate` throw; `CastVote` succeeds
+- [x] 3.4 `LoadActiveSessionSeedAsync` returns null for non-active and a seed for active
+- [x] 3.5 Guest join to an active session yields room state including the guest participant
 
 #### Manual
 

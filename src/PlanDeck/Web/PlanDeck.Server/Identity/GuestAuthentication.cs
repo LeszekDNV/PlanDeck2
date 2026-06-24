@@ -15,6 +15,12 @@ public static class GuestAuthentication
     public const string IsGuestClaim = "is_guest";
     public const string SessionIdClaim = "sid";
 
+    /// <summary>
+    /// Authorization policy admitting both members (cookie/OIDC) and guests to the planning room,
+    /// while still rejecting fully anonymous callers. Schemes are bound per environment at startup.
+    /// </summary>
+    public const string RoomParticipantPolicy = "RoomParticipant";
+
     public static void ConfigureCookie(CookieAuthenticationOptions options)
     {
         options.Cookie.Name = CookieName;

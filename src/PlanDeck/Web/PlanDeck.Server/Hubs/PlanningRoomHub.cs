@@ -6,7 +6,7 @@ using PlanDeck.Server.Identity;
 
 namespace PlanDeck.Server.Hubs;
 
-[Authorize]
+[Authorize(Policy = GuestAuthentication.RoomParticipantPolicy)]
 public sealed class PlanningRoomHub(
     IPlanningRoomService planningRoomService,
     IVotingRoundService votingRoundService,
@@ -18,12 +18,18 @@ public sealed class PlanningRoomHub(
         principalAccessor.Principal = Context.User;
         var key = BuildKey(sessionId);
 
-        // One DB load authorizes the caller and returns the seed; null means missing session or not a member.
-        var seed = await votingRoundService.AuthorizeAndLoadSeedAsync(
-            key.SessionId, UserId, Email, Context.ConnectionAborted);
+        // Guests are admitted by their validated guest cookie + sid scope (already enforced by
+        // BuildKey); members go through the assigned-member/creator authorization. Both need a fresh
+        // Active session seed.
+        var seed = IsGuest
+            ? await votingRoundService.LoadActiveSessionSeedAsync(key.SessionId, Context.ConnectionAborted)
+            : await votingRoundService.AuthorizeAndLoadSeedAsync(
+                key.SessionId, UserId, Email, Context.ConnectionAborted);
         if (seed is null)
         {
-            throw new HubException("You are not an assigned member of this session.");
+            throw new HubException(IsGuest
+                ? "This session is not open for guests."
+                : "You are not an assigned member of this session.");
         }
 
         planningRoomService.EnsureSeeded(key, seed.Tasks, seed.ScaleValues);
@@ -50,6 +56,7 @@ public sealed class PlanningRoomHub(
 
     public async Task RevealVotes(string sessionId)
     {
+        EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
         var state = planningRoomService.RevealVotes(key);
         await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
@@ -57,6 +64,7 @@ public sealed class PlanningRoomHub(
 
     public async Task ResetRound(string sessionId)
     {
+        EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
 
         // Persist the agreed-estimate clear BEFORE mutating in-memory state so a DB failure
@@ -77,6 +85,7 @@ public sealed class PlanningRoomHub(
 
     public async Task SetActiveTask(string sessionId, string taskId)
     {
+        EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
         var state = planningRoomService.SetActiveTask(key, ParseTaskId(taskId));
         await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
@@ -84,6 +93,7 @@ public sealed class PlanningRoomHub(
 
     public async Task SelectEstimate(string sessionId, string taskId, string value)
     {
+        EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
         var taskGuid = ParseTaskId(taskId);
 
@@ -120,6 +130,14 @@ public sealed class PlanningRoomHub(
         principalAccessor.Principal = Context.User;
 
         var key = BuildKey(sessionId);
+
+        // Guests are confined to their own session by BuildKey's sid scope check and authorized by
+        // the validated guest cookie — they never go through the member/creator lookup.
+        if (IsGuest)
+        {
+            return key;
+        }
+
         var email = Email;
 
         var isAuthorized = await votingRoundService.IsAuthorizedParticipantAsync(
@@ -190,7 +208,39 @@ public sealed class PlanningRoomHub(
             throw new HubException("Authenticated tenant claim is missing or invalid.");
         }
 
+        EnsureSessionScope(sessionGuid);
+
         return new RoomKey(tenantGuid, sessionGuid);
+    }
+
+    private bool IsGuest =>
+        string.Equals(
+            Context.User?.FindFirstValue(GuestAuthentication.IsGuestClaim),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
+    // A guest cookie is bound to a single session via its 'sid' claim. Reject any attempt to act on
+    // a different session, so a guest can never reach sibling sessions in the same tenant.
+    private void EnsureSessionScope(Guid sessionId)
+    {
+        if (!IsGuest)
+        {
+            return;
+        }
+
+        var scoped = Context.User?.FindFirstValue(GuestAuthentication.SessionIdClaim);
+        if (!Guid.TryParse(scoped, out var scopedSessionId) || scopedSessionId != sessionId)
+        {
+            throw new HubException("This guest link is not valid for the requested session.");
+        }
+    }
+
+    private void EnsureNotGuest()
+    {
+        if (IsGuest)
+        {
+            throw new HubException("Guests can only vote; this action is restricted to members.");
+        }
     }
 
     private string ReadRequiredClaim(string claimType)

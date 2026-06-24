@@ -8,6 +8,8 @@ public interface IVotingRoundService
 
     Task<RoomSeed?> AuthorizeAndLoadSeedAsync(Guid sessionId, Guid userId, string? email, CancellationToken cancellationToken);
 
+    Task<RoomSeed?> LoadActiveSessionSeedAsync(Guid sessionId, CancellationToken cancellationToken);
+
     Task<bool> SelectEstimateAsync(Guid sessionId, Guid taskId, string? estimate, CancellationToken cancellationToken);
 }
 

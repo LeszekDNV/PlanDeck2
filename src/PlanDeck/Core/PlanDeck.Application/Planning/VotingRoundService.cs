@@ -27,6 +27,24 @@ public sealed class VotingRoundService(
             return null;
         }
 
+        return BuildSeed(session);
+    }
+
+    public async Task<RoomSeed?> LoadActiveSessionSeedAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        // Guests are authorized by their validated guest cookie + sid scope (enforced at the hub),
+        // not by membership — so this load only confirms the session exists and is still Active.
+        var session = await sessionRepository.GetSessionAsync(sessionId, cancellationToken);
+        if (session is null || session.Status != SessionStatus.Active)
+        {
+            return null;
+        }
+
+        return BuildSeed(session);
+    }
+
+    private static RoomSeed BuildSeed(PlanningSession session)
+    {
         var tasks = session.Tasks
             .OrderBy(task => task.SortOrder)
             .Select(task => new PlanningRoomTaskSnapshot(task.Id, task.Title, task.Description, task.SortOrder, task.AgreedEstimate))
