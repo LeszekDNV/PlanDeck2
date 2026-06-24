@@ -38,7 +38,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | S-04 | create-configure-session | create and configure a session from selected tasks | F-01, S-02 or S-03 | FR-005, FR-006 | done |
 | S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | done |
 | S-06 | realtime-voting-round | run a hidden-vote → reveal → manual-pick round in a session | F-02, S-04, S-05 | FR-008, FR-009, US-01 | done |
-| S-07 | guest-link-voting | join a session's vote via a share link with only a temporary username | S-04, F-02 | FR-013 | proposed |
+| S-07 | guest-link-voting | join a session's vote via a share link with only a temporary username | S-04, F-02 | FR-013 | done |
 | S-08 | ado-estimate-writeback | write the agreed estimate back to the originating Azure DevOps task | S-03, S-06 | FR-010, US-01 | proposed |
 
 ## Streams
@@ -198,7 +198,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - How is the per-session code scoped/expired so guests cannot reach other sessions (isolation)? — Owner: user. Block: no.
 - **Risk:** Frictionless guest voting is a deliberate differentiator, but it is the path that most stresses tenant isolation. It reuses the F-02 contract; the new surface is the link/code scoping, which must not leak across sessions. Can be built in parallel with the assigned-member path.
-- **Status:** proposed
+- **Status:** done
 
 ### S-08: Azure DevOps estimate write-back
 
@@ -254,3 +254,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-05: a user can assign/invite team members to a session.** — Archived 2026-06-22 → `context/archive/2026-06-22-assign-session-members/`. Lesson: —.
 - **S-06: assigned members join a session and vote on each task in real time; participants see who has voted as it happens, values stay hidden until the round is revealed and then appear together, and the user manually selects the agreed estimate, which is persisted.** — Archived 2026-06-23 → `context/archive/2026-06-22-realtime-voting-round/`. Lesson: —.
 - **S-03: a user can connect to Azure DevOps and import selected tasks into PlanDeck.** — Archived 2026-06-24 → `context/archive/2026-06-24-azure-devops-import/`. Lesson: —.
+- **S-07: a user without an account can join a session's vote via a share link containing a code, providing only a temporary username, and vote like any participant.** — Archived 2026-06-24 → `context/archive/2026-06-24-guest-link-voting/`. Lesson: —.
