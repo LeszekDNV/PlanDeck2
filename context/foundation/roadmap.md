@@ -39,7 +39,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | S-05 | assign-session-members | assign/invite team members to a session | S-01, S-04 | FR-007 | done |
 | S-06 | realtime-voting-round | run a hidden-vote → reveal → manual-pick round in a session | F-02, S-04, S-05 | FR-008, FR-009, US-01 | done |
 | S-07 | guest-link-voting | join a session's vote via a share link with only a temporary username | S-04, F-02 | FR-013 | done |
-| S-08 | ado-estimate-writeback | write the agreed estimate back to the originating Azure DevOps task | S-03, S-06 | FR-010, US-01 | proposed |
+| S-08 | ado-estimate-writeback | write the agreed estimate back to the originating Azure DevOps task | S-03, S-06 | FR-010, US-01 | done |
 
 ## Streams
 
@@ -210,7 +210,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The north star — closing the round-trip proves the MVP. The write-back client (PATCH with an optimistic `/rev` concurrency test) already exists, so the risk is in correctly mapping the persisted agreed estimate to the right work item/field and surfacing failures per the guardrail (never corrupt or silently drop). Sequenced last on the critical path because it can only write back an estimate the voting round (S-06) has produced for an ADO-sourced task (S-03).
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -255,3 +255,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-06: assigned members join a session and vote on each task in real time; participants see who has voted as it happens, values stay hidden until the round is revealed and then appear together, and the user manually selects the agreed estimate, which is persisted.** — Archived 2026-06-23 → `context/archive/2026-06-22-realtime-voting-round/`. Lesson: —.
 - **S-03: a user can connect to Azure DevOps and import selected tasks into PlanDeck.** — Archived 2026-06-24 → `context/archive/2026-06-24-azure-devops-import/`. Lesson: —.
 - **S-07: a user without an account can join a session's vote via a share link containing a code, providing only a temporary username, and vote like any participant.** — Archived 2026-06-24 → `context/archive/2026-06-24-guest-link-voting/`. Lesson: —.
+- **S-08: a user can write the agreed estimate back to the originating Azure DevOps task, with success or failure surfaced explicitly and never silently dropped.** — Archived 2026-06-24 → `context/archive/2026-06-24-ado-estimate-writeback/`. Lesson: —.
