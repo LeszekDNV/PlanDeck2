@@ -26,7 +26,16 @@ public sealed class PlanningSessionConfiguration : IEntityTypeConfiguration<Plan
 
         builder.PrimitiveCollection(s => s.ScaleValues);
 
+        builder.Property(s => s.ShareCode)
+            .HasMaxLength(16);
+
         builder.HasIndex(s => s.TenantId);
+
+        // Filtered unique index: share codes are tenant-agnostic join keys, so they must be
+        // globally unique, but only across sessions that actually have one (Draft sessions are null).
+        builder.HasIndex(s => s.ShareCode)
+            .IsUnique()
+            .HasFilter("[ShareCode] IS NOT NULL");
 
         builder.HasMany(s => s.Tasks)
             .WithOne()

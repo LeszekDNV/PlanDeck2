@@ -1,6 +1,7 @@
 using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Application.Planning;
 using PlanDeck.Application.Services;
 using PlanDeck.Core.Shared.Contracts;
 
@@ -13,6 +14,7 @@ public sealed class SessionGrpcServiceTests
     private FakeSessionMemberRepository _memberRepository = null!;
     private FakeCurrentUserContext _currentUser = null!;
     private RecordingPlanningRoomNotifier _notifier = null!;
+    private StubShareCodeGenerator _shareCodeGenerator = null!;
     private SessionGrpcService _service = null!;
 
     [SetUp]
@@ -22,7 +24,8 @@ public sealed class SessionGrpcServiceTests
         _memberRepository = new FakeSessionMemberRepository();
         _currentUser = new FakeCurrentUserContext();
         _notifier = new RecordingPlanningRoomNotifier();
-        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier);
+        _shareCodeGenerator = new StubShareCodeGenerator();
+        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier, _shareCodeGenerator);
     }
 
     [Test]
@@ -375,6 +378,31 @@ public sealed class SessionGrpcServiceTests
     }
 
     [Test]
+    public async Task ActivateSession_AssignsShareCode()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+
+        var reply = await _service.ActivateSessionAsync(new ActivateSessionRequest { Id = session.Id });
+
+        Assert.That(reply.Session.ShareCode, Is.Not.Null.And.Not.Empty);
+        Assert.That(session.ShareCode, Is.EqualTo(reply.Session.ShareCode));
+        Assert.That(_shareCodeGenerator.CallCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task ActivateSession_WhenAlreadyActive_KeepsExistingShareCode()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+        await _service.ActivateSessionAsync(new ActivateSessionRequest { Id = session.Id });
+        var firstCode = session.ShareCode;
+
+        var reply = await _service.ActivateSessionAsync(new ActivateSessionRequest { Id = session.Id });
+
+        Assert.That(reply.Session.ShareCode, Is.EqualTo(firstCode));
+        Assert.That(_shareCodeGenerator.CallCount, Is.EqualTo(1));
+    }
+
+    [Test]
     public async Task CreateSession_AddsCreatorAsMember()
     {
         _currentUser.Email = "creator@example.com";
@@ -420,6 +448,17 @@ public sealed class SessionGrpcServiceTests
         }));
 
         await Task.CompletedTask;
+    }
+
+    private sealed class StubShareCodeGenerator : IShareCodeGenerator
+    {
+        public int CallCount { get; private set; }
+
+        public string Generate()
+        {
+            CallCount++;
+            return $"CODE{CallCount:D6}";
+        }
     }
 
     private sealed class FakeCurrentUserContext : ICurrentUserContext
@@ -530,6 +569,15 @@ public sealed class SessionGrpcServiceTests
 
             task.AgreedEstimate = estimate;
             return Task.FromResult(true);
+        }
+
+        public Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(string shareCode, CancellationToken cancellationToken)
+        {
+            var session = _sessions.FirstOrDefault(s =>
+                s.ShareCode == shareCode && s.Status == SessionStatus.Active);
+            return Task.FromResult(session is null
+                ? null
+                : new GuestSessionReference(session.Id, session.TenantId));
         }
     }
 }

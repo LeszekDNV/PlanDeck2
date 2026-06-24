@@ -15,7 +15,11 @@ public interface ISessionRepository
     Task<bool> DeleteSessionAsync(Guid id, CancellationToken cancellationToken);
 
     Task<bool> SetAgreedEstimateAsync(Guid sessionId, Guid taskId, string? estimate, CancellationToken cancellationToken);
+
+    Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(string shareCode, CancellationToken cancellationToken);
 }
+
+public sealed record GuestSessionReference(Guid SessionId, Guid TenantId);
 
 public sealed class SessionNotFoundException(Guid sessionId)
     : Exception($"Session '{sessionId}' was not found in the current tenant.")

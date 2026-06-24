@@ -86,6 +86,9 @@ public sealed class SessionDto
 
     [DataMember(Order = 8)]
     public List<SessionTaskDto> Tasks { get; set; } = [];
+
+    [DataMember(Order = 9)]
+    public string? ShareCode { get; set; }
 }
 
 [DataContract]

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PlanDeck.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using PlanDeck.Infrastructure.Persistence;
 namespace PlanDeck.Infrastructure.Migrations
 {
     [DbContext(typeof(PlanDeckDbContext))]
-    partial class PlanDeckDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624125520_AddSessionShareCode")]
+    partial class AddSessionShareCode
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

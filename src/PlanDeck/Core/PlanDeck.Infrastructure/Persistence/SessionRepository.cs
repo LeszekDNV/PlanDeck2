@@ -63,4 +63,19 @@ public sealed class SessionRepository(PlanDeckDbContext db, ICurrentUserContext 
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(string shareCode, CancellationToken cancellationToken)
+    {
+        // Guest redeem runs before any tenant is known, so the tenant query filter is bypassed
+        // and the resolved session's own TenantId becomes the guest's effective tenant. Read-only:
+        // never SaveChanges here — the empty-tenant context would fail closed.
+        var session = await db.Sessions
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(s => s.ShareCode == shareCode && s.Status == SessionStatus.Active)
+            .Select(s => new GuestSessionReference(s.Id, s.TenantId))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return session;
+    }
 }

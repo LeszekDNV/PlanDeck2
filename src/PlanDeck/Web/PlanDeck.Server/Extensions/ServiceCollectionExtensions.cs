@@ -127,6 +127,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<TeamGrpcService>();
             services.AddScoped<ISessionRepository, SessionRepository>();
+            services.AddSingleton<IShareCodeGenerator, ShareCodeGenerator>();
             services.AddScoped<SessionGrpcService>();
             services.AddScoped<ISessionMemberRepository, SessionMemberRepository>();
             services.AddScoped<SessionMemberGrpcService>();

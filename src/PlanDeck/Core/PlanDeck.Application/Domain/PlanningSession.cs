@@ -14,5 +14,7 @@ public sealed class PlanningSession : TenantEntity
 
     public List<string> ScaleValues { get; set; } = [];
 
+    public string? ShareCode { get; set; }
+
     public List<SessionTask> Tasks { get; set; } = [];
 }

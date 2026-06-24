@@ -1,6 +1,7 @@
 using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Application.Planning;
 using PlanDeck.Core.Shared.Contracts;
 using PlanDeck.Core.Shared.Validation;
 using ProtoBuf.Grpc;
@@ -11,7 +12,8 @@ public sealed class SessionGrpcService(
     ISessionRepository repository,
     ISessionMemberRepository memberRepository,
     ICurrentUserContext currentUser,
-    IPlanningRoomNotifier roomNotifier) : ISessionService
+    IPlanningRoomNotifier roomNotifier,
+    IShareCodeGenerator shareCodeGenerator) : ISessionService
 {
     private static readonly string[] FibonacciFaces = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -234,6 +236,9 @@ public sealed class SessionGrpcService(
             if (session.Status != SessionStatus.Active)
             {
                 session.Status = SessionStatus.Active;
+                // Mint the share code on first activation so guests can join via link; once set it
+                // is stable for the life of the session.
+                session.ShareCode ??= shareCodeGenerator.Generate();
                 await repository.UpdateSessionAsync(session, context.CancellationToken);
             }
 
@@ -370,7 +375,8 @@ public sealed class SessionGrpcService(
         ScaleType = (VotingScaleTypeDto)(int)session.ScaleType,
         ScaleValues = [.. session.ScaleValues],
         CreatedAtUtc = session.CreatedAtUtc.UtcDateTime,
-        Tasks = session.Tasks.OrderBy(t => t.SortOrder).Select(ToDto).ToList()
+        Tasks = session.Tasks.OrderBy(t => t.SortOrder).Select(ToDto).ToList(),
+        ShareCode = session.ShareCode
     };
 
     private static SessionTaskDto ToDto(SessionTask task) => new()
