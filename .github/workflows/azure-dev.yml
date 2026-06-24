@@ -41,10 +41,10 @@ jobs:
       AZURE_RESOURCE_GROUP: rg-${{ vars.AZURE_ENV_NAME }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install .NET 10 SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           # Install the exact SDK pinned in global.json (10.0.301). Using "10.0.x" would install a
           # newer patch whose bundled Microsoft.NET.Sdk.WebAssembly.Pack has a different content
@@ -63,7 +63,7 @@ jobs:
 
       # az CLI is needed to mint an Azure SQL access token for the migration step.
       - name: Sign in to Azure CLI (OIDC)
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
