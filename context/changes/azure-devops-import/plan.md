@@ -317,11 +317,11 @@ None — no schema or data changes.
 
 #### Automated
 
-- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 2.2 New + existing unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 2.3 E2E suite passes locally (Podman): `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx` — 58721a4
+- [x] 2.2 New + existing unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — 58721a4
+- [x] 2.3 E2E suite passes locally (Podman): `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj` — 58721a4
 
 #### Manual
 
-- [x] 2.4 E2E import test passes with no real Azure DevOps configured (fake serves data)
-- [x] 2.5 Fake client active only under the test scheme; normal `dotnet run` uses the real client
+- [x] 2.4 E2E import test passes with no real Azure DevOps configured (fake serves data) — 58721a4
+- [x] 2.5 Fake client active only under the test scheme; normal `dotnet run` uses the real client — 58721a4
