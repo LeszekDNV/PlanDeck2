@@ -1,7 +1,7 @@
 ---
 change_id: ado-estimate-writeback
 title: Write the agreed estimate back to the originating Azure DevOps task
-status: implementing
+status: implemented
 created: 2026-06-24
 updated: 2026-06-24
 archived_at: null

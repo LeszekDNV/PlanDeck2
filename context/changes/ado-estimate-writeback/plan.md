@@ -374,14 +374,14 @@ No schema change. `AdoRevision` already exists; only its value is updated post-w
 
 #### Automated
 
-- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 2.2 Unit tests still pass
-- [x] 2.3 E2E round-trip test passes locally (Aspire + Podman)
-- [x] 2.4 Both `.resx` and `.pl.resx` contain every new key
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx` — 74ce246
+- [x] 2.2 Unit tests still pass — 74ce246
+- [x] 2.3 E2E round-trip test passes locally (Aspire + Podman) — 74ce246
+- [x] 2.4 Both `.resx` and `.pl.resx` contain every new key — 74ce246
 
 #### Manual
 
-- [x] 2.5 Action shows only for numeric ADO estimates; absent for T-Shirt / `?` / `☕`
-- [x] 2.6 Success snackbar shown; stored revision advances (no false second-write conflict)
-- [x] 2.7 Conflict / rate-limit / failure each surface the correct distinct localized message
-- [x] 2.8 Polish locale shows translated strings for all five keys
+- [x] 2.5 Action shows only for numeric ADO estimates; absent for T-Shirt / `?` / `☕` — 74ce246
+- [x] 2.6 Success snackbar shown; stored revision advances (no false second-write conflict) — 74ce246
+- [x] 2.7 Conflict / rate-limit / failure each surface the correct distinct localized message — 74ce246
+- [x] 2.8 Polish locale shows translated strings for all five keys — 74ce246
