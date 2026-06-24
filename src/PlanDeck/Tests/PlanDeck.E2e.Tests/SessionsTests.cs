@@ -70,6 +70,26 @@ public class SessionsTests : PageTest
     }
 
     [Test]
+    public async Task ImportFromAzureDevOps_AddsWorkItemWithAdoChip()
+    {
+        var sessionName = $"E2E ADO {Guid.NewGuid():N}";
+        var seedTask = $"Seed {Guid.NewGuid():N}";
+
+        var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+
+        await sessions.GotoAsync();
+        await sessions.CreateSessionAsync(sessionName, seedTask);
+        await sessions.SelectSessionAsync(sessionName);
+
+        // The test-scheme fake serves a fixed work item with id 1001.
+        await sessions.ImportAdoWorkItemAsync(1001);
+
+        var task = sessions.ConfigTask("Import work items from Azure DevOps");
+        await Expect(task).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await Expect(task.GetByText("ADO #1001")).ToBeVisibleAsync(new() { Timeout = 15_000 });
+    }
+
+    [Test]
     public async Task Sessions_RendersOnMobileViewport()
     {
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);

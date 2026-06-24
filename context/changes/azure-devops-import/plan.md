@@ -303,25 +303,25 @@ None — no schema or data changes.
 
 #### Automated
 
-- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 1.2 Existing unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 1.1 Solution builds: `dotnet build PlanDeck.slnx` — 2eb2559
+- [x] 1.2 Existing unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — 2eb2559
 
 #### Manual
 
-- [x] 1.3 Create dialog: filter + load + select + add stages tasks that persist with ADO chips
-- [x] 1.4 Config panel: same flow persists via a single batch call and renders immediately
-- [x] 1.5 Re-adding an already-present work item does not duplicate
-- [x] 1.6 Filter labels render in both `en` and `pl`
+- [x] 1.3 Create dialog: filter + load + select + add stages tasks that persist with ADO chips — 2eb2559
+- [x] 1.4 Config panel: same flow persists via a single batch call and renders immediately — 2eb2559
+- [x] 1.5 Re-adding an already-present work item does not duplicate — 2eb2559
+- [x] 1.6 Filter labels render in both `en` and `pl` — 2eb2559
 
 ### Phase 2: Test coverage (fake ADO client, unit, E2E)
 
 #### Automated
 
-- [ ] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 2.2 New + existing unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [ ] 2.3 E2E suite passes locally (Podman): `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
+- [x] 2.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 2.2 New + existing unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 2.3 E2E suite passes locally (Podman): `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj`
 
 #### Manual
 
-- [ ] 2.4 E2E import test passes with no real Azure DevOps configured (fake serves data)
-- [ ] 2.5 Fake client active only under the test scheme; normal `dotnet run` uses the real client
+- [x] 2.4 E2E import test passes with no real Azure DevOps configured (fake serves data)
+- [x] 2.5 Fake client active only under the test scheme; normal `dotnet run` uses the real client

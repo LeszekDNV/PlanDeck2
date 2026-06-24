@@ -10,6 +10,7 @@ using PlanDeck.Infrastructure.AzureDevOps;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Identity;
 using PlanDeck.Server.Realtime;
+using PlanDeck.Server.Testing;
 
 namespace PlanDeck.Server.Extensions;
 
@@ -67,8 +68,7 @@ public static class ServiceCollectionExtensions
                         TestAuthenticationHandler.SchemeName, null);
 
                 services.AddAuthorization();
-                services.Configure<AzureDevOpsOptions>(configuration.GetSection(AzureDevOpsOptions.SectionName));
-                services.AddHttpClient<IAzureDevOpsWorkItemClient, AzureDevOpsWorkItemClient>();
+                services.AddScoped<IAzureDevOpsWorkItemClient, FakeAzureDevOpsWorkItemClient>();
 
                 return services;
             }

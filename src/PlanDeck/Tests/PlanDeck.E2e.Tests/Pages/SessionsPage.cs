@@ -154,6 +154,33 @@ public class SessionsPage
     public ILocator SessionEntry(string name) =>
         _page.Locator("[data-testid=session-entry]").Filter(new() { HasText = name });
 
+    private ILocator AdoImportButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Import from Azure DevOps" });
+
+    private ILocator AdoDialog =>
+        _page.Locator(".mud-dialog").Filter(new() { HasText = "Import from Azure DevOps" });
+
+    public async Task ImportAdoWorkItemAsync(int workItemId)
+    {
+        // Open the import dialog from the config panel.
+        await AdoImportButton.First.ClickAsync();
+
+        var dialog = AdoDialog;
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+
+        // The load button shares the "Import from Azure DevOps" label, so scope to the dialog.
+        await dialog.GetByRole(AriaRole.Button, new() { Name = "Import from Azure DevOps" }).ClickAsync();
+
+        // Select the requested work item by clicking its checkbox label.
+        var row = dialog.Locator("label.mud-checkbox").Filter(new() { HasText = $"#{workItemId}" });
+        await row.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await row.ClickAsync();
+
+        // "Add selected" closes the dialog and persists the tasks.
+        await dialog.Locator("button:has-text('Add selected')").ClickAsync();
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Hidden, Timeout = 15_000 });
+    }
+
     public ILocator ConfigTask(string title) =>
         _page.Locator("[data-testid=config-task]").Filter(new() { HasText = title });
 
