@@ -298,10 +298,10 @@ Author a human-followable runbook that proves the four runtime-contract checks a
 
 #### Automated
 
-- [x] 3.1 `runbook.md` exists in the change folder
+- [x] 3.1 `runbook.md` exists in the change folder — 32b5d85
 
 #### Manual
 
-- [x] 3.2 Human executed runbook; all five checks pass (DB warmup, WASM, gRPC-Web, SignalR round, persistence)
-- [x] 3.3 SignalR room survives/reconnects through one ACA revision change
-- [x] 3.4 Results recorded in runbook.md and summarized in change.md
+- [x] 3.2 Human executed runbook; all five checks pass (DB warmup, WASM, gRPC-Web, SignalR round, persistence) — 32b5d85
+- [x] 3.3 SignalR room survives/reconnects through one ACA revision change — 32b5d85
+- [x] 3.4 Results recorded in runbook.md and summarized in change.md — 32b5d85

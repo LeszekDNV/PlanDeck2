@@ -1,7 +1,7 @@
 ---
 change_id: deploy-realtime-validation-skeleton
 title: Pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL runtime stack
-status: implementing
+status: implemented
 created: 2026-06-24
 updated: 2026-06-25
 archived_at: null
