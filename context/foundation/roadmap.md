@@ -3,7 +3,7 @@ project: "PlanDeck"
 version: 1
 status: draft
 created: 2026-06-18
-updated: 2026-06-24
+updated: 2026-06-25
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -31,7 +31,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 |---|---|---|---|---|---|
 | F-01 | multitenant-persistence-baseline | (foundation) persisted, tenant-scoped domain model with verified migrations | — | Access Control Changes, Guardrails (tenant isolation), FR-001 | done |
 | F-02 | realtime-vote-integrity | (foundation) authoritative hidden-vote/reveal contract with consistency guarantees | F-01 | Guardrails (vote consistency, hidden-until-reveal), Business Logic Changes | proposed |
-| F-03 | deploy-realtime-validation-skeleton | (foundation) pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL stack | — | Constraints & Compatibility; infrastructure.md (ACA + Azure SQL) | ready |
+| F-03 | deploy-realtime-validation-skeleton | (foundation) pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL stack | — | Constraints & Compatibility; infrastructure.md (ACA + Azure SQL) | done |
 | S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | done |
 | S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | done |
 | S-03 | azure-devops-import | connect Azure DevOps and import selected tasks | F-01 | FR-003 | done |
@@ -108,7 +108,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - Does gRPC-Web behave identically through ACA ingress as locally? — Owner: user. Block: no.
   - Do SignalR rooms survive ACA revision/scale changes with `minReplicas=1` + sticky sessions? — Owner: user. Block: no.
 - **Risk:** Included as a foundation (not pure ops) because validating the real-time stack early is a `quality`-goal de-risking step the `infrastructure.md` risk register calls out. Kept light per the `time` blocker and "go simple on infra" — single replica, single region, no Azure SignalR backplane. Risk if deferred: a gRPC-Web/SignalR incompatibility surfaces only at production, after the loop is built.
-- **Status:** ready
+- **Status:** done
 
 ## Slices
 
@@ -254,5 +254,6 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-05: a user can assign/invite team members to a session.** — Archived 2026-06-22 → `context/archive/2026-06-22-assign-session-members/`. Lesson: —.
 - **S-06: assigned members join a session and vote on each task in real time; participants see who has voted as it happens, values stay hidden until the round is revealed and then appear together, and the user manually selects the agreed estimate, which is persisted.** — Archived 2026-06-23 → `context/archive/2026-06-22-realtime-voting-round/`. Lesson: —.
 - **S-03: a user can connect to Azure DevOps and import selected tasks into PlanDeck.** — Archived 2026-06-24 → `context/archive/2026-06-24-azure-devops-import/`. Lesson: —.
+- **F-03: (foundation) a minimal pilot environment on Azure Container Apps + Azure SQL exists, and the exact runtime contract — hosted Blazor WASM load, gRPC-Web unary calls, a SignalR voting round staying connected through reveal, and SQL access via managed identity — is validated.** — Archived 2026-06-25 → `context/archive/2026-06-24-deploy-realtime-validation-skeleton/`. Lesson: —.
 - **S-07: a user without an account can join a session's vote via a share link containing a code, providing only a temporary username, and vote like any participant.** — Archived 2026-06-24 → `context/archive/2026-06-24-guest-link-voting/`. Lesson: —.
 - **S-08: a user can write the agreed estimate back to the originating Azure DevOps task, with success or failure surfaced explicitly and never silently dropped.** — Archived 2026-06-24 → `context/archive/2026-06-24-ado-estimate-writeback/`. Lesson: —.
