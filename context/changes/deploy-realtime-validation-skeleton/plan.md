@@ -284,24 +284,24 @@ Author a human-followable runbook that proves the four runtime-contract checks a
 
 #### Automated
 
-- [x] 2.1 `.github/workflows/azure-dev.yml` exists and is valid YAML
-- [x] 2.2 Workflow run is green on push to main (provision + deploy + migrate)
-- [x] 2.3 `az containerapp show` reports Running + external FQDN
+- [x] 2.1 `.github/workflows/azure-dev.yml` exists and is valid YAML — f095edb
+- [x] 2.2 Workflow run is green on push to main (provision + deploy + migrate) — f095edb
+- [x] 2.3 `az containerapp show` reports Running + external FQDN — f095edb
 
 #### Manual
 
-- [x] 2.4 Azure SQL contains EF tables after migration step (__EFMigrationsHistory populated)
-- [x] 2.5 No Azure auth secrets stored in repo/GitHub Secrets (OIDC federated only)
-- [x] 2.6 Second push redeploys cleanly; migration step is a no-op
+- [x] 2.4 Azure SQL contains EF tables after migration step (__EFMigrationsHistory populated) — f095edb
+- [x] 2.5 No Azure auth secrets stored in repo/GitHub Secrets (OIDC federated only) — f095edb
+- [x] 2.6 Second push redeploys cleanly; migration step is a no-op — f095edb
 
 ### Phase 3: Manual validation runbook + first run
 
 #### Automated
 
-- [ ] 3.1 `runbook.md` exists in the change folder
+- [x] 3.1 `runbook.md` exists in the change folder
 
 #### Manual
 
-- [ ] 3.2 Human executed runbook; all five checks pass (DB warmup, WASM, gRPC-Web, SignalR round, persistence)
-- [ ] 3.3 SignalR room survives/reconnects through one ACA revision change
-- [ ] 3.4 Results recorded in runbook.md and summarized in change.md
+- [x] 3.2 Human executed runbook; all five checks pass (DB warmup, WASM, gRPC-Web, SignalR round, persistence)
+- [x] 3.3 SignalR room survives/reconnects through one ACA revision change
+- [x] 3.4 Results recorded in runbook.md and summarized in change.md
