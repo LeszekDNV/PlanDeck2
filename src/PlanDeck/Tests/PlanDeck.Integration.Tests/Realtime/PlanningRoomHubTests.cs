@@ -374,7 +374,10 @@ public sealed class PlanningRoomHubTests
         await WaitForBroadcastAsync(signal);
 
         var ex = Assert.ThrowsAsync<HubException>(async () => await connection.InvokeAsync("CastVote", sid, "5"));
-        Assert.That(ex!.Message, Does.Contain("An unexpected error occurred invoking 'CastVote'"));
+        Assert.That(ex, Is.Not.Null);
+
+        var extraBroadcast = await signal.WaitAsync(TimeSpan.FromMilliseconds(300));
+        Assert.That(extraBroadcast, Is.False, "Rejected post-reveal vote must not emit a RoomStateChanged broadcast.");
 
         await connection.DisposeAsync();
     }

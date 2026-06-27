@@ -25,7 +25,7 @@ The codebase already has:
 ## Desired End State
 
 After this plan is complete:
-- Hub integration tests prove: reconnect yields consistent state, full disconnect clears vote by design, reveal is atomic, persist-first estimate never broadcasts on failure, last-write-wins is clean, ADO write-back signals errors explicitly
+- Hub integration tests prove: reconnect yields consistent state, full disconnect marks participant offline while preserving vote state, reveal is atomic, persist-first estimate never broadcasts on failure, last-write-wins is clean, ADO write-back signals errors explicitly
 - A config-to-voting integration test proves: scale values propagate from session config into voting room validation
 - Three e2e tests prove in real browsers: two-user vote/reveal consistency, estimate persistence round-trip, and session config feeding into a voting round
 - Test-plan §6.1 and §6.4 cookbook entries are filled with patterns from this phase
@@ -63,7 +63,7 @@ Add integration test methods to `PlanningRoomHubTests` covering disconnect/recon
 
 **Risk #1 — Disconnect/Reveal Consistency:**
 - `Reconnect_AfterBriefDisconnect_ReceivesCurrentRoomState` — participant joins, votes, connection drops briefly, reconnects via new `JoinRoom` call, receives current state (votes hidden or revealed depending on round state)
-- `FullDisconnect_ClearsVote_ByDesign` — participant votes, all connections disposed, second participant sees `HasVoted` flag cleared for the disconnected participant
+- `FullDisconnect_MarksOffline_PreservesVoteState` — participant votes, all connections disposed, second participant sees the disconnected participant marked offline while the voted state remains unchanged until an explicit leave/reset action
 - `Reveal_WithPartialTurnout_ExposesOnlySubmittedVotes` — two participants joined, only one votes, reveal shows one vote value + one null; no error
 - `Reveal_IsIdempotent_SecondCallReturnsSameState` — reveal called twice via hub invocation, second broadcast matches first exactly
 - `CastVote_AfterReveal_ThrowsHubException` — attempt to vote after reveal produces `HubException`
@@ -138,7 +138,7 @@ Add integration tests proving that session configuration (task selection, voting
 
 #### Automated Verification:
 
-- All new config pipeline tests pass: `dotnet test Tests/PlanDeck.Integration.Tests --filter "FullyQualifiedName~PlanningRoomHubTests.JoinRoom" | "FullyQualifiedName~PlanningRoomHubTests.Config"`
+- All new config pipeline tests pass: `dotnet test Tests/PlanDeck.Integration.Tests --filter "FullyQualifiedName~PlanningRoomHubTests.JoinRoom"`; `dotnet test Tests/PlanDeck.Integration.Tests --filter "FullyQualifiedName~PlanningRoomHubTests.Config"`
 - All new persistence tests pass: `dotnet test Tests/PlanDeck.Integration.Tests --filter "FullyQualifiedName~SessionPersistenceTests"`
 - Full solution build succeeds: `dotnet build PlanDeck.slnx`
 - No regressions: `dotnet test PlanDeck.slnx`
@@ -280,7 +280,7 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 #### Automated
 
 - [x] 1.1 All new hub integration tests pass — 8bb7f9b
-- [x] 1.2 All new ADO write-back unit tests pass — 8bb7f9b
+- [x] 1.2 Existing ADO write-back unit tests validated for this phase — 8bb7f9b
 - [x] 1.3 No regressions in existing test suite — 8bb7f9b
 - [x] 1.4 Solution builds cleanly — 8bb7f9b
 

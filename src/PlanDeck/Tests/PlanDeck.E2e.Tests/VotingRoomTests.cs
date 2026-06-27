@@ -163,6 +163,7 @@ public class VotingRoomTests : PageTest
 
         await votingA.VoteAsync("3");
         await votingB.VoteAsync("5");
+        await Expect(votingA.VotedStatuses).ToHaveCountAsync(2, new() { Timeout = 15_000 });
 
         await pageB.CloseAsync();
         await votingA.RevealAsync();
