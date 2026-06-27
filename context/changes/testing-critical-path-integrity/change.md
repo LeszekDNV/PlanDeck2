@@ -1,7 +1,7 @@
 ---
 change_id: testing-critical-path-integrity
 title: Critical-path integrity tests (reconnect/reveal, estimate save, session config)
-status: implementing
+status: implemented
 created: 2026-06-27
 updated: 2026-06-27
 archived_at: null
