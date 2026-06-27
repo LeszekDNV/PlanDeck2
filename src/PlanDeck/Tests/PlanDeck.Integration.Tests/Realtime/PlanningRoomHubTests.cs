@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -185,6 +186,255 @@ public sealed class PlanningRoomHubTests
             "Selected estimate must be persisted to the database.");
     }
 
+    [Test]
+    public async Task Reconnect_AfterDisconnect_RetainsVoteAndRestoresOnlineStatus()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true);
+        var sid = sessionId.ToString();
+
+        var first = CreateConnection();
+        PlanningRoomState? latest = null;
+        var firstSignal = new SemaphoreSlim(0);
+        first.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            latest = state;
+            firstSignal.Release();
+        });
+
+        await first.StartAsync();
+        await first.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(firstSignal);
+
+        await first.InvokeAsync("CastVote", sid, "3");
+        await WaitForBroadcastAsync(firstSignal);
+
+        var beforeDisconnect = latest!.Participants.Single(participant => participant.ParticipantId == TestObjectId);
+        Assert.That(beforeDisconnect.HasVoted, Is.True);
+        Assert.That(beforeDisconnect.IsOnline, Is.True);
+
+        await first.DisposeAsync();
+
+        var second = CreateConnection();
+        PlanningRoomState? rejoined = null;
+        var secondSignal = new SemaphoreSlim(0);
+        second.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            rejoined = state;
+            secondSignal.Release();
+        });
+
+        await second.StartAsync();
+        await second.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(secondSignal);
+
+        var afterReconnect = rejoined!.Participants.Single(participant => participant.ParticipantId == TestObjectId);
+        Assert.That(afterReconnect.HasVoted, Is.True, "Disconnect should not drop the voted flag.");
+        Assert.That(afterReconnect.IsOnline, Is.True, "Rejoin should restore online presence.");
+        Assert.That(afterReconnect.Vote, Is.Null, "Votes remain hidden until reveal.");
+
+        await second.DisposeAsync();
+    }
+
+    [Test]
+    public async Task Disconnect_WithoutLeave_KeepsVote_AndMarksParticipantOffline()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true);
+        var sid = sessionId.ToString();
+
+        var observer = CreateGuestConnection(sessionId);
+        PlanningRoomState? observerState = null;
+        var observerSignal = new SemaphoreSlim(0);
+        observer.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            observerState = state;
+            observerSignal.Release();
+        });
+
+        await observer.StartAsync();
+        await observer.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(observerSignal);
+
+        var voter = CreateConnection();
+        await voter.StartAsync();
+        await voter.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(observerSignal);
+
+        await voter.InvokeAsync("CastVote", sid, "5");
+        await WaitForBroadcastAsync(observerSignal);
+
+        var beforeDisconnect = observerState!.Participants.Single(participant => participant.ParticipantId == TestObjectId);
+        Assert.That(beforeDisconnect.HasVoted, Is.True);
+        Assert.That(beforeDisconnect.IsOnline, Is.True);
+
+        await voter.DisposeAsync();
+        await WaitForBroadcastAsync(observerSignal);
+
+        var afterDisconnect = observerState!.Participants.Single(participant => participant.ParticipantId == TestObjectId);
+        Assert.That(afterDisconnect.HasVoted, Is.True, "Disconnect should not clear vote state.");
+        Assert.That(afterDisconnect.IsOnline, Is.False, "Disconnect should mark participant offline.");
+
+        await observer.DisposeAsync();
+    }
+
+    [Test]
+    public async Task Reveal_WithPartialTurnout_ExposesOnlySubmittedVotes()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true);
+        var sid = sessionId.ToString();
+
+        var member = CreateConnection();
+        PlanningRoomState? latest = null;
+        var signal = new SemaphoreSlim(0);
+        member.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            latest = state;
+            signal.Release();
+        });
+
+        var guest = CreateGuestConnection(sessionId);
+        await member.StartAsync();
+        await member.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+
+        await guest.StartAsync();
+        await guest.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+
+        await member.InvokeAsync("CastVote", sid, "5");
+        await WaitForBroadcastAsync(signal);
+
+        await member.InvokeAsync("RevealVotes", sid);
+        await WaitForBroadcastAsync(signal);
+
+        Assert.That(latest!.IsRevealed, Is.True);
+        var memberState = latest.Participants.Single(participant => participant.ParticipantId == TestObjectId);
+        Assert.That(memberState.Vote, Is.EqualTo("5"));
+
+        var guestState = latest.Participants.Single(participant => participant.ParticipantId == "44444444-4444-4444-4444-444444444444");
+        Assert.That(guestState.HasVoted, Is.False);
+        Assert.That(guestState.Vote, Is.Null);
+
+        await guest.DisposeAsync();
+        await member.DisposeAsync();
+    }
+
+    [Test]
+    public async Task Reveal_IsIdempotent_SecondCallReturnsSameState()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true);
+        var sid = sessionId.ToString();
+
+        var connection = CreateConnection();
+        var signal = new SemaphoreSlim(0);
+        PlanningRoomState? latest = null;
+        connection.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            latest = state;
+            signal.Release();
+        });
+
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+        await connection.InvokeAsync("CastVote", sid, "3");
+        await WaitForBroadcastAsync(signal);
+
+        await connection.InvokeAsync("RevealVotes", sid);
+        await WaitForBroadcastAsync(signal);
+        var firstReveal = latest!;
+
+        await connection.InvokeAsync("RevealVotes", sid);
+        await WaitForBroadcastAsync(signal);
+        var secondReveal = latest!;
+
+        Assert.That(secondReveal.IsRevealed, Is.EqualTo(firstReveal.IsRevealed));
+        Assert.That(secondReveal.CurrentTaskId, Is.EqualTo(firstReveal.CurrentTaskId));
+        Assert.That(secondReveal.Tasks, Is.EqualTo(firstReveal.Tasks));
+        Assert.That(secondReveal.Participants, Is.EqualTo(firstReveal.Participants));
+        Assert.That(secondReveal.ScaleValues, Is.EqualTo(firstReveal.ScaleValues));
+
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task CastVote_AfterReveal_ThrowsHubException()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true);
+        var sid = sessionId.ToString();
+        var connection = CreateConnection();
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", _ => signal.Release());
+
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+        await connection.InvokeAsync("CastVote", sid, "3");
+        await WaitForBroadcastAsync(signal);
+        await connection.InvokeAsync("RevealVotes", sid);
+        await WaitForBroadcastAsync(signal);
+
+        var ex = Assert.ThrowsAsync<HubException>(async () => await connection.InvokeAsync("CastVote", sid, "5"));
+        Assert.That(ex!.Message, Does.Contain("An unexpected error occurred invoking 'CastVote'"));
+
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task SelectEstimate_OnPersistFailure_DoesNotBroadcast()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true);
+        var sid = sessionId.ToString();
+        var connection = CreateConnection();
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", _ => signal.Release());
+
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+
+        var ex = Assert.ThrowsAsync<HubException>(async () =>
+            await connection.InvokeAsync("SelectEstimate", sid, Guid.NewGuid().ToString(), "3"));
+        Assert.That(ex!.Message, Does.Contain("could not be saved"));
+
+        var extraBroadcast = await signal.WaitAsync(TimeSpan.FromMilliseconds(300));
+        Assert.That(extraBroadcast, Is.False, "Failed persistence must not emit a RoomStateChanged broadcast.");
+
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task SelectEstimate_LastWriteWins_NoConcurrencyError()
+    {
+        var (sessionId, _, secondTaskId) = SeedSession(assignTestUser: true);
+        var sid = sessionId.ToString();
+
+        var connection = CreateConnection();
+        PlanningRoomState? latest = null;
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            latest = state;
+            signal.Release();
+        });
+
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+        await connection.InvokeAsync("SetActiveTask", sid, secondTaskId.ToString());
+        await WaitForBroadcastAsync(signal);
+
+        await connection.InvokeAsync("SelectEstimate", sid, secondTaskId.ToString(), "3");
+        await WaitForBroadcastAsync(signal);
+        await connection.InvokeAsync("SelectEstimate", sid, secondTaskId.ToString(), "5");
+        await WaitForBroadcastAsync(signal);
+
+        var taskState = latest!.Tasks.Single(task => task.TaskId == secondTaskId);
+        Assert.That(taskState.AgreedEstimate, Is.EqualTo("5"));
+        Assert.That(ReadPersistedEstimate(sessionId, secondTaskId), Is.EqualTo("5"));
+
+        await connection.DisposeAsync();
+    }
+
     private (Guid SessionId, Guid FirstTaskId, Guid SecondTaskId) SeedSession(bool assignTestUser, Guid? createdByUserId = null)
     {
         using var scope = _factory.Services.CreateScope();
@@ -240,15 +490,22 @@ public sealed class PlanningRoomHubTests
         return new ClaimsPrincipal(identity);
     }
 
-    private HubConnection CreateConnection()
+    private HubConnection CreateConnection(Action<HttpConnectionOptions>? configure = null)
     {
         return new HubConnectionBuilder()
             .WithUrl(new Uri(_factory.Server.BaseAddress, "hubs/planning-room"), options =>
             {
                 options.HttpMessageHandlerFactory = _ => _factory.Server.CreateHandler();
                 options.Transports = HttpTransportType.LongPolling;
+                configure?.Invoke(options);
             })
             .Build();
+    }
+
+    private HubConnection CreateGuestConnection(Guid sessionId)
+    {
+        return CreateConnection(options =>
+            options.Headers[TestAuthenticationHandler.GuestSessionHeader] = sessionId.ToString());
     }
 
     private static async Task WaitForBroadcastAsync(SemaphoreSlim signal)
