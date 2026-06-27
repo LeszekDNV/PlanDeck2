@@ -435,6 +435,93 @@ public sealed class PlanningRoomHubTests
         await connection.DisposeAsync();
     }
 
+    [Test]
+    public async Task JoinRoom_WithCustomScale_VoteOutsideScaleRejected()
+    {
+        var (sessionId, taskIds) = SeedSessionWithConfig(
+            assignTestUser: true,
+            scaleValues: ["S", "M", "L"],
+            tasks: [("Task Custom Scale", 0)]);
+        var sid = sessionId.ToString();
+        var connection = CreateConnection();
+        PlanningRoomState? latest = null;
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            latest = state;
+            signal.Release();
+        });
+
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+
+        Assert.That(latest!.ScaleValues, Is.EqualTo(new[] { "S", "M", "L" }));
+        Assert.That(latest.Tasks.Single().TaskId, Is.EqualTo(taskIds[0]));
+
+        var ex = Assert.ThrowsAsync<HubException>(async () => await connection.InvokeAsync("CastVote", sid, "5"));
+        Assert.That(ex, Is.Not.Null);
+
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task JoinRoom_WithMultipleTasks_TaskSelectionPreserved()
+    {
+        var (sessionId, taskIds) = SeedSessionWithConfig(
+            assignTestUser: true,
+            scaleValues: ["1", "2", "3", "5"],
+            tasks: [("Task C", 2), ("Task A", 0), ("Task B", 1)]);
+        var sid = sessionId.ToString();
+        var connection = CreateConnection();
+        PlanningRoomState? latest = null;
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            latest = state;
+            signal.Release();
+        });
+
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+
+        Assert.That(latest!.Tasks.Select(task => task.SortOrder), Is.EqualTo(new[] { 0, 1, 2 }));
+        Assert.That(latest.Tasks.Select(task => task.Title), Is.EqualTo(new[] { "Task A", "Task B", "Task C" }));
+        Assert.That(latest.CurrentTaskId, Is.EqualTo(taskIds[1]), "Current task should be the lowest sort-order task.");
+
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task ConfigRoundTrip_CreateAndJoin_ScaleMatchesConfiguration()
+    {
+        var (sessionId, _) = SeedSessionWithConfig(
+            assignTestUser: true,
+            scaleValues: ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"],
+            tasks: [("Task A", 0), ("Task B", 1)]);
+        var sid = sessionId.ToString();
+        var connection = CreateConnection();
+        PlanningRoomState? latest = null;
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            latest = state;
+            signal.Release();
+        });
+
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sid);
+        await WaitForBroadcastAsync(signal);
+
+        Assert.That(
+            latest!.ScaleValues,
+            Is.EqualTo(new[] { "0", "1", "2", "3", "5", "8", "13", "21", "?", "☕" }),
+            "Voting room scale should match persisted session configuration.");
+
+        await connection.DisposeAsync();
+    }
+
     private (Guid SessionId, Guid FirstTaskId, Guid SecondTaskId) SeedSession(bool assignTestUser, Guid? createdByUserId = null)
     {
         using var scope = _factory.Services.CreateScope();
@@ -476,6 +563,49 @@ public sealed class PlanningRoomHubTests
             .AsNoTracking()
             .Single(task => task.Id == taskId && task.SessionId == sessionId)
             .AgreedEstimate;
+    }
+
+    private (Guid SessionId, Guid[] TaskIds) SeedSessionWithConfig(
+        bool assignTestUser,
+        IReadOnlyList<string> scaleValues,
+        IReadOnlyList<(string Title, int SortOrder)> tasks,
+        Guid? createdByUserId = null)
+    {
+        using var scope = _factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<RequestPrincipalAccessor>().Principal = BuildTestPrincipal();
+        var db = scope.ServiceProvider.GetRequiredService<PlanDeckDbContext>();
+
+        var sessionId = Guid.NewGuid();
+        var taskIds = tasks.Select(_ => Guid.NewGuid()).ToArray();
+        db.Sessions.Add(new PlanningSession
+        {
+            Id = sessionId,
+            Name = "Hub Config Session",
+            Status = SessionStatus.Active,
+            ScaleType = VotingScaleType.Custom,
+            ScaleValues = [.. scaleValues],
+            CreatedByUserId = createdByUserId ?? Guid.Empty
+        });
+
+        for (var i = 0; i < tasks.Count; i++)
+        {
+            var (title, sortOrder) = tasks[i];
+            db.SessionTasks.Add(new SessionTask
+            {
+                Id = taskIds[i],
+                SessionId = sessionId,
+                Title = title,
+                SortOrder = sortOrder
+            });
+        }
+
+        if (assignTestUser)
+        {
+            db.SessionMembers.Add(new SessionMember { SessionId = sessionId, Email = TestEmail });
+        }
+
+        db.SaveChanges();
+        return (sessionId, taskIds);
     }
 
     private static ClaimsPrincipal BuildTestPrincipal()

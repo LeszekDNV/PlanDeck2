@@ -174,6 +174,57 @@ public sealed class SessionPersistenceTests
         Assert.That(leaked, Is.Empty);
     }
 
+    [Test]
+    public async Task CreateSession_WithCustomScaleAndOrderedTasks_RoundTripsExactly()
+    {
+        var userId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        Guid sessionId;
+
+        await using (var write = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true)))
+        {
+            var session = new PlanningSession
+            {
+                Name = $"custom-scale-{Guid.NewGuid():N}",
+                TeamId = teamId,
+                CreatedByUserId = userId,
+                ScaleType = VotingScaleType.Custom,
+                ScaleValues = ["XS", "S", "M", "L"],
+                Tasks =
+                {
+                    new SessionTask { Title = "Task 2", Source = TaskSource.AdHoc, SortOrder = 1 },
+                    new SessionTask { Title = "Task 1", Source = TaskSource.AzureDevOps, SortOrder = 0, AdoWorkItemId = 77, AdoRevision = 9 },
+                    new SessionTask { Title = "Task 3", Source = TaskSource.AdHoc, SortOrder = 2 }
+                }
+            };
+
+            write.Sessions.Add(session);
+            await write.SaveChangesAsync();
+            sessionId = session.Id;
+        }
+
+        await using var read = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true));
+        var loaded = await read.Sessions
+            .AsNoTracking()
+            .Include(s => s.Tasks)
+            .SingleAsync(s => s.Id == sessionId);
+
+        var orderedTitles = loaded.Tasks
+            .OrderBy(task => task.SortOrder)
+            .Select(task => task.Title)
+            .ToArray();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(loaded.TeamId, Is.EqualTo(teamId));
+            Assert.That(loaded.ScaleType, Is.EqualTo(VotingScaleType.Custom));
+            Assert.That(loaded.ScaleValues, Is.EqualTo(new[] { "XS", "S", "M", "L" }));
+            Assert.That(loaded.Tasks, Has.Count.EqualTo(3));
+            Assert.That(orderedTitles, Is.EqualTo(new[] { "Task 1", "Task 2", "Task 3" }));
+            Assert.That(loaded.Tasks.Single(task => task.Title == "Task 1").AdoWorkItemId, Is.EqualTo(77));
+        });
+    }
+
     private static async Task<Guid> CreateSessionAsync(Guid tenantId, string name)
     {
         await using var context = CreateContext(new FakeCurrentUserContext(tenantId, Guid.NewGuid(), authenticated: true));

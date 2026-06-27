@@ -279,27 +279,27 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 
 #### Automated
 
-- [x] 1.1 All new hub integration tests pass
-- [x] 1.2 All new ADO write-back unit tests pass
-- [x] 1.3 No regressions in existing test suite
-- [x] 1.4 Solution builds cleanly
+- [x] 1.1 All new hub integration tests pass — 8bb7f9b
+- [x] 1.2 All new ADO write-back unit tests pass — 8bb7f9b
+- [x] 1.3 No regressions in existing test suite — 8bb7f9b
+- [x] 1.4 Solution builds cleanly — 8bb7f9b
 
 #### Manual
 
-- [x] 1.5 Test names clearly document invariants (readable as specification)
+- [x] 1.5 Test names clearly document invariants (readable as specification) — 8bb7f9b
 
 ### Phase 2: Config-to-Voting Integration Tests (Risk #5)
 
 #### Automated
 
-- [ ] 2.1 Config pipeline hub tests pass
-- [ ] 2.2 Session persistence tests pass
-- [ ] 2.3 Solution builds cleanly
-- [ ] 2.4 No regressions
+- [x] 2.1 Config pipeline hub tests pass
+- [x] 2.2 Session persistence tests pass
+- [x] 2.3 Solution builds cleanly
+- [x] 2.4 No regressions
 
 #### Manual
 
-- [ ] 2.5 Config-to-voting tests exercise real pipeline without mocking intermediate layers
+- [x] 2.5 Config-to-voting tests exercise real pipeline without mocking intermediate layers
 
 ### Phase 3: Targeted E2E Tests
 
