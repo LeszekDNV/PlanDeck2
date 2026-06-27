@@ -135,4 +135,120 @@ public class VotingRoomTests : PageTest
         await Expect(votingA.TaskListItem(liveTask)).ToBeVisibleAsync(new() { Timeout = 15_000 });
         await Expect(votingB.TaskListItem(liveTask)).ToBeVisibleAsync(new() { Timeout = 15_000 });
     }
+
+    [Test]
+    public async Task TwoMembers_DisconnectAndReconnect_RevealShowsConsistentState()
+    {
+        var sessionName = $"E2E Reconnect {Guid.NewGuid():N}";
+        var taskTitle = $"Reconnect Task {Guid.NewGuid():N}";
+
+        var sessionsA = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var membersA = new SessionMembersPage(Page);
+        await sessionsA.GotoAsync();
+        await sessionsA.CreateSessionAsync(sessionName, taskTitle);
+        await membersA.AssignMemberAsync(UserBEmail);
+        await sessionsA.ActivateAsync();
+
+        var sessionId = await sessionsA.JoinVotingAsync();
+        var votingA = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
+        await votingA.WaitForLoadedAsync();
+
+        await using var contextB = await CreateUserBContextAsync();
+        var pageB = await contextB.NewPageAsync();
+        var votingB = new VotingRoomPage(pageB, AspireAppFixture.BaseUrl);
+        await votingB.GotoAsync(sessionId);
+
+        await votingA.SelectTaskAsync(taskTitle);
+        await Expect(votingB.VoteButton("3")).ToBeEnabledAsync(new() { Timeout = 15_000 });
+
+        await votingA.VoteAsync("3");
+        await votingB.VoteAsync("5");
+
+        await pageB.CloseAsync();
+        await votingA.RevealAsync();
+        await Expect(votingA.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
+
+        var pageBReconnect = await contextB.NewPageAsync();
+        var votingBReconnect = new VotingRoomPage(pageBReconnect, AspireAppFixture.BaseUrl);
+        await votingBReconnect.GotoAsync(sessionId);
+
+        await Expect(votingBReconnect.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
+        await Expect(votingBReconnect.RevealedVotes.Filter(new() { HasText = "3" })).ToHaveCountAsync(1);
+        await Expect(votingBReconnect.RevealedVotes.Filter(new() { HasText = "5" })).ToHaveCountAsync(1);
+    }
+
+    [Test]
+    public async Task EstimateSelect_PersistsAcrossPageReload()
+    {
+        var sessionName = $"E2E Persist {Guid.NewGuid():N}";
+        var taskTitle = $"Persist Task {Guid.NewGuid():N}";
+
+        var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        await sessions.GotoAsync();
+        await sessions.CreateSessionAsync(sessionName, taskTitle);
+        await sessions.ActivateAsync();
+
+        var sessionId = await sessions.JoinVotingAsync();
+        var voting = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
+        await voting.WaitForLoadedAsync();
+
+        await voting.SelectTaskAsync(taskTitle);
+        await voting.VoteAsync("5");
+        await voting.RevealAsync();
+        await Expect(voting.RevealedVotes).ToHaveCountAsync(1, new() { Timeout = 15_000 });
+
+        await voting.PickEstimateAsync("5");
+        await Expect(voting.AgreedEstimate).ToContainTextAsync("5", new() { Timeout = 15_000 });
+
+        await voting.GotoAsync(sessionId);
+        await voting.SelectTaskAsync(taskTitle);
+        await Expect(voting.AgreedEstimate).ToContainTextAsync("5", new() { Timeout = 15_000 });
+    }
+
+    [Test]
+    public async Task SessionConfig_ScaleAndTasks_FeedIntoVotingRound()
+    {
+        var sessionName = $"E2E Config {Guid.NewGuid():N}";
+        var taskA = $"Config Task A {Guid.NewGuid():N}";
+        var taskB = $"Config Task B {Guid.NewGuid():N}";
+
+        var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var members = new SessionMembersPage(Page);
+        await sessions.GotoAsync();
+        await sessions.CreateSessionWithBulkAsync(
+            sessionName,
+            $"{taskA}{Environment.NewLine}{taskB}",
+            "T-shirt sizes");
+        await members.AssignMemberAsync(UserBEmail);
+        await sessions.ActivateAsync();
+
+        var sessionId = await sessions.JoinVotingAsync();
+        var voting = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
+        await voting.GotoAsync(sessionId);
+
+        await Expect(voting.TaskListItem(taskA)).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await Expect(voting.TaskListItem(taskB)).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await Expect(voting.VoteButton("XS")).ToBeVisibleAsync();
+        await Expect(voting.VoteButton("S")).ToBeVisibleAsync();
+        await Expect(voting.VoteButton("M")).ToBeVisibleAsync();
+        await Expect(voting.VoteButton("L")).ToBeVisibleAsync();
+        await Expect(voting.VoteButton("XL")).ToBeVisibleAsync();
+        await Expect(voting.VoteButton("?")).ToBeVisibleAsync();
+    }
+
+    private async Task<IBrowserContext> CreateUserBContextAsync()
+    {
+        var context = await Browser.NewContextAsync(ContextOptions());
+        await context.AddCookiesAsync(
+        [
+            new Cookie
+            {
+                Name = UserSelectionCookie,
+                Value = "b",
+                Url = AspireAppFixture.BaseUrl
+            }
+        ]);
+
+        return context;
+    }
 }

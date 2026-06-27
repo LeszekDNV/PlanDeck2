@@ -292,27 +292,27 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 
 #### Automated
 
-- [x] 2.1 Config pipeline hub tests pass
-- [x] 2.2 Session persistence tests pass
-- [x] 2.3 Solution builds cleanly
-- [x] 2.4 No regressions
+- [x] 2.1 Config pipeline hub tests pass — ce58965
+- [x] 2.2 Session persistence tests pass — ce58965
+- [x] 2.3 Solution builds cleanly — ce58965
+- [x] 2.4 No regressions — ce58965
 
 #### Manual
 
-- [x] 2.5 Config-to-voting tests exercise real pipeline without mocking intermediate layers
+- [x] 2.5 Config-to-voting tests exercise real pipeline without mocking intermediate layers — ce58965
 
 ### Phase 3: Targeted E2E Tests
 
 #### Automated
 
-- [ ] 3.1 All 3 new e2e tests pass locally (Podman running)
-- [ ] 3.2 Solution builds cleanly
-- [ ] 3.3 No regressions in existing e2e tests
+- [x] 3.1 All 3 new e2e tests pass locally (Podman running)
+- [x] 3.2 Solution builds cleanly
+- [x] 3.3 No regressions in existing e2e tests
 
 #### Manual
 
-- [ ] 3.4 Watched one e2e test in headed mode — flow matches real user behavior
-- [ ] 3.5 Tests are deterministic (3 consecutive runs pass)
+- [x] 3.4 Watched one e2e test in headed mode — flow matches real user behavior
+- [x] 3.5 Tests are deterministic (3 consecutive runs pass)
 
 ### Phase 4: Cookbook Update (§6)
 

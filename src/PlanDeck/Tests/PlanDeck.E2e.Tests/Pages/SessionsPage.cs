@@ -53,11 +53,12 @@ public class SessionsPage
         });
     }
 
-    public async Task CreateSessionAsync(string name, string adHocTaskTitle)
+    public async Task CreateSessionAsync(string name, string adHocTaskTitle, string? scaleName = null)
     {
         await CreateSessionButton.ClickAsync();
         await NameField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
         await NameField.FillAsync(name);
+        await SelectScaleAsync(scaleName);
 
         await TaskTitleField.FillAsync(adHocTaskTitle);
         await AddTaskButton.ClickAsync();
@@ -68,11 +69,12 @@ public class SessionsPage
         await SessionEntry(name).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
-    public async Task CreateSessionWithBulkAsync(string name, string bulkText)
+    public async Task CreateSessionWithBulkAsync(string name, string bulkText, string? scaleName = null)
     {
         await CreateSessionButton.ClickAsync();
         await NameField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
         await NameField.FillAsync(name);
+        await SelectScaleAsync(scaleName);
 
         await BulkToggle.ClickAsync();
         await BulkTextField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
@@ -81,6 +83,21 @@ public class SessionsPage
 
         await SaveButton.ClickAsync();
         await SessionEntry(name).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    private async Task SelectScaleAsync(string? scaleName)
+    {
+        if (string.IsNullOrWhiteSpace(scaleName))
+        {
+            return;
+        }
+
+        // MudSelect renders a hidden input for ARIA; click the visible input container instead.
+        await _page.Locator(".mud-input-control")
+            .Filter(new() { HasText = "Voting scale" })
+            .First
+            .ClickAsync();
+        await _page.GetByRole(AriaRole.Option, new() { Name = scaleName, Exact = true }).ClickAsync();
     }
 
     private ILocator ActivateButton =>
