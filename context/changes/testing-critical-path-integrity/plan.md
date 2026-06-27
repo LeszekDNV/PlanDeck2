@@ -305,21 +305,21 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 
 #### Automated
 
-- [x] 3.1 All 3 new e2e tests pass locally (Podman running)
-- [x] 3.2 Solution builds cleanly
-- [x] 3.3 No regressions in existing e2e tests
+- [x] 3.1 All 3 new e2e tests pass locally (Podman running) — 7df807f
+- [x] 3.2 Solution builds cleanly — 7df807f
+- [x] 3.3 No regressions in existing e2e tests — 7df807f
 
 #### Manual
 
-- [x] 3.4 Watched one e2e test in headed mode — flow matches real user behavior
-- [x] 3.5 Tests are deterministic (3 consecutive runs pass)
+- [x] 3.4 Watched one e2e test in headed mode — flow matches real user behavior — 7df807f
+- [x] 3.5 Tests are deterministic (3 consecutive runs pass) — 7df807f
 
 ### Phase 4: Cookbook Update (§6)
 
 #### Automated
 
-- [ ] 4.1 test-plan.md is valid markdown with §6.1 and §6.4 filled
+- [x] 4.1 test-plan.md is valid markdown with §6.1 and §6.4 filled
 
 #### Manual
 
-- [ ] 4.2 Cookbook entries are actionable for a developer adding new tests
+- [x] 4.2 Cookbook entries are actionable for a developer adding new tests

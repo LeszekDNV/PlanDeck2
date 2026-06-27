@@ -86,7 +86,28 @@ How to add new tests in this project. Wzorce poniżej będą uzupełniane po dos
 
 ### 6.1 Dodawanie testu integration dla przepływu sesji/głosowania
 
-TBD — see §3 Phase 1 for disconnected-session and estimate-save protection pattern.
+Location:
+- `src/PlanDeck/Tests/PlanDeck.Integration.Tests/Realtime/PlanningRoomHubTests.cs`
+- (gdy trzeba potwierdzić persistence shape) `src/PlanDeck/Tests/PlanDeck.Integration.Tests/Persistence/SessionPersistenceTests.cs`
+
+Naming convention:
+- `Scenario_Condition_ExpectedResult` (np. `SelectEstimate_OnPersistFailure_DoesNotBroadcast`)
+
+Fixture / setup:
+- Reuse istniejący `[OneTimeSetUp]` z `PlanningRoomHubTests` (`WebApplicationFactory` + in-memory DB).
+- Używaj helperów: `SeedSession(...)`, `SeedSessionWithConfig(...)`, `CreateConnection(...)`, `CreateGuestConnection(...)`, `WaitForBroadcastAsync(...)`, `ReadPersistedEstimate(...)`.
+
+Assertion pattern:
+- Dla broadcastów: subskrypcja `connection.On<PlanningRoomState>("RoomStateChanged", ...)` + `SemaphoreSlim` gate.
+- Dla cross-boundary: po akcji hubowej asercja zarówno na `latest` state, jak i na persisted DB state.
+
+Reference tests (copy-from):
+- `Reconnect_AfterDisconnect_RetainsVoteAndRestoresOnlineStatus`
+- `SelectEstimate_OnPersistFailure_DoesNotBroadcast`
+- `JoinRoom_WithCustomScale_VoteOutsideScaleRejected`
+
+Run command:
+- `dotnet test src/PlanDeck/Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
 
 ### 6.2 Dodawanie testu contract/integration dla granicy Azure DevOps
 
@@ -98,7 +119,28 @@ TBD — see §3 Phase 3 for tenant/guest scope denial pattern.
 
 ### 6.4 Dodawanie testu e2e dla krytycznego przepływu
 
-TBD — see §3 Phase 1 for critical-path end-to-end pattern.
+Location:
+- `src/PlanDeck/Tests/PlanDeck.E2e.Tests/VotingRoomTests.cs`
+- Page objects: `Pages/VotingRoomPage.cs`, `Pages/SessionsPage.cs`, `Pages/SessionMembersPage.cs`
+
+Naming convention:
+- `FlowOrRisk_Behavior_ExpectedOutcome` (np. `TwoMembers_DisconnectAndReconnect_RevealShowsConsistentState`)
+
+Fixture / setup:
+- Reuse `AspireAppFixture` (`BaseUrl`) oraz `PageTest` (`ContextOptions()` z `IgnoreHTTPSErrors = true`).
+- Dla drugiego użytkownika: osobny browser context + cookie `e2e-user=b`.
+
+Assertion pattern:
+- Każdy krok czeka na efekt UI (`Expect(...).ToHaveCountAsync/ToBeVisibleAsync/ToContainTextAsync`).
+- Po krytycznej akcji weryfikuj również trwałość (`GotoAsync`/reload i ponowna asercja stanu).
+
+Reference tests (copy-from):
+- `TwoMembers_DisconnectAndReconnect_RevealShowsConsistentState`
+- `EstimateSelect_PersistsAcrossPageReload`
+- `SessionConfig_ScaleAndTasks_FeedIntoVotingRound`
+
+Run command:
+- `dotnet test src/PlanDeck/Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --filter "FullyQualifiedName~VotingRoomTests"`
 
 ### 6.5 Selektywne AI-native kontrole jakości
 
