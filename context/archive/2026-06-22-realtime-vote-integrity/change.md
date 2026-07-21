@@ -1,10 +1,10 @@
 ---
 change_id: realtime-vote-integrity
 title: Real-time vote-integrity baseline — hidden/reveal contract + reconnection
-status: impl_reviewed
+status: archived
 created: 2026-06-22
 updated: 2026-07-21
-archived_at: null
+archived_at: 2026-07-21T12:23:01Z
 ---
 
 ## Notes

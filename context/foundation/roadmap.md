@@ -3,7 +3,7 @@ project: "PlanDeck"
 version: 1
 status: draft
 created: 2026-06-18
-updated: 2026-06-25
+updated: 2026-07-21
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -30,7 +30,7 @@ PlanDeck is a SCRUM planning-poker tool whose bet is radical simplicity: a user 
 | ID | Change ID | Outcome (user can …) | Prerequisites | PRD refs | Status |
 |---|---|---|---|---|---|
 | F-01 | multitenant-persistence-baseline | (foundation) persisted, tenant-scoped domain model with verified migrations | — | Access Control Changes, Guardrails (tenant isolation), FR-001 | done |
-| F-02 | realtime-vote-integrity | (foundation) authoritative hidden-vote/reveal contract with consistency guarantees | F-01 | Guardrails (vote consistency, hidden-until-reveal), Business Logic Changes | proposed |
+| F-02 | realtime-vote-integrity | (foundation) authoritative hidden-vote/reveal contract with consistency guarantees | F-01 | Guardrails (vote consistency, hidden-until-reveal), Business Logic Changes | done |
 | F-03 | deploy-realtime-validation-skeleton | (foundation) pilot ACA + Azure SQL env validating the gRPC-Web/SignalR/SQL stack | — | Constraints & Compatibility; infrastructure.md (ACA + Azure SQL) | done |
 | S-01 | team-and-members | create a team and add members to it | F-01 | FR-001, FR-002 | done |
 | S-02 | adhoc-tasks | create ad-hoc tasks manually | F-01 | FR-004 | done |
@@ -93,7 +93,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Promoted to its own foundation because two distinct slices (assigned-member and guest voting) depend on the same integrity guarantees, and the `quality` goal forbids deferring vote-consistency correctness behind user-facing work. Kept minimal — it defines and tests the contract/reconnection semantics; the consuming slices wire it to real sessions and UI. Risk if folded into a single slice: the second voting path re-implements integrity subtly differently.
-- **Status:** proposed
+- **Status:** done
 
 ### F-03: Deploy & real-time-stack validation skeleton
 
@@ -257,3 +257,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-03: (foundation) a minimal pilot environment on Azure Container Apps + Azure SQL exists, and the exact runtime contract — hosted Blazor WASM load, gRPC-Web unary calls, a SignalR voting round staying connected through reveal, and SQL access via managed identity — is validated.** — Archived 2026-06-25 → `context/archive/2026-06-24-deploy-realtime-validation-skeleton/`. Lesson: —.
 - **S-07: a user without an account can join a session's vote via a share link containing a code, providing only a temporary username, and vote like any participant.** — Archived 2026-06-24 → `context/archive/2026-06-24-guest-link-voting/`. Lesson: —.
 - **S-08: a user can write the agreed estimate back to the originating Azure DevOps task, with success or failure surfaced explicitly and never silently dropped.** — Archived 2026-06-24 → `context/archive/2026-06-24-ado-estimate-writeback/`. Lesson: —.
+- **F-02: (foundation) the in-memory planning-room spike is hardened into the authoritative hidden-vote/reveal contract: votes are never lost, duplicated, or reordered; values are not observable by any participant before reveal; and a participant can drop and reconnect without corrupting room state.** — Archived 2026-07-21 → `context/archive/2026-06-22-realtime-vote-integrity/`. Lesson: —.
