@@ -1,0 +1,15 @@
+#!/bin/sh
+set -u
+
+repository_root="$(git rev-parse --show-toplevel)"
+cd "$repository_root/src/PlanDeck"
+
+test_exit_code=0
+
+dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --nologo ||
+    test_exit_code=$?
+
+dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --nologo ||
+    test_exit_code=$?
+
+exit "$test_exit_code"
