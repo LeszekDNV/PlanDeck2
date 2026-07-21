@@ -19,7 +19,7 @@ The spike is already wired end-to-end but is a thin, trust-the-client prototype:
 
 ### Key Discoveries
 
-- **`ICurrentUserContext` is HttpContext-based** (`Web/PlanDeck.Server/Identity/HttpContextCurrentUserContext.cs`) — during a SignalR hub method invocation there is **no active `HttpContext`**, so the existing repository/tenant machinery returns `Guid.Empty`. Identity inside the hub **must** be read from `Hub.Context.User` claims, not via `ICurrentUserContext` or a repository. This is why the agreed design does no DB calls in the hub.
+- **`ICurrentUserContext` is HttpContext-based** (`Web/PlanDeck.Server/Identity/HttpContextCurrentUserContext.cs`) — during a SignalR hub method invocation there is **no reliable ambient `HttpContext`**, so the existing repository/tenant machinery returns `Guid.Empty` unless the hub principal is bridged into the invocation scope. Identity at the hub boundary **must** be read from `Hub.Context.User`; tenant-scoped data access is allowed only through an application service after explicitly supplying that principal to the scoped current-user context.
 - **Claims available** (`Web/PlanDeck.Server/Identity/TestAuthenticationHandler.cs`): `tid` (tenant), `oid` (user object id), `name`, `email`. The OIDC path maps the same claim names (`HttpContextCurrentUserContext` reads `tid`/`oid`/`name`/`email`). So `oid` is a stable per-user identity and `tid` is the tenant — both present on the authenticated WebSocket principal.
 - **Identity model decision** (from planning): participant identity = `oid`. One participant per person; multiple connections of the same person share one participant entry; the participant is **online** while it holds ≥1 live connection. Reconnection = a new connection for the same `oid`, which re-attaches to the existing entry and its preserved vote.
 - **Test wiring**: `PlanDeck.Unit.Tests` already references `PlanDeck.Application`, so `PlanningRoomService` is directly unit-testable. `PlanDeck.Integration.Tests` references `PlanDeck.AppHost` + `PlanDeck.Infrastructure` (Aspire) but **not** `PlanDeck.Server`, and lacks `Microsoft.AspNetCore.Mvc.Testing` / `Microsoft.AspNetCore.SignalR.Client` — these must be added for the hub integration test, along with a `public partial class Program` marker in the Server so `WebApplicationFactory<Program>` can target it. The Server runs with `Authentication:UseTestScheme=true` in test config, giving an authenticated principal automatically.
@@ -31,9 +31,9 @@ The spike is already wired end-to-end but is a thin, trust-the-client prototype:
 The planning room enforces the integrity contract regardless of client behavior:
 
 1. **Hidden-until-reveal** — no `PlanningRoomState` emitted over the wire carries any non-null `Vote` while `IsRevealed == false`, for any participant, at any time.
-2. **No lost/duplicated/reordered votes** — concurrent casts from distinct participants all land; repeated casts from the same participant before reveal overwrite (last-write) without creating duplicate entries; a participant is never double-listed.
-3. **Drop/reconnect safe** — when a connection drops, the participant entry and its vote are retained and the participant is shown **offline**; on reconnect (same `oid`) the participant re-attaches, regains **online**, and its vote is intact. Only an explicit `LeaveRoom` removes the participant.
-4. **Tenant-scoped, validated identity** — rooms are keyed by `(tenantId, sessionId)` from the authenticated principal + a well-formed `Guid` session id; `participantId`/`displayName` come from claims, never from client arguments. The hub requires authentication.
+2. **No lost/duplicated/reordered votes** — concurrent casts from distinct participants all land; repeated casts from the same participant before reveal overwrite (last-write) without creating duplicate entries; a participant is never double-listed; clients never apply an older room snapshot after a newer one.
+3. **Drop/reconnect safe** — when a connection drops, the participant entry and its vote are retained and the participant is shown **offline**; on reconnect (same `oid`) the participant re-attaches, regains **online**, and its vote is intact. Only an explicit `LeaveRoom` removes the participant. One live `connectionId` belongs to at most one room, so disconnect always updates the room that owns it.
+4. **Tenant-scoped, validated identity** — rooms are keyed by `(tenantId, sessionId)` from the authenticated principal + an existing Active persisted session identified by a well-formed `Guid`; `participantId`/`displayName` come from claims, never from client arguments. The hub requires authentication.
 5. **Proven** — a unit suite over `PlanningRoomService` and a focused hub integration test (connect → cast → disconnect → reconnect → reveal) pass in CI via `dotnet test`.
 
 Verify by running the unit + integration tests and by a local smoke (two authenticated connections, drop one mid-round, confirm vote survives and stays hidden until reveal).
@@ -43,20 +43,20 @@ Verify by running the unit + integration tests and by a local smoke (two authent
 - **No UI / Blazor page** for voting — S-06 owns the voting-round screen.
 - **No per-task rounds** — the room remains a single round abstraction; "which task is being voted" and advancing task-by-task is S-06.
 - **No database persistence** of votes or an agreed estimate, and **no new migration** — S-06 persists the agreed estimate via gRPC.
-- **No DB-backed authorization** of *who may join* (assigned-member vs guest) — that membership check is S-06 (assigned members) and S-07 (guest links). F-02 only requires an authenticated principal and namespaces rooms by tenant.
+- **No DB-backed membership authorization** of *who may join* (assigned-member vs guest) — that membership check is S-06 (assigned members) and S-07 (guest links). F-02 does verify that the tenant-scoped session exists and is Active, but any authenticated principal in that tenant may join it.
 - **No role-based authorization of *who may reveal/reset*** — `RevealVotes`/`ResetRound` accept any authenticated participant in F-02. The facilitator/role model that gates these moderator actions is **S-06**. F-02 guarantees votes are hidden *until someone reveals*, not *who* is allowed to reveal.
 - **No multi-replica backplane** (Azure SignalR / Redis) — single-replica MVP; documented as a later trigger only.
 - **No gRPC contract** for the room — real-time stays on SignalR.
 
 ## Implementation Approach
 
-Work inward-out in three phases. Phase 1 rebuilds the integrity logic where it actually lives — the in-memory service — together with its full unit suite, so correctness is provable without any transport. Phase 2 hardens the hub: authentication, claims-derived identity, connection tracking, and disconnect lifecycle, delegating all state to the Phase 1 service. Phase 3 makes the client resilient to reconnects and adds the transport-level integration test that proves the end-to-end lifecycle and the hidden-on-the-wire guarantee.
+Work inward-out in six phases. Phase 1 rebuilds the integrity logic where it actually lives — the in-memory service — together with its full unit suite, so correctness is provable without any transport. Phase 2 hardens the hub: authentication, claims-derived identity, connection tracking, and disconnect lifecycle, delegating all state to the Phase 1 service. Phase 3 makes the client resilient to reconnects and adds the transport-level integration test that proves the end-to-end lifecycle and the hidden-on-the-wire guarantee. Phase 4 closes the transport-ordering gap by versioning room snapshots and preventing clients from applying stale state. Phase 5 enforces the one-room-per-connection invariant so disconnect cannot leave ghost presence in a previously joined room. Phase 6 validates that the tenant-scoped session exists and is Active before creating or joining its in-memory room.
 
 The room key becomes a small value type `RoomKey(Guid TenantId, Guid SessionId)`; the SignalR group name is its stable string form `"{TenantId}:{SessionId}"`. The service owns a global `connectionId → (RoomKey, participantId)` map so the hub's `OnDisconnectedAsync` (which only knows the `ConnectionId`) can resolve and update the right room without the client re-sending the key.
 
 ## Critical Implementation Details
 
-- **No `HttpContext` in hub invocations** — read `tid`/`oid`/`name`/`email` from `Hub.Context.User` directly. Do not inject `ICurrentUserContext` or any repository into the hub; a tenant/user resolved that way will be empty and silently mis-scope rooms.
+- **No reliable ambient `HttpContext` in hub invocations** — read `tid`/`oid`/`name`/`email` from `Hub.Context.User` directly. Do not inject a repository into the hub. Before calling an application service that uses tenant-scoped repositories, bridge `Context.User` into the invocation's scoped current-user accessor so the EF query filter resolves the same `tid`.
 - **SignalR auto-removes connections from groups on disconnect** — do not attempt manual group removal in `OnDisconnectedAsync`; only update the in-memory room (mark offline) and broadcast the new state to the remaining group members.
 - **Same-user multiple connections** — `OnDisconnectedAsync` must mark the participant offline **only when its last connection drops**, not on the first; the service tracks a per-participant connection set.
 
@@ -187,7 +187,7 @@ Make `PlanningRoomHub` the trust boundary: require authentication, derive identi
 
 #### Manual Verification
 
-- App boots via Aspire (`dotnet run --project Aspire/PlanDeck.AppHost`, Podman running); an authenticated client completes the `/hubs/planning-room` negotiate and `JoinRoom` succeeds. (A true anonymous 401 is not reproducible under `UseTestScheme=true`, which always authenticates — gate presence is asserted via the `[Authorize]` attribute check below / in Phase 3, real anonymous rejection is a prod-OIDC-only path.)
+- App boots via Aspire (`dotnet run --project Aspire/PlanDeck.AppHost`, Podman running); an authenticated client completes the `/hubs/planning-room` negotiate and `JoinRoom` succeeds. The `[Authorize]` attribute is a quick structural guard; Phase 6 adds a transport-level negative test with a non-authenticating test handler.
 - Hub method signatures no longer accept `participantId`/`displayName` from the client.
 
 **Implementation Note**: Pause for manual confirmation that the hub authorizes and binds identity correctly before proceeding.
@@ -228,7 +228,7 @@ Make the client auto-rejoin on reconnect and prove the full transport lifecycle 
 
 **Intent**: Prove the connect → cast → disconnect → reconnect → reveal lifecycle and that vote values never cross the wire before reveal — the single-identity transport scenario (multi-participant integrity is already covered by Phase 1 unit tests, since the test scheme is one fixed user).
 
-**Contract**: Using `WebApplicationFactory<Program>` and `new HubConnectionBuilder().WithUrl(testServerUrl + "/hubs/planning-room", o => o.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler())`: connect, `JoinRoom`, `CastVote`, capture each `RoomStateChanged` payload and assert `Vote` is null on all participants while `IsRevealed == false`; stop the connection (or simulate drop) and reconnect with a fresh `HubConnection` for the same identity, assert the participant is present with its vote preserved and back online after rejoin; `RevealVotes` and assert the vote value now appears. Assert the hub enforces auth by checking `typeof(PlanningRoomHub)` carries `[Authorize]` (a true anonymous-negotiate 401 is not reproducible under the always-authenticating test scheme, so it is covered by the attribute assertion plus the positive authenticated path; real OIDC anonymous rejection is verified at deploy).
+**Contract**: Using `WebApplicationFactory<Program>` and `new HubConnectionBuilder().WithUrl(testServerUrl + "/hubs/planning-room", o => o.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler())`: connect, `JoinRoom`, `CastVote`, capture each `RoomStateChanged` payload and assert `Vote` is null on all participants while `IsRevealed == false`; stop the connection (or simulate drop) and reconnect with a fresh `HubConnection` for the same identity, assert the participant is present with its vote preserved and back online after rejoin; `RevealVotes` and assert the vote value now appears. Keep the `typeof(PlanningRoomHub)` `[Authorize]` assertion as a structural guard; Phase 6 adds the behavioral anonymous-negotiate rejection test.
 
 ### Success Criteria
 
@@ -247,6 +247,183 @@ Make the client auto-rejoin on reconnect and prove the full transport lifecycle 
 
 ---
 
+## Phase 4: Monotonic room-state delivery
+
+### Overview
+
+Prevent a client from applying an older `RoomStateChanged` snapshot after a newer one when concurrent hub invocations complete their `SendAsync` calls out of order. Preserve the existing per-room mutation lock, but make snapshot order explicit and enforce it at the client boundary.
+
+### Changes Required
+
+#### 1. Version the wire state
+
+**File**: `src/PlanDeck/Core/PlanDeck.Core.Shared/Realtime/PlanningRoomState.cs`
+
+**Intent**: Give every emitted room snapshot an ordering token that survives concurrent transport sends.
+
+**Contract**: Append `long Revision` to `PlanningRoomState`. The revision is scoped to one in-memory room instance, starts at zero, and never decreases while that room instance exists.
+
+#### 2. Assign revisions under the room lock
+
+**File**: `src/PlanDeck/Core/PlanDeck.Application/Planning/PlanningRoomService.cs`
+
+**Intent**: Make revision order identical to authoritative mutation order.
+
+**Contract**: Increment the room revision inside the existing per-room lock whenever an operation changes observable room state, before calling `ToState`. Idempotent no-ops may return the current revision without incrementing it. `GetState` returns the current revision. Add unit coverage proving that concurrent successful mutations produce unique, increasing revisions and that no returned snapshot has a revision lower than the authoritative state already observed.
+
+#### 3. Reject stale snapshots in the client
+
+**File**: `src/PlanDeck/Web/PlanDeck.Client/Services/PlanningRoomClientService.cs`
+
+**Intent**: Ensure consumers of `RoomStateChanged` observe monotonic state even if SignalR delivers concurrent sends out of order.
+
+**Contract**: Track the greatest applied revision for the currently joined session and raise the public `RoomStateChanged` event only when the incoming revision is greater than or equal to that value. Reset the tracked baseline before joining a different session and when a fresh/reconnected transport re-joins, so a server restart with revisions starting from zero cannot permanently suppress valid state.
+
+#### 4. Ordering regression tests
+
+**File**: `src/PlanDeck/Tests/PlanDeck.Unit.Tests/Planning/PlanningRoomServiceTests.cs`, `src/PlanDeck/Tests/PlanDeck.Unit.Tests/Realtime/PlanningRoomStateOrderingTests.cs` (new)
+
+**Intent**: Prove both halves of the ordering contract deterministically without relying on a race reproducing during a test run.
+
+**Contract**: Add a service test for revision assignment under concurrent mutations. Extract the client's revision-acceptance rule into a small testable helper and feed it synthetic snapshots in revision order `2, 1, 3`; assert that consumers observe only `2, 3`. Add the minimal project reference needed for the unit test only if the existing test project cannot access the client helper.
+
+### Success Criteria
+
+#### Automated Verification
+
+- Solution builds: `dotnet build PlanDeck.slnx`
+- Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- Ordering regression proves synthetic revisions `2, 1, 3` are observed as `2, 3`.
+
+#### Manual Verification
+
+- Reading every `RoomStateChanged` consumer confirms stale snapshots cannot bypass the revision gate.
+
+**Implementation Note**: Do not hold the room lock across `SendAsync`; transport latency must not block room mutations. The revision gate makes ordering explicit without coupling the application service to SignalR.
+
+---
+
+## Phase 5: Single-room connection ownership
+
+### Overview
+
+Make the global connection map authoritative: one live `connectionId` can own membership in exactly one `(RoomKey, participantId)` pair. A second join for a different room or participant is rejected before SignalR group membership changes, preventing ghost-online participants and disconnect broadcasts to the wrong room.
+
+### Changes Required
+
+#### 1. Enforce atomic connection ownership
+
+**File**: `src/PlanDeck/Core/PlanDeck.Application/Planning/PlanningRoomService.cs`
+
+**Intent**: Keep `_connections` and each participant's connection set consistent.
+
+**Contract**: `Join` atomically reserves `connectionId` with `TryAdd`. Rejoining the same `(RoomKey, participantId)` is idempotent; an existing different owner produces a clear domain error before mutating either room. Never overwrite an existing connection owner with the indexer. If room mutation fails after a new reservation, remove that reservation before propagating the error.
+
+#### 2. Keep hub group membership transactional
+
+**File**: `src/PlanDeck/Web/PlanDeck.Server/Hubs/PlanningRoomHub.cs`
+
+**Intent**: Do not add a rejected connection to a second SignalR group or leave service ownership behind when group registration fails.
+
+**Contract**: Call the ownership-enforcing service join before adding the connection to the SignalR group. If `Groups.AddToGroupAsync` fails, compensate by removing that connection from the room through the service disconnect/leave path, then propagate the failure. Broadcast only after both service ownership and group membership succeed.
+
+#### 3. Make client room switching explicit
+
+**File**: `src/PlanDeck/Web/PlanDeck.Client/Services/PlanningRoomClientService.cs`
+
+**Intent**: Preserve normal navigation between rooms without relying on server-side implicit transfer.
+
+**Contract**: When `JoinRoomAsync` targets a different session than `_joinedSessionId`, invoke `LeaveRoom` for the previous session first. Set `_joinedSessionId` only after the new join succeeds; a rejected join must not corrupt reconnect state.
+
+#### 4. Ownership regression tests
+
+**File**: `src/PlanDeck/Tests/PlanDeck.Unit.Tests/Planning/PlanningRoomServiceTests.cs`, `src/PlanDeck/Tests/PlanDeck.Integration.Tests/Realtime/PlanningRoomHubTests.cs`
+
+**Intent**: Prove that a connection cannot silently move between rooms and that disconnect updates its sole owner.
+
+**Contract**: Add a service test for join(A) → attempted join(B) → disconnect, asserting that B was never mutated and A becomes offline. Add a hub integration test asserting that a second-room join is rejected and does not subscribe the connection to B's SignalR group.
+
+### Success Criteria
+
+#### Automated Verification
+
+- Solution builds: `dotnet build PlanDeck.slnx`
+- Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+
+#### Manual Verification
+
+- Reviewing `Join`, `JoinRoom`, and `JoinRoomAsync` confirms one connection cannot be retained by two rooms and reconnect remembers only a successfully joined room.
+
+**Implementation Note**: Do not implement implicit server-side transfer in `Join`; it would require broadcasting the old and new room states from one service call. The client performs an explicit leave-then-join transition instead.
+
+---
+
+## Phase 6: Active persisted-session validation
+
+### Overview
+
+Require `JoinRoom` to resolve an existing Active planning session within the authenticated tenant before creating in-memory room state or adding the connection to a SignalR group. This validates real session identity without taking on assigned-member or guest-link authorization.
+
+### Changes Required
+
+#### 1. Bridge the hub principal into tenant-scoped data access
+
+**File**: `src/PlanDeck/Web/PlanDeck.Server/Identity/RequestPrincipalAccessor.cs` (new), `HttpContextCurrentUserContext.cs`, `Extensions/ServiceCollectionExtensions.cs`
+
+**Intent**: Let application services called during a hub invocation reuse the existing `ICurrentUserContext` and EF tenant query filters without depending on an ambient `HttpContext`.
+
+**Contract**: Register a scoped `RequestPrincipalAccessor` holding a `ClaimsPrincipal?`. Update `HttpContextCurrentUserContext` to prefer its explicitly supplied principal and fall back to `IHttpContextAccessor.HttpContext?.User` for HTTP/gRPC requests. The hub sets the accessor from `Context.User` before invoking tenant-scoped application logic. An absent or invalid tenant remains an explicit failure; never fall back to `Guid.Empty`.
+
+#### 2. Add the active-session validation use case
+
+**File**: `src/PlanDeck/Core/PlanDeck.Application/Planning/IActivePlanningSessionValidator.cs` (new), `ActivePlanningSessionValidator.cs` (new)
+
+**Intent**: Keep persistence and status rules out of the SignalR hub.
+
+**Contract**: Add `Task<bool> ExistsActiveAsync(Guid sessionId, CancellationToken cancellationToken)`. The implementation loads the session through the existing tenant-scoped `ISessionRepository` and returns true only when it exists and `Status == SessionStatus.Active`. It performs no membership or role check.
+
+#### 3. Validate before joining the room
+
+**File**: `src/PlanDeck/Web/PlanDeck.Server/Hubs/PlanningRoomHub.cs`
+
+**Intent**: Prevent arbitrary or stale Guid values from creating authoritative in-memory rooms.
+
+**Contract**: In `JoinRoom`, set the scoped principal accessor, build the `RoomKey`, and call `ExistsActiveAsync` before service ownership reservation or `Groups.AddToGroupAsync`. Throw a clear `HubException` when the session is missing or inactive. Other room operations still require prior successful join through the existing service rules.
+
+#### 4. Validation tests
+
+**File**: `src/PlanDeck/Tests/PlanDeck.Unit.Tests/Planning/ActivePlanningSessionValidatorTests.cs` (new), `src/PlanDeck/Tests/PlanDeck.Integration.Tests/Realtime/PlanningRoomHubTests.cs`
+
+**Intent**: Prove tenant-scoped existence/status validation at the application and transport boundaries.
+
+**Contract**: Unit-test missing, inactive, and active sessions. In the hub integration fixture, seed an Active session in the authenticated tenant and use it for the positive lifecycle; assert that an unknown Guid and an inactive session are rejected before any `RoomStateChanged` broadcast.
+
+#### 5. Behavioral anonymous-connection test
+
+**File**: `src/PlanDeck/Tests/PlanDeck.Integration.Tests/Realtime/PlanningRoomHubTests.cs`
+
+**Intent**: Prove that endpoint mapping, authentication middleware, authorization middleware, and the hub attribute jointly reject an unauthenticated transport connection.
+
+**Contract**: Create a dedicated `WebApplicationFactory` configuration that replaces the always-successful test authentication scheme with a test handler returning `AuthenticateResult.NoResult()` (or an equivalent unauthenticated result). Build a `HubConnection` against that server and assert `StartAsync`/negotiate is rejected with 401 or 403. Do not treat reflection over `[Authorize]` as the behavioral oracle.
+
+### Success Criteria
+
+#### Automated Verification
+
+- Solution builds: `dotnet build PlanDeck.slnx`
+- Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- Anonymous hub connection is rejected by the real test-server pipeline.
+
+#### Manual Verification
+
+- Reviewing `PlanningRoomHub` confirms no repository is injected directly and no room/group mutation occurs before active-session validation succeeds.
+
+**Implementation Note**: This phase validates existence and Active status only. Assigned-member, creator, guest-link, facilitator, and moderator authorization remain owned by S-06/S-07.
+
+---
+
 ## Testing Strategy
 
 ### Unit Tests (`PlanDeck.Unit.Tests/Planning/PlanningRoomServiceTests.cs`)
@@ -256,12 +433,17 @@ Make the client auto-rejoin on reconnect and prove the full transport lifecycle 
 - Join idempotency per `oid`; disconnect keeps vote, online→offline only on last connection; reconnect restores online + vote.
 - Explicit leave removes participant; tenant isolation for identical `SessionId`.
 - Concurrency: N parallel casts → all land, no lost/duplicated entries.
+- Revision assignment follows authoritative mutation order under concurrency.
+- One connection cannot join two rooms; a rejected second join leaves the original room as the sole disconnect owner.
 
 ### Integration Tests (`PlanDeck.Integration.Tests/Realtime/PlanningRoomHubTests.cs`)
 
 - End-to-end connect → cast → disconnect → reconnect → reveal over a real `HubConnection`.
 - Hidden-on-the-wire assertion on every `RoomStateChanged` payload before reveal.
 - Unauthenticated connection rejected.
+- Client ordering regression feeds revisions `2, 1, 3` and exposes only `2, 3`.
+- Second-room join is rejected without subscribing the connection to the second SignalR group.
+- Unknown and inactive session IDs are rejected before room/group mutation; an Active tenant-scoped session can join.
 
 ### Manual Testing Steps
 
@@ -329,3 +511,40 @@ None — no schema or data changes. Wire-contract change (`PlanningParticipantSt
 
 - [x] 3.4 Local smoke: drop + reconnect preserves vote, stays hidden until reveal — 6b28768
 - [x] 3.5 No `.razor` regressions from the client service change — 6b28768
+
+### Phase 4: Monotonic room-state delivery
+
+#### Automated
+
+- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 4.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 4.3 Ordering regression proves synthetic revisions `2, 1, 3` are observed as `2, 3`
+
+#### Manual
+
+- [x] 4.4 Every `RoomStateChanged` consumer routes incoming snapshots through the revision gate
+
+### Phase 5: Single-room connection ownership
+
+#### Automated
+
+- [ ] 5.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [ ] 5.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [ ] 5.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+
+#### Manual
+
+- [ ] 5.4 `Join`, `JoinRoom`, and `JoinRoomAsync` enforce one room per connection and retain only successful reconnect state
+
+### Phase 6: Active persisted-session validation
+
+#### Automated
+
+- [ ] 6.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [ ] 6.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [ ] 6.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [ ] 6.4 Anonymous hub connection is rejected by the real test-server pipeline
+
+#### Manual
+
+- [ ] 6.5 Hub performs no room/group mutation before tenant-scoped Active-session validation succeeds

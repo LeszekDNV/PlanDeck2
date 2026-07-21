@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\PlanDeck.Application\PlanDeck.Application.csproj" />
+    <ProjectReference Include="..\..\Web\PlanDeck.Client\PlanDeck.Client.csproj" />
   </ItemGroup>
 
 </Project>

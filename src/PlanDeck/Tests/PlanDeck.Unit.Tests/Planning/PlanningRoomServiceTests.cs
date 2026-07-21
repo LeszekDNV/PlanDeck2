@@ -1,6 +1,7 @@
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Planning;
 using PlanDeck.Core.Shared.Realtime;
+using System.Collections.Concurrent;
 
 namespace PlanDeck.Unit.Tests.Planning;
 
@@ -239,6 +240,34 @@ public sealed class PlanningRoomServiceTests
         Assert.That(state.Participants.All(p => p.Vote is not null), Is.True);
         var votes = state.Participants.Select(p => p.Vote).ToHashSet();
         Assert.That(votes, Has.Count.EqualTo(participantCount));
+    }
+
+    [Test]
+    public void ConcurrentMutations_AssignUniqueIncreasingRevisions()
+    {
+        const int participantCount = 50;
+        var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
+        var scale = Enumerable.Range(0, participantCount).Select(i => i.ToString()).ToArray();
+        _service.EnsureSeeded(key, [Task(Guid.NewGuid(), "Task", 0)], scale);
+
+        for (var i = 0; i < participantCount; i++)
+        {
+            _service.Join(key, $"p{i}", $"P{i:D2}", $"conn-{i}");
+        }
+
+        var baselineRevision = _service.GetState(key).Revision;
+        var returnedRevisions = new ConcurrentBag<long>();
+
+        Parallel.For(0, participantCount, i =>
+        {
+            var state = _service.CastVote(key, $"p{i}", i.ToString());
+            returnedRevisions.Add(state.Revision);
+        });
+
+        Assert.That(
+            returnedRevisions.Order(),
+            Is.EqualTo(Enumerable.Range(1, participantCount).Select(i => baselineRevision + i)));
+        Assert.That(_service.GetState(key).Revision, Is.EqualTo(baselineRevision + participantCount));
     }
 
     [Test]

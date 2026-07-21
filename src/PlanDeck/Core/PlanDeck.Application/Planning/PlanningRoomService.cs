@@ -34,6 +34,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
 
                 room.CurrentTaskId = room.Tasks.OrderBy(t => t.SortOrder).FirstOrDefault()?.TaskId;
                 room.Seeded = true;
+                room.Revision++;
             }
 
             return ToState(key, room);
@@ -56,6 +57,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
 
             var incomingIds = tasks.Select(t => t.TaskId).ToHashSet();
             var activeRemoved = room.CurrentTaskId is Guid current && !incomingIds.Contains(current);
+            var changed = room.Tasks.Any(t => !incomingIds.Contains(t.TaskId));
             room.Tasks.RemoveAll(t => !incomingIds.Contains(t.TaskId));
 
             foreach (var snapshot in tasks)
@@ -63,6 +65,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 var existing = room.Tasks.FirstOrDefault(t => t.TaskId == snapshot.TaskId);
                 if (existing is null)
                 {
+                    changed = true;
                     room.Tasks.Add(new RoomTask(snapshot.TaskId, snapshot.Title, snapshot.SortOrder)
                     {
                         Description = snapshot.Description,
@@ -71,6 +74,9 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 }
                 else
                 {
+                    changed |= existing.Title != snapshot.Title
+                        || existing.Description != snapshot.Description
+                        || existing.SortOrder != snapshot.SortOrder;
                     // Preserve in-flight Votes/IsRevealed/AgreedEstimate; only metadata changes.
                     existing.Title = snapshot.Title;
                     existing.Description = snapshot.Description;
@@ -81,6 +87,11 @@ public sealed class PlanningRoomService : IPlanningRoomService
             if (activeRemoved)
             {
                 room.CurrentTaskId = room.Tasks.OrderBy(t => t.SortOrder).FirstOrDefault()?.TaskId;
+            }
+
+            if (changed)
+            {
+                room.Revision++;
             }
 
             return ToState(key, room);
@@ -102,14 +113,27 @@ public sealed class PlanningRoomService : IPlanningRoomService
         var room = GetRoom(key);
         lock (room)
         {
+            var changed = false;
             if (!room.Participants.TryGetValue(participantId, out var participant))
             {
                 participant = new Participant(displayName);
                 room.Participants[participantId] = participant;
+                changed = true;
             }
 
+            var wasOnline = participant.Connections.Count > 0;
             participant.Connections.Add(connectionId);
             _connections[connectionId] = new ConnectionOwner(key, participantId);
+            if (!wasOnline)
+            {
+                changed = true;
+            }
+
+            if (changed)
+            {
+                room.Revision++;
+            }
+
             return ToState(key, room);
         }
     }
@@ -128,6 +152,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 {
                     room.Participants.Remove(participantId);
                     RemoveVotes(room, participantId);
+                    room.Revision++;
                 }
             }
 
@@ -151,7 +176,12 @@ public sealed class PlanningRoomService : IPlanningRoomService
         {
             if (room.Participants.TryGetValue(owner.ParticipantId, out var participant))
             {
+                var wasOnline = participant.Connections.Count > 0;
                 participant.Connections.Remove(connectionId);
+                if (wasOnline && participant.Connections.Count == 0)
+                {
+                    room.Revision++;
+                }
             }
 
             return (owner.Key, ToState(owner.Key, room));
@@ -181,7 +211,13 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 throw new InvalidOperationException("Vote is not a valid value for the session scale.");
             }
 
-            task.Votes[participantId] = vote;
+            if (!task.Votes.TryGetValue(participantId, out var currentVote)
+                || !string.Equals(currentVote, vote, StringComparison.Ordinal))
+            {
+                task.Votes[participantId] = vote;
+                room.Revision++;
+            }
+
             return ToState(key, room);
         }
     }
@@ -194,7 +230,12 @@ public sealed class PlanningRoomService : IPlanningRoomService
             var task = ActiveTask(room)
                 ?? throw new InvalidOperationException("There is no active task to reveal.");
 
-            task.IsRevealed = true;
+            if (!task.IsRevealed)
+            {
+                task.IsRevealed = true;
+                room.Revision++;
+            }
+
             return ToState(key, room);
         }
     }
@@ -207,9 +248,14 @@ public sealed class PlanningRoomService : IPlanningRoomService
             var task = ActiveTask(room)
                 ?? throw new InvalidOperationException("There is no active task to reset.");
 
-            task.IsRevealed = false;
-            task.Votes.Clear();
-            task.AgreedEstimate = null;
+            if (task.IsRevealed || task.Votes.Count > 0 || task.AgreedEstimate is not null)
+            {
+                task.IsRevealed = false;
+                task.Votes.Clear();
+                task.AgreedEstimate = null;
+                room.Revision++;
+            }
+
             return ToState(key, room);
         }
     }
@@ -224,7 +270,12 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 throw new InvalidOperationException("Task does not belong to this planning room.");
             }
 
-            room.CurrentTaskId = taskId;
+            if (room.CurrentTaskId != taskId)
+            {
+                room.CurrentTaskId = taskId;
+                room.Revision++;
+            }
+
             return ToState(key, room);
         }
     }
@@ -237,7 +288,12 @@ public sealed class PlanningRoomService : IPlanningRoomService
             var task = room.Tasks.FirstOrDefault(t => t.TaskId == taskId)
                 ?? throw new InvalidOperationException("Task does not belong to this planning room.");
 
-            task.AgreedEstimate = estimate;
+            if (!string.Equals(task.AgreedEstimate, estimate, StringComparison.Ordinal))
+            {
+                task.AgreedEstimate = estimate;
+                room.Revision++;
+            }
+
             return ToState(key, room);
         }
     }
@@ -321,7 +377,8 @@ public sealed class PlanningRoomService : IPlanningRoomService
             isRevealed,
             participants,
             tasks,
-            [.. room.ScaleValues]);
+            [.. room.ScaleValues],
+            room.Revision);
     }
 
     private readonly record struct ConnectionOwner(RoomKey Key, string ParticipantId);
@@ -329,6 +386,8 @@ public sealed class PlanningRoomService : IPlanningRoomService
     private sealed class PlanningRoom
     {
         public bool Seeded { get; set; }
+
+        public long Revision { get; set; }
 
         public Guid? CurrentTaskId { get; set; }
 

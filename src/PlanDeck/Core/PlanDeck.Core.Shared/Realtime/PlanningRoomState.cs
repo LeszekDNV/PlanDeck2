@@ -6,7 +6,8 @@ public sealed record PlanningRoomState(
     bool IsRevealed,
     IReadOnlyCollection<PlanningParticipantState> Participants,
     IReadOnlyList<PlanningTaskState> Tasks,
-    IReadOnlyList<string> ScaleValues);
+    IReadOnlyList<string> ScaleValues,
+    long Revision);
 
 public sealed record PlanningTaskState(
     Guid TaskId,

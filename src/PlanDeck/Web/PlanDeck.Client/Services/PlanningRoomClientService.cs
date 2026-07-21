@@ -10,8 +10,10 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
         .WithUrl(navigationManager.ToAbsoluteUri("/hubs/planning-room"))
         .WithAutomaticReconnect()
         .Build();
+    private readonly PlanningRoomStateRevisionGate _revisionGate = new();
 
     private bool _handlerRegistered;
+    private string? _joinedConnectionId;
     private string? _joinedSessionId;
 
     public event Action<PlanningRoomState>? RoomStateChanged;
@@ -20,12 +22,20 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
     {
         if (!_handlerRegistered)
         {
-            _hubConnection.On<PlanningRoomState>("RoomStateChanged", state => RoomStateChanged?.Invoke(state));
+            _hubConnection.On<PlanningRoomState>("RoomStateChanged", state =>
+            {
+                if (_revisionGate.TryAccept(state))
+                {
+                    RoomStateChanged?.Invoke(state);
+                }
+            });
             _hubConnection.Reconnected += async _ =>
             {
                 if (_joinedSessionId is { } sessionId)
                 {
+                    _revisionGate.Reset();
                     await _hubConnection.InvokeAsync("JoinRoom", sessionId);
+                    _joinedConnectionId = _hubConnection.ConnectionId;
                 }
             };
             _handlerRegistered = true;
@@ -39,8 +49,15 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
 
     public async Task JoinRoomAsync(string sessionId)
     {
+        if (!string.Equals(_joinedSessionId, sessionId, StringComparison.Ordinal)
+            || !string.Equals(_joinedConnectionId, _hubConnection.ConnectionId, StringComparison.Ordinal))
+        {
+            _revisionGate.Reset();
+        }
+
         _joinedSessionId = sessionId;
         await _hubConnection.InvokeAsync("JoinRoom", sessionId);
+        _joinedConnectionId = _hubConnection.ConnectionId;
     }
 
     public async Task LeaveRoomAsync(string sessionId)
@@ -49,6 +66,8 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
         if (string.Equals(_joinedSessionId, sessionId, StringComparison.Ordinal))
         {
             _joinedSessionId = null;
+            _joinedConnectionId = null;
+            _revisionGate.Reset();
         }
     }
 
