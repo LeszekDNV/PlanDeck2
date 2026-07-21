@@ -323,14 +323,14 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 - [x] 3.1 All 3 new e2e tests pass locally (Podman running) — 7df807f
 - [x] 3.2 Solution builds cleanly — 7df807f
 - [x] 3.3 No regressions in existing e2e tests — 7df807f
-- [x] 3.6 ADO concurrency failure surfaces as a localized snackbar
-- [x] 3.7 Post-addendum build and E2E suite pass
+- [x] 3.6 ADO concurrency failure surfaces as a localized snackbar — 52e3b75
+- [x] 3.7 Post-addendum build and E2E suite pass — 52e3b75
 
 #### Manual
 
 - [x] 3.4 Watched one e2e test in headed mode — flow matches real user behavior — 7df807f
 - [x] 3.5 Tests are deterministic (3 consecutive runs pass) — 7df807f
-- [x] 3.8 ADO conflict signaling E2E passes 3 consecutive runs
+- [x] 3.8 ADO conflict signaling E2E passes 3 consecutive runs — 52e3b75
 
 ### Phase 4: Cookbook Update (§6)
 
