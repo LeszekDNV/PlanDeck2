@@ -6,7 +6,7 @@ using PlanDeck.Server.Identity;
 
 namespace PlanDeck.Server.Hubs;
 
-[Authorize(Policy = GuestAuthentication.RoomParticipantPolicy)]
+[Authorize(Policy = PlanDeckPolicies.RoomIdentity)]
 public sealed class PlanningRoomHub(
     IPlanningRoomService planningRoomService,
     IVotingRoundService votingRoundService,
@@ -171,9 +171,11 @@ public sealed class PlanningRoomHub(
     {
         get
         {
-            if (!Guid.TryParse(ReadRequiredClaim("oid"), out var userId))
+            if (!Guid.TryParse(
+                    ReadRequiredClaim(PlanDeckIdentity.AppUserIdClaim),
+                    out var userId))
             {
-                throw new HubException("Authenticated 'oid' claim is missing or invalid.");
+                throw new HubException("Authenticated PlanDeck user claim is missing or invalid.");
             }
 
             return userId;

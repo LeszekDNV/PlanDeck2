@@ -12,6 +12,13 @@ internal static class GuestAccessGuard
 {
     public static void RejectGuests(ICurrentUserContext currentUser)
     {
+        if (!currentUser.IsAuthenticated)
+        {
+            throw new RpcException(new Status(
+                StatusCode.Unauthenticated,
+                "Authentication is required."));
+        }
+
         if (currentUser.IsGuest)
         {
             throw new RpcException(new Status(

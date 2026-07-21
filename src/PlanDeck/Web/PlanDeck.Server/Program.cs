@@ -147,13 +147,18 @@ app.MapPost("/guest/join", async (
 
 // Configure the HTTP request pipeline.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
-app.MapGrpcService<HelloGrpcService>();
-app.MapGrpcService<AzureDevOpsWorkItemGrpcService>();
-app.MapGrpcService<TeamGrpcService>();
-app.MapGrpcService<SessionGrpcService>();
-app.MapGrpcService<SessionMemberGrpcService>();
-app.MapGrpcService<AuthGrpcService>();
-app.MapHub<PlanningRoomHub>("/hubs/planning-room");
+app.MapGrpcService<AzureDevOpsWorkItemGrpcService>()
+    .RequireAuthorization(PlanDeckPolicies.MemberAccount);
+app.MapGrpcService<TeamGrpcService>()
+    .RequireAuthorization(PlanDeckPolicies.MemberAccount);
+app.MapGrpcService<SessionGrpcService>()
+    .RequireAuthorization(PlanDeckPolicies.RoomIdentity);
+app.MapGrpcService<SessionMemberGrpcService>()
+    .RequireAuthorization(PlanDeckPolicies.MemberAccount);
+app.MapGrpcService<AuthGrpcService>()
+    .AllowAnonymous();
+app.MapHub<PlanningRoomHub>("/hubs/planning-room")
+    .RequireAuthorization(PlanDeckPolicies.RoomIdentity);
 app.MapStaticAssets();
 app.MapDefaultEndpoints();
 app.MapFallbackToFile("index.html");

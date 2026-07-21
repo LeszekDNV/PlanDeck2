@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.Security.Claims;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Planning;
 using PlanDeck.Application.Services;
@@ -68,15 +69,7 @@ public static class ServiceCollectionExtensions
                         TestAuthenticationHandler.SchemeName, null)
                     .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
 
-                services.AddAuthorization(options =>
-                {
-                    options.AddPolicy(GuestAuthentication.RoomParticipantPolicy, policy =>
-                    {
-                        policy.RequireAuthenticatedUser();
-                        policy.AddAuthenticationSchemes(
-                            TestAuthenticationHandler.SchemeName, GuestAuthentication.SchemeName);
-                    });
-                });
+                AddPlanDeckAuthorization(services);
                 services.AddScoped<IAzureDevOpsWorkItemClient, FakeAzureDevOpsWorkItemClient>();
 
                 return services;
@@ -85,9 +78,17 @@ public static class ServiceCollectionExtensions
             var microsoftAuth = configuration.GetSection("Authentication:Microsoft");
             var tenantId = microsoftAuth["TenantId"];
             var clientId = microsoftAuth["ClientId"];
+            var clientSecret = microsoftAuth["ClientSecret"];
             var callbackPath = microsoftAuth["CallbackPath"];
             var isMicrosoftAuthConfigured = !string.IsNullOrWhiteSpace(tenantId)
-                && !string.IsNullOrWhiteSpace(clientId);
+                && !string.IsNullOrWhiteSpace(clientId)
+                && !string.IsNullOrWhiteSpace(clientSecret);
+
+            if (environment.IsProduction() && !isMicrosoftAuthConfigured)
+            {
+                throw new InvalidOperationException(
+                    "Production requires Authentication:Microsoft:TenantId, ClientId, and ClientSecret.");
+            }
 
             var authenticationBuilder = services
                 .AddAuthentication(options =>
@@ -97,7 +98,7 @@ public static class ServiceCollectionExtensions
                         ? OpenIdConnectDefaults.AuthenticationScheme
                         : CookieAuthenticationDefaults.AuthenticationScheme;
                 })
-                .AddCookie()
+                .AddCookie(ConfigureMemberCookie)
                 .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
 
             if (isMicrosoftAuthConfigured)
@@ -106,7 +107,7 @@ public static class ServiceCollectionExtensions
                 {
                     options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
                     options.ClientId = clientId;
-                    options.ClientSecret = microsoftAuth["ClientSecret"];
+                    options.ClientSecret = clientSecret;
                     options.CallbackPath = string.IsNullOrWhiteSpace(callbackPath)
                         ? "/signin-oidc"
                         : callbackPath;
@@ -114,18 +115,39 @@ public static class ServiceCollectionExtensions
                     options.SaveTokens = false;
                     options.GetClaimsFromUserInfoEndpoint = true;
                     options.MapInboundClaims = false;
+                    options.Events.OnTokenValidated = async context =>
+                    {
+                        var principal = context.Principal;
+                        if (principal?.Identity is not ClaimsIdentity identity)
+                        {
+                            context.Fail("The authenticated identity is unavailable.");
+                            return;
+                        }
+
+                        try
+                        {
+                            var provisioner = context.HttpContext.RequestServices
+                                .GetRequiredService<IAppUserProvisioner>();
+                            var appUserId = await provisioner.ProvisionAsync(
+                                principal,
+                                context.HttpContext.RequestAborted);
+
+                            identity.AddClaim(new Claim(
+                                PlanDeckIdentity.AppUserIdClaim,
+                                appUserId.ToString()));
+                            identity.AddClaim(new Claim(
+                                PlanDeckIdentity.ActiveUserClaim,
+                                bool.TrueString));
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            context.Fail("The authenticated PlanDeck account is invalid or inactive.");
+                        }
+                    };
                 });
             }
 
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy(GuestAuthentication.RoomParticipantPolicy, policy =>
-                {
-                    policy.RequireAuthenticatedUser();
-                    policy.AddAuthenticationSchemes(
-                        CookieAuthenticationDefaults.AuthenticationScheme, GuestAuthentication.SchemeName);
-                });
-            });
+            AddPlanDeckAuthorization(services);
             services.Configure<AzureDevOpsOptions>(configuration.GetSection(AzureDevOpsOptions.SectionName));
             services.AddHttpClient<IAzureDevOpsWorkItemClient, AzureDevOpsWorkItemClient>();
 
@@ -138,11 +160,12 @@ public static class ServiceCollectionExtensions
             services.AddSingleton(TimeProvider.System);
             services.AddScoped<RequestPrincipalAccessor>();
             services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
+            services.AddScoped<IAppUserRepository, AppUserRepository>();
+            services.AddScoped<IAppUserProvisioner, AppUserProvisioner>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
             services.AddHostedService<PlanningRoomCleanupService>();
             services.AddScoped<IPlanningRoomNotifier, SignalRPlanningRoomNotifier>();
             services.AddScoped<IVotingRoundService, VotingRoundService>();
-            services.AddScoped<HelloGrpcService>();
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<TeamGrpcService>();
@@ -154,6 +177,60 @@ public static class ServiceCollectionExtensions
             services.AddScoped<AuthGrpcService>();
             return services;
         }
+    }
+
+    private static void AddPlanDeckAuthorization(IServiceCollection services)
+    {
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(PlanDeckPolicies.MemberAccount, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireAssertion(context => PlanDeckIdentity.IsValidMember(context.User));
+            });
+            options.AddPolicy(PlanDeckPolicies.RoomIdentity, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireAssertion(context => PlanDeckIdentity.IsValidRoomIdentity(context.User));
+            });
+        });
+    }
+
+    private static void ConfigureMemberCookie(CookieAuthenticationOptions options)
+    {
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var principal = context.Principal;
+            if (!PlanDeckIdentity.IsValidMember(principal)
+                || !PlanDeckIdentity.TryReadGuid(
+                    principal!,
+                    PlanDeckIdentity.AppUserIdClaim,
+                    out var appUserId))
+            {
+                context.RejectPrincipal();
+                return;
+            }
+
+            var provisioner = context.HttpContext.RequestServices
+                .GetRequiredService<IAppUserProvisioner>();
+            if (!await provisioner.IsActiveAsync(
+                    principal!,
+                    appUserId,
+                    context.HttpContext.RequestAborted))
+            {
+                context.RejectPrincipal();
+            }
+        };
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
     }
 
 

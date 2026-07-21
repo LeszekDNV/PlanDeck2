@@ -83,6 +83,7 @@ public sealed class PlanDeckDbContext(
                         added.UpdatedAtUtc = now;
                     }
 
+                    NormalizeAppUser(entry.Entity);
                     break;
 
                 case EntityState.Modified:
@@ -92,12 +93,22 @@ public sealed class PlanDeckDbContext(
                         modified.UpdatedAtUtc = now;
                     }
 
+                    NormalizeAppUser(entry.Entity);
                     break;
 
                 case EntityState.Deleted:
                     GuardTenantOwnership(entry);
                     break;
             }
+        }
+    }
+
+    private static void NormalizeAppUser(ITenantScoped entity)
+    {
+        if (entity is AppUser user)
+        {
+            user.Email = user.Email.Trim();
+            user.NormalizedEmail = user.Email.ToUpperInvariant();
         }
     }
 

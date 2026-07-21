@@ -54,6 +54,15 @@ Required Azure Pipelines variables:
 - `AZURE_SERVICE_CONNECTION` - Azure Resource Manager service connection authorized for the target subscription/resource group.
 - `AZURE_ENV_NAME` - `azd` environment name, for example `plandeck-dev`.
 - `AZURE_RESOURCE_GROUP` - target resource group, for example `rg-plandeck-dev`.
+- `Authentication__Microsoft__TenantId` - Entra tenant containing the application registration.
+- `Authentication__Microsoft__ClientId` - Entra application client ID.
+- `Authentication__Microsoft__ClientSecret` - Entra application credential supplied as a secret.
+
+The AppHost publish model exposes these as the `entra-tenant-id`, `entra-client-id`, and secret
+`entra-client-secret` parameters and maps them to the server container environment.
+
+Production startup fails when any required Entra value is absent. Test authentication is restricted to
+explicit Development/Testing runs and must never be set on a published Container App.
 
 Store application secrets such as `Authentication__Microsoft__ClientSecret` and `AzureDevOps__PersonalAccessToken` in Key Vault or secure pipeline variables only.
 

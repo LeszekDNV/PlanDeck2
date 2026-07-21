@@ -12,6 +12,9 @@ if (builder.ExecutionContext.IsPublishMode)
 
     var sqlServer = builder.AddAzureSqlServer("sql-server");
     var sqlDatabase = sqlServer.AddDatabase("PlanDeckDb");
+    var entraTenantId = builder.AddParameter("entra-tenant-id");
+    var entraClientId = builder.AddParameter("entra-client-id");
+    var entraClientSecret = builder.AddParameter("entra-client-secret", secret: true);
 
     // Pin the pilot database to a serverless General Purpose tier with auto-pause to keep
     // cost minimal; cold-start latency on the first query after a pause is acceptable for a
@@ -35,15 +38,11 @@ if (builder.ExecutionContext.IsPublishMode)
     planDeckServer
         .WithReference(sqlDatabase, "DefaultConnection")
         .WithReference(keyVault)
+        .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
+        .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
+        .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret)
         .WithEnvironment("EmailSettings__Host", "smtp")
         .WithEnvironment("EmailSettings__Port", "587")
-        // Run the deployed pilot in test-auth mode so the gRPC-Web + SignalR voting contract
-        // can be validated without an Entra app registration. AddExternalServices only permits
-        // the test scheme in the Development or Testing environments, so the container must run
-        // as Testing. Migrations are applied by the pipeline, not on startup, so running as
-        // Testing (rather than Development) is fine.
-        .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing")
-        .WithEnvironment("Authentication__UseTestScheme", "true")
         .WaitFor(sqlDatabase)
         .PublishAsAzureContainerApp((infrastructure, app) =>
         {

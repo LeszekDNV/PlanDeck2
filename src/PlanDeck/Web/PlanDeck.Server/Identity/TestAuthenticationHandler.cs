@@ -35,12 +35,16 @@ public sealed class TestAuthenticationHandler(
     /// </summary>
     public const string GuestSessionCookie = "e2e-guest-sid";
 
+    public const string IdentityShapeHeader = "X-Test-Identity";
+
     private const string TestTenantId = "11111111-1111-1111-1111-111111111111";
     private const string TestObjectId = "22222222-2222-2222-2222-222222222222";
+    private const string TestAppUserId = "aaaaaaaa-2222-2222-2222-222222222222";
     private const string TestDisplayName = "Test User";
     private const string TestEmail = "test.user@plandeck.local";
 
     private const string SecondObjectId = "33333333-3333-3333-3333-333333333333";
+    private const string SecondAppUserId = "bbbbbbbb-3333-3333-3333-333333333333";
     private const string SecondDisplayName = "Test User B";
     private const string SecondEmail = "test.userb@plandeck.local";
 
@@ -49,6 +53,17 @@ public sealed class TestAuthenticationHandler(
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        var requestedShape = Request.Headers[IdentityShapeHeader].ToString();
+        if (string.Equals(requestedShape, "anonymous", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
+        if (string.Equals(requestedShape, "malformed", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(AuthenticateResult.Fail("The test identity is malformed."));
+        }
+
         var guestSid =
             Request.Headers.TryGetValue(GuestSessionHeader, out var headerSid) && !string.IsNullOrWhiteSpace(headerSid)
                 ? headerSid.ToString()
@@ -58,12 +73,19 @@ public sealed class TestAuthenticationHandler(
 
         if (guestSid is not null)
         {
+            if (!Guid.TryParse(guestSid, out var parsedGuestSid)
+                || parsedGuestSid == Guid.Empty)
+            {
+                return Task.FromResult(
+                    AuthenticateResult.Fail("The test guest session ID is invalid."));
+            }
+
             return Task.FromResult(BuildResult(
             [
                 new Claim("tid", TestTenantId),
                 new Claim("oid", GuestObjectId),
                 new Claim("name", GuestDisplayName),
-                new Claim(GuestAuthentication.SessionIdClaim, guestSid),
+                new Claim(GuestAuthentication.SessionIdClaim, parsedGuestSid.ToString()),
                 new Claim(GuestAuthentication.IsGuestClaim, "true")
             ]));
         }
@@ -73,6 +95,7 @@ public sealed class TestAuthenticationHandler(
             && string.Equals(selection, "b", StringComparison.OrdinalIgnoreCase);
 
         var objectId = isSecondUser ? SecondObjectId : TestObjectId;
+        var appUserId = isSecondUser ? SecondAppUserId : TestAppUserId;
         var displayName = isSecondUser ? SecondDisplayName : TestDisplayName;
         var email = isSecondUser ? SecondEmail : TestEmail;
 
@@ -80,6 +103,8 @@ public sealed class TestAuthenticationHandler(
         [
             new Claim("tid", TestTenantId),
             new Claim("oid", objectId),
+            new Claim(PlanDeckIdentity.AppUserIdClaim, appUserId),
+            new Claim(PlanDeckIdentity.ActiveUserClaim, bool.TrueString),
             new Claim("name", displayName),
             new Claim("email", email)
         ]));

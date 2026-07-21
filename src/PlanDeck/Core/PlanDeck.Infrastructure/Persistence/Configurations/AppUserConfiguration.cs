@@ -22,6 +22,18 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .IsRequired()
             .HasMaxLength(320);
 
-        builder.HasIndex(u => u.TenantId);
+        builder.Property(u => u.NormalizedEmail)
+            .IsRequired()
+            .HasMaxLength(320);
+
+        builder.Property(u => u.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        builder.HasIndex(u => new { u.TenantId, u.EntraObjectId })
+            .IsUnique();
+
+        builder.HasIndex(u => new { u.TenantId, u.NormalizedEmail })
+            .IsUnique();
     }
 }

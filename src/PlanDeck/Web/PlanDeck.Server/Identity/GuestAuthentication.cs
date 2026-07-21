@@ -19,7 +19,7 @@ public static class GuestAuthentication
     /// Authorization policy admitting both members (cookie/OIDC) and guests to the planning room,
     /// while still rejecting fully anonymous callers. Schemes are bound per environment at startup.
     /// </summary>
-    public const string RoomParticipantPolicy = "RoomParticipant";
+    public const string RoomParticipantPolicy = PlanDeckPolicies.RoomIdentity;
 
     public static void ConfigureCookie(CookieAuthenticationOptions options)
     {
@@ -27,6 +27,16 @@ public static class GuestAuthentication
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+        options.Events.OnValidatePrincipal = context =>
+        {
+            if (!PlanDeckIdentity.IsValidGuest(context.Principal))
+            {
+                context.RejectPrincipal();
+            }
+
+            return Task.CompletedTask;
+        };
 
         // The guest surface is an anonymous API, not an interactive site: never redirect to a
         // login/access-denied page, return the bare status code instead.

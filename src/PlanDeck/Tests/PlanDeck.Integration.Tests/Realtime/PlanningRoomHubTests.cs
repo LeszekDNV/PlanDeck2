@@ -32,6 +32,7 @@ public sealed class PlanningRoomHubTests
 {
     private const string TestTenantId = "11111111-1111-1111-1111-111111111111";
     private const string TestObjectId = "22222222-2222-2222-2222-222222222222";
+    private const string TestAppUserId = "aaaaaaaa-2222-2222-2222-222222222222";
     private const string TestEmail = "test.user@plandeck.local";
     private const string NoResultScheme = "NoResult";
 
@@ -217,7 +218,7 @@ public sealed class PlanningRoomHubTests
     public async Task Creator_IsAuthorized_WithoutExplicitMembership()
     {
         // Session created by the connecting user (oid), with no SessionMember row for them.
-        var (sessionId, _, _) = SeedSession(assignTestUser: false, createdByUserId: Guid.Parse(TestObjectId));
+        var (sessionId, _, _) = SeedSession(assignTestUser: false, createdByUserId: Guid.Parse(TestAppUserId));
 
         var connection = CreateConnection();
         await connection.StartAsync();

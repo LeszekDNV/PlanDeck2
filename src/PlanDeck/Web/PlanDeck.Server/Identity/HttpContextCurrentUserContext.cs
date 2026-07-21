@@ -11,9 +11,11 @@ public sealed class HttpContextCurrentUserContext(
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
     private readonly RequestPrincipalAccessor _principalAccessor = principalAccessor;
 
-    public Guid TenantId => ReadGuidClaim("tid");
+    public Guid TenantId => ReadRequiredGuidClaim(PlanDeckIdentity.TenantIdClaim);
 
-    public Guid UserId => ReadGuidClaim("oid");
+    public Guid UserId => IsGuest
+        ? throw new InvalidOperationException("Guests do not have an internal PlanDeck user ID.")
+        : ReadRequiredGuidClaim(PlanDeckIdentity.AppUserIdClaim);
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated == true;
 
@@ -21,7 +23,7 @@ public sealed class HttpContextCurrentUserContext(
 
     public string? Email => ReadStringClaim("email") ?? ReadStringClaim("preferred_username");
 
-    public string? ParticipantId => ReadStringClaim("oid");
+    public string? ParticipantId => ReadStringClaim(PlanDeckIdentity.EntraObjectIdClaim);
 
     public bool IsGuest =>
         string.Equals(ReadStringClaim("is_guest"), "true", StringComparison.OrdinalIgnoreCase);
@@ -34,7 +36,7 @@ public sealed class HttpContextCurrentUserContext(
     private ClaimsPrincipal? Principal =>
         _principalAccessor.Principal ?? _httpContextAccessor.HttpContext?.User;
 
-    private Guid ReadGuidClaim(string claimType)
+    private Guid ReadRequiredGuidClaim(string claimType)
     {
         var principal = Principal;
         if (principal?.Identity?.IsAuthenticated != true)
@@ -43,9 +45,14 @@ public sealed class HttpContextCurrentUserContext(
         }
 
         var value = principal.FindFirstValue(claimType);
-        return Guid.TryParse(value, CultureInfo.InvariantCulture, out var parsed)
-            ? parsed
-            : Guid.Empty;
+        if (!Guid.TryParse(value, CultureInfo.InvariantCulture, out var parsed)
+            || parsed == Guid.Empty)
+        {
+            throw new InvalidOperationException(
+                $"Authenticated identity claim '{claimType}' is missing or invalid.");
+        }
+
+        return parsed;
     }
 
     private string? ReadStringClaim(string claimType)
