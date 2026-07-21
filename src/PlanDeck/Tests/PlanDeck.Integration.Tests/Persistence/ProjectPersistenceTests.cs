@@ -276,12 +276,90 @@ public sealed class ProjectPersistenceTests
             Throws.TypeOf<DbUpdateException>());
     }
 
+    [Test]
+    public async Task AzureDevOpsConnection_EnforcesOnePerProjectAndTenantCompositeForeignKey()
+    {
+        var tenantA = Guid.NewGuid();
+        var tenantB = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        Guid projectId;
+
+        await using (var db = CreateContext(CurrentUser(
+            tenantA,
+            userId,
+            "owner@example.com")))
+        {
+            projectId = PersistenceTestData.AddProject(db, userId);
+            await db.SaveChangesAsync();
+            db.ProjectAzureDevOpsConnections.Add(Connection(projectId));
+            await db.SaveChangesAsync();
+
+            db.ProjectAzureDevOpsConnections.Add(Connection(projectId));
+            Assert.That(
+                async () => await db.SaveChangesAsync(),
+                Throws.TypeOf<DbUpdateException>());
+        }
+
+        await using var wrongTenant = CreateContext(CurrentUser(
+            tenantB,
+            userId,
+            "owner@example.com"));
+        wrongTenant.ProjectAzureDevOpsConnections.Add(Connection(projectId));
+        Assert.That(
+            async () => await wrongTenant.SaveChangesAsync(),
+            Throws.TypeOf<DbUpdateException>());
+    }
+
+    [Test]
+    public async Task ConnectionSchema_StoresOpaqueReferenceButNoSecretValueOrPatColumn()
+    {
+        await using var connection = new SqlConnection(AspireAppFixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT [COLUMN_NAME]
+            FROM [INFORMATION_SCHEMA].[COLUMNS]
+            WHERE [TABLE_NAME] = 'ProjectAzureDevOpsConnections';
+            """;
+
+        var columns = new List<string>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            columns.Add(reader.GetString(0));
+        }
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(columns, Does.Contain("SecretName"));
+            Assert.That(columns, Does.Contain("TargetLockedAtUtc"));
+            Assert.That(columns, Does.Not.Contain("PersonalAccessToken"));
+            Assert.That(columns, Does.Not.Contain("Pat"));
+            Assert.That(columns, Does.Not.Contain("SecretValue"));
+        });
+    }
+
     private static AppUser User(Guid id, string email) => new()
     {
         Id = id,
         EntraObjectId = Guid.NewGuid(),
         DisplayName = email,
         Email = email
+    };
+
+    private static ProjectAzureDevOpsConnection Connection(Guid projectId) => new()
+    {
+        ProjectId = projectId,
+        OrganizationUrl = "https://dev.azure.com/contoso",
+        AzureDevOpsProject = "PlanDeck",
+        EstimateField = "Microsoft.VSTS.Scheduling.StoryPoints",
+        DescriptionField = "System.Description",
+        ReproStepsField = "Microsoft.VSTS.TCM.ReproSteps",
+        AcceptanceCriteriaField = "Microsoft.VSTS.Common.AcceptanceCriteria",
+        SecretName = $"pat-{Guid.NewGuid():N}",
+        IsEnabled = true,
+        ValidationState = ConnectionValidationState.Valid,
+        LastValidatedAtUtc = DateTimeOffset.UtcNow
     };
 
     private static FakeCurrentUserContext CurrentUser(

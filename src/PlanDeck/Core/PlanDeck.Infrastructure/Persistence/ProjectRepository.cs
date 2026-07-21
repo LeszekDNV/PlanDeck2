@@ -226,10 +226,26 @@ public sealed class ProjectRepository(
 
     public async Task DeleteAsync(Guid projectId, CancellationToken cancellationToken)
     {
+        await EnsureCanDeleteAsync(projectId, cancellationToken);
         var project = await db.Projects.SingleOrDefaultAsync(
             candidate => candidate.Id == projectId,
             cancellationToken);
         if (project is null)
+        {
+            throw new ProjectNotFoundException(projectId);
+        }
+
+        db.Projects.Remove(project);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task EnsureCanDeleteAsync(
+        Guid projectId,
+        CancellationToken cancellationToken)
+    {
+        if (!await db.Projects.AnyAsync(
+                candidate => candidate.Id == projectId,
+                cancellationToken))
         {
             throw new ProjectNotFoundException(projectId);
         }
@@ -241,9 +257,6 @@ public sealed class ProjectRepository(
             throw new InvalidOperationException(
                 "A project with planning sessions cannot be deleted.");
         }
-
-        db.Projects.Remove(project);
-        await db.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<ProjectMember> LoadMemberAsync(

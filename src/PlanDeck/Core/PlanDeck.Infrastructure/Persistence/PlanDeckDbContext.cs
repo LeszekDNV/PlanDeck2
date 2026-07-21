@@ -20,6 +20,9 @@ public sealed class PlanDeckDbContext(
 
     public DbSet<ProjectTeam> ProjectTeams => Set<ProjectTeam>();
 
+    public DbSet<ProjectAzureDevOpsConnection> ProjectAzureDevOpsConnections =>
+        Set<ProjectAzureDevOpsConnection>();
+
     public DbSet<Team> Teams => Set<Team>();
 
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();

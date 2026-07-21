@@ -54,6 +54,8 @@ public static class ServiceCollectionExtensions
 
         public IServiceCollection AddExternalServices(IConfiguration configuration, IHostEnvironment environment)
         {
+            services.AddHttpClient<IAzureDevOpsConnectionValidator, AzureDevOpsConnectionValidator>(
+                client => client.Timeout = TimeSpan.FromSeconds(20));
             var useTestScheme = configuration.GetValue<bool>("Authentication:UseTestScheme");
             if (useTestScheme && !environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
             {
@@ -156,6 +158,7 @@ public static class ServiceCollectionExtensions
 
         public IServiceCollection AddLocalServices()
         {
+            services.AddMemoryCache();
             services.AddHttpContextAccessor();
             services.AddSingleton(TimeProvider.System);
             services.AddScoped<RequestPrincipalAccessor>();
@@ -170,7 +173,11 @@ public static class ServiceCollectionExtensions
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<TeamGrpcService>();
             services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<
+                IProjectAzureDevOpsConnectionRepository,
+                ProjectAzureDevOpsConnectionRepository>();
             services.AddScoped<IProjectAccessResolver, ProjectAccessResolver>();
+            services.AddSingleton<IProjectSecretStore, KeyVaultProjectSecretStore>();
             services.AddScoped<ISessionAccessResolver, SessionAccessResolver>();
             services.AddScoped<ProjectGrpcService>();
             services.AddScoped<ISessionRepository, SessionRepository>();

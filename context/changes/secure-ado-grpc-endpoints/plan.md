@@ -970,31 +970,31 @@ manual security/deployment review are accepted.
 
 #### Automated
 
-- [x] 2.1 Solution builds
-- [x] 2.2 Project role-matrix unit tests pass
-- [x] 2.3 Persistence isolation and constraint tests pass
-- [x] 2.4 Migration applies from the current schema with required ProjectId and no TeamId
+- [x] 2.1 Solution builds — 93d108d
+- [x] 2.2 Project role-matrix unit tests pass — 93d108d
+- [x] 2.3 Persistence isolation and constraint tests pass — 93d108d
+- [x] 2.4 Migration applies from the current schema with required ProjectId and no TeamId — 93d108d
 
 #### Manual
 
-- [x] 2.5 Schema contains no PAT or secret-value columns
-- [x] 2.6 Owner/Admin/Member capabilities match the approved matrix
-- [x] 2.7 Backup and irreversible reset procedure is accepted
+- [x] 2.5 Schema contains no PAT or secret-value columns — 93d108d
+- [x] 2.6 Owner/Admin/Member capabilities match the approved matrix — 93d108d
+- [x] 2.7 Backup and irreversible reset procedure is accepted — 93d108d
 
 ### Phase 3: Project-Owned Azure DevOps Connection and Real Key Vault
 
 #### Automated
 
-- [ ] 3.1 Solution builds
-- [ ] 3.2 Key Vault orchestration unit tests pass
-- [ ] 3.3 Aspire-provisioned vault integration test creates, reads, rotates, and soft-deletes a test PAT
-- [ ] 3.4 DTO and log tests prove PAT and secret identifiers are not exposed
+- [x] 3.1 Solution builds
+- [x] 3.2 Key Vault orchestration unit tests pass
+- [x] 3.3 Aspire-provisioned vault integration test creates, reads, rotates, and soft-deletes a test PAT
+- [x] 3.4 DTO and log tests prove PAT and secret identifiers are not exposed
 
 #### Manual
 
-- [ ] 3.5 Local AppHost provisions or reuses the dedicated development Key Vault
-- [ ] 3.6 Aspire dashboard shows a healthy server-to-vault reference
-- [ ] 3.7 Generated role assignments are least-privilege and environment-isolated
+- [x] 3.5 Local AppHost provisions or reuses the dedicated development Key Vault
+- [x] 3.6 Aspire dashboard shows a healthy server-to-vault reference
+- [x] 3.7 Generated role assignments are least-privilege and environment-isolated
 
 ### Phase 4: Project-Scoped Sessions and Hardened ADO Operations
 

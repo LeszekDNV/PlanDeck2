@@ -22,7 +22,11 @@ public sealed class ProjectGrpcServiceTests
         _service = new ProjectGrpcService(
             _repository,
             _access,
-            new FakeCurrentUserContext());
+            new FakeCurrentUserContext(),
+            new FakeConnectionRepository(),
+            new FakeSecretStore(),
+            new FakeConnectionValidator(),
+            TimeProvider.System);
     }
 
     [Test]
@@ -221,6 +225,11 @@ public sealed class ProjectGrpcServiceTests
             CancellationToken cancellationToken) =>
             Task.CompletedTask;
 
+        public Task EnsureCanDeleteAsync(
+            Guid projectId,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
         private static PlanDeckProject Project(string name = "Project") => new()
         {
             Id = ProjectId,
@@ -234,6 +243,69 @@ public sealed class ProjectGrpcServiceTests
             Email = email,
             Role = role
         };
+    }
+
+    private sealed class FakeConnectionRepository
+        : IProjectAzureDevOpsConnectionRepository
+    {
+        public Task<ProjectAzureDevOpsConnection?> GetAsync(
+            Guid projectId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<ProjectAzureDevOpsConnection?>(null);
+
+        public Task AddAsync(
+            ProjectAzureDevOpsConnection connection,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(
+            ProjectAzureDevOpsConnection connection,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task DeleteAsync(
+            ProjectAzureDevOpsConnection connection,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task LockTargetAsync(
+            Guid projectId,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class FakeSecretStore : IProjectSecretStore
+    {
+        public Task<string> CreateAsync(string value, CancellationToken cancellationToken) =>
+            Task.FromResult($"pat-{Guid.NewGuid():N}");
+
+        public Task<string> GetLatestAsync(
+            string secretName,
+            CancellationToken cancellationToken) =>
+            Task.FromResult("pat");
+
+        public Task RotateAsync(
+            string secretName,
+            string value,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task SoftDeleteAsync(
+            string secretName,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public void Invalidate(string secretName)
+        {
+        }
+    }
+
+    private sealed class FakeConnectionValidator : IAzureDevOpsConnectionValidator
+    {
+        public Task ValidateAsync(
+            AzureDevOpsConnectionValidationRequest request,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakeCurrentUserContext : ICurrentUserContext

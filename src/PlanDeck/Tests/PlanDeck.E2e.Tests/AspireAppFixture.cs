@@ -1,6 +1,7 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace PlanDeck.E2e.Tests;
@@ -47,16 +48,30 @@ public class AspireAppFixture
 
         var builder = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.PlanDeck_AppHost>();
+        EnsureAzureProvisioningConfigured(builder.Configuration);
 
         _app = await builder.BuildAsync();
         await _app.StartAsync();
 
         var notifications = _app.Services.GetRequiredService<ResourceNotificationService>();
         await notifications
+            .WaitForResourceAsync("key-vault", KnownResourceStates.Running)
+            .WaitAsync(TimeSpan.FromMinutes(5));
+        await notifications
             .WaitForResourceAsync("plandeck-server", KnownResourceStates.Running)
-            .WaitAsync(TimeSpan.FromMinutes(2));
+            .WaitAsync(TimeSpan.FromMinutes(5));
 
         BaseUrl = _app.GetEndpoint("plandeck-server", "https").ToString();
+    }
+
+    private static void EnsureAzureProvisioningConfigured(IConfiguration configuration)
+    {
+        if (string.IsNullOrWhiteSpace(configuration["Azure:SubscriptionId"])
+            || string.IsNullOrWhiteSpace(configuration["Azure:Location"]))
+        {
+            throw new InvalidOperationException(
+                "Local E2E requires Azure:SubscriptionId and Azure:Location for a dedicated non-production Key Vault.");
+        }
     }
 
     [OneTimeTearDown]

@@ -1,10 +1,27 @@
 using Azure.Provisioning.AppContainers;
+using Azure.Provisioning.KeyVault;
 using Azure.Provisioning.Sql;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
 var planDeckServer = builder.AddProject<Projects.PlanDeck_Server>("plandeck-server")
     .WithExternalHttpEndpoints();
+
+var keyVault = builder.AddAzureKeyVault("key-vault")
+    .ClearDefaultRoleAssignments()
+    .ConfigureInfrastructure(infrastructure =>
+    {
+        var vault = infrastructure.GetProvisionableResources()
+            .OfType<KeyVaultService>()
+            .Single();
+        vault.Properties.EnableSoftDelete = true;
+        vault.Properties.EnablePurgeProtection = true;
+    });
+
+planDeckServer
+    .WithRoleAssignments(keyVault, KeyVaultBuiltInRole.KeyVaultSecretsOfficer)
+    .WithReference(keyVault)
+    .WaitFor(keyVault);
 
 if (builder.ExecutionContext.IsPublishMode)
 {
@@ -33,11 +50,8 @@ if (builder.ExecutionContext.IsPublishMode)
         database.AutoPauseDelay = 60;
     });
 
-    var keyVault = builder.AddAzureKeyVault("key-vault");
-
     planDeckServer
         .WithReference(sqlDatabase, "DefaultConnection")
-        .WithReference(keyVault)
         .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
         .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
         .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret)

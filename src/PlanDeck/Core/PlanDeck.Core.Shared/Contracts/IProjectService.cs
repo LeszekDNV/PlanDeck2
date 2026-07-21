@@ -56,6 +56,31 @@ public interface IProjectService
     Task<EmptyProjectReply> DeleteProjectAsync(
         DeleteProjectRequest request,
         CallContext context = default);
+
+    [Operation]
+    Task<ProjectConnectionReply> ConfigureConnectionAsync(
+        ConfigureProjectConnectionRequest request,
+        CallContext context = default);
+
+    [Operation]
+    Task<ProjectConnectionReply> UpdateConnectionAsync(
+        UpdateProjectConnectionRequest request,
+        CallContext context = default);
+
+    [Operation]
+    Task<ProjectConnectionReply> RotateConnectionPatAsync(
+        RotateProjectConnectionPatRequest request,
+        CallContext context = default);
+
+    [Operation]
+    Task<ProjectConnectionReply> SetConnectionEnabledAsync(
+        SetProjectConnectionEnabledRequest request,
+        CallContext context = default);
+
+    [Operation]
+    Task<EmptyProjectReply> RemoveConnectionAsync(
+        RemoveProjectConnectionRequest request,
+        CallContext context = default);
 }
 
 [DataContract]
@@ -78,6 +103,14 @@ public enum ProjectMembershipSourceDto
 {
     [EnumMember] Direct = 1,
     [EnumMember] Team = 2
+}
+
+[DataContract]
+public enum ProjectConnectionValidationStateDto
+{
+    [EnumMember] NotValidated = 0,
+    [EnumMember] Valid = 1,
+    [EnumMember] Invalid = 2
 }
 
 [DataContract]
@@ -170,6 +203,9 @@ public sealed class GetProjectReply
 
     [DataMember(Order = 3)]
     public List<ProjectTeamDto> Teams { get; set; } = [];
+
+    [DataMember(Order = 4)]
+    public ProjectConnectionDto? Connection { get; set; }
 }
 
 [DataContract]
@@ -261,3 +297,104 @@ public sealed class DeleteProjectRequest
 
 [DataContract]
 public sealed class EmptyProjectReply;
+
+[DataContract]
+public sealed class ProjectConnectionDto
+{
+    [DataMember(Order = 1)]
+    public bool IsEnabled { get; set; }
+
+    [DataMember(Order = 2)]
+    public ProjectConnectionValidationStateDto ValidationState { get; set; }
+
+    [DataMember(Order = 3)]
+    public DateTimeOffset? LastValidatedAtUtc { get; set; }
+}
+
+[DataContract]
+public sealed class ProjectConnectionReply
+{
+    [DataMember(Order = 1)]
+    public ProjectConnectionDto Connection { get; set; } = new();
+}
+
+[DataContract]
+public sealed class ConfigureProjectConnectionRequest
+{
+    [DataMember(Order = 1)]
+    public Guid ProjectId { get; set; }
+
+    [DataMember(Order = 2)]
+    public string OrganizationUrl { get; set; } = string.Empty;
+
+    [DataMember(Order = 3)]
+    public string AzureDevOpsProject { get; set; } = string.Empty;
+
+    [DataMember(Order = 4)]
+    public string EstimateField { get; set; } = "Microsoft.VSTS.Scheduling.StoryPoints";
+
+    [DataMember(Order = 5)]
+    public string DescriptionField { get; set; } = "System.Description";
+
+    [DataMember(Order = 6)]
+    public string ReproStepsField { get; set; } = "Microsoft.VSTS.TCM.ReproSteps";
+
+    [DataMember(Order = 7)]
+    public string AcceptanceCriteriaField { get; set; } =
+        "Microsoft.VSTS.Common.AcceptanceCriteria";
+
+    [DataMember(Order = 8)]
+    public string PersonalAccessToken { get; set; } = string.Empty;
+}
+
+[DataContract]
+public sealed class UpdateProjectConnectionRequest
+{
+    [DataMember(Order = 1)]
+    public Guid ProjectId { get; set; }
+
+    [DataMember(Order = 2)]
+    public string OrganizationUrl { get; set; } = string.Empty;
+
+    [DataMember(Order = 3)]
+    public string AzureDevOpsProject { get; set; } = string.Empty;
+
+    [DataMember(Order = 4)]
+    public string EstimateField { get; set; } = string.Empty;
+
+    [DataMember(Order = 5)]
+    public string DescriptionField { get; set; } = string.Empty;
+
+    [DataMember(Order = 6)]
+    public string ReproStepsField { get; set; } = string.Empty;
+
+    [DataMember(Order = 7)]
+    public string AcceptanceCriteriaField { get; set; } = string.Empty;
+}
+
+[DataContract]
+public sealed class RotateProjectConnectionPatRequest
+{
+    [DataMember(Order = 1)]
+    public Guid ProjectId { get; set; }
+
+    [DataMember(Order = 2)]
+    public string PersonalAccessToken { get; set; } = string.Empty;
+}
+
+[DataContract]
+public sealed class SetProjectConnectionEnabledRequest
+{
+    [DataMember(Order = 1)]
+    public Guid ProjectId { get; set; }
+
+    [DataMember(Order = 2)]
+    public bool IsEnabled { get; set; }
+}
+
+[DataContract]
+public sealed class RemoveProjectConnectionRequest
+{
+    [DataMember(Order = 1)]
+    public Guid ProjectId { get; set; }
+}
