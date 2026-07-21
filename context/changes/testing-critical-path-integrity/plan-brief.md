@@ -18,15 +18,15 @@ The codebase already has:
 
 ## Desired End State
 
-Integration tests prove: reconnect yields consistent state, full disconnect clears vote by design, reveal is atomic, persist-first estimate never broadcasts on failure, last-write-wins is clean, ADO write-back signals errors explicitly, and session config propagates into the voting room. Three e2e tests prove these critical paths in real browsers. Test-plan §6.1 and §6.4 cookbook entries are filled with reusable patterns.
+Integration tests prove: reconnect yields consistent state, full disconnect marks the participant offline while preserving vote state until explicit leave/reset, reveal is atomic, persist-first estimate never broadcasts on failure, last-write-wins is clean, ADO write-back signals errors explicitly, and session config propagates into the voting room. Four e2e tests prove these critical paths in real browsers, including user-visible ADO conflict signaling. Test-plan §6.1 and §6.4 cookbook entries are filled with reusable patterns.
 
 ## Key Decisions Made
 
 | Decision | Choice | Why (1 sentence) | Source |
 |----------|--------|-------------------|--------|
-| Vote loss on disconnect | Assert as correct behavior | Archived plan designed votes as ephemeral; documenting the choice prevents future confusion. | Research |
+| Vote state on disconnect | Preserve on disconnect; clear on explicit leave/reset | A transient disconnect must not lose a submitted vote; explicit leave/reset remains the clearing boundary. | Research |
 | Concurrent organizer | Add one last-write-wins test | Cheap to write and documents the behavior even though single-organizer is the current model. | Plan |
-| E2E granularity | One comprehensive test per risk (3 total) | Maximum signal per run; follows existing VotingRoomTests pattern of multi-step flows. | Plan |
+| E2E granularity | One comprehensive voting-room test per risk plus one ADO failure-signaling test (4 total) | Covers the browser-visible critical paths while keeping each scenario focused. | Plan |
 | Test class organization | Extend existing PlanningRoomHubTests | Reuses fixture infrastructure with zero overhead; avoids premature abstraction. | Plan |
 | Scale propagation testing | Test config→seed→vote-validation pipeline | Catches boundary bugs between SessionGrpcService and PlanningRoomService that unit tests miss. | Plan |
 
@@ -35,7 +35,7 @@ Integration tests prove: reconnect yields consistent state, full disconnect clea
 **In scope:**
 - Hub integration tests for disconnect/reconnect, reveal, persist-first estimate, ADO error mapping
 - Config-to-voting pipeline integration test (scale propagation, task ordering)
-- 3 targeted e2e tests (vote/reveal, estimate persistence, config-in-voting)
+- 4 targeted e2e tests (vote/reveal, estimate persistence, config-in-voting, ADO failure signaling)
 - Cookbook §6.1 and §6.4 updates
 
 **Out of scope:**
@@ -53,9 +53,9 @@ Tests are layered by cost×signal: hub integration tests (fast, in-memory DB, 1-
 
 | Phase | What it delivers | Key risk |
 |-------|-----------------|----------|
-| 1. Hub integration tests (Risk #1 + #2) | 11 new hub test methods + 4 ADO unit tests | Disconnect simulation reliability with LongPolling transport |
+| 1. Hub integration tests (Risk #1 + #2) | 11 new hub test methods + validation of existing ADO gRPC unit coverage | Disconnect simulation reliability with LongPolling transport |
 | 2. Config-to-voting integration (Risk #5) | 3-5 config pipeline tests + persistence round-trip | Complex seed→activate→join→vote setup per test |
-| 3. Targeted e2e tests | 3 comprehensive browser tests | WASM boot + SignalR timing; test determinism across runs |
+| 3. Targeted e2e tests | 4 comprehensive browser tests | WASM boot + SignalR timing; deterministic ADO failure injection; test determinism across runs |
 | 4. Cookbook update (§6) | Filled §6.1 and §6.4 in test-plan.md | Keeping recipes concise yet actionable |
 
 **Prerequisites:** Podman running (for e2e/Aspire tests). Existing test suite passes (`dotnet test PlanDeck.slnx`).
