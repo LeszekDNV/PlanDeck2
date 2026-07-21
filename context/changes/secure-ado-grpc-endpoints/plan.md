@@ -985,16 +985,16 @@ manual security/deployment review are accepted.
 
 #### Automated
 
-- [x] 3.1 Solution builds
-- [x] 3.2 Key Vault orchestration unit tests pass
-- [x] 3.3 Aspire-provisioned vault integration test creates, reads, rotates, and soft-deletes a test PAT
-- [x] 3.4 DTO and log tests prove PAT and secret identifiers are not exposed
+- [x] 3.1 Solution builds — 12ad61f
+- [x] 3.2 Key Vault orchestration unit tests pass — 12ad61f
+- [x] 3.3 Aspire-provisioned vault integration test creates, reads, rotates, and soft-deletes a test PAT — 12ad61f
+- [x] 3.4 DTO and log tests prove PAT and secret identifiers are not exposed — 12ad61f
 
 #### Manual
 
-- [x] 3.5 Local AppHost provisions or reuses the dedicated development Key Vault
-- [x] 3.6 Aspire dashboard shows a healthy server-to-vault reference
-- [x] 3.7 Generated role assignments are least-privilege and environment-isolated
+- [x] 3.5 Local AppHost provisions or reuses the dedicated development Key Vault — 12ad61f
+- [x] 3.6 Aspire dashboard shows a healthy server-to-vault reference — 12ad61f
+- [x] 3.7 Generated role assignments are least-privilege and environment-isolated — 12ad61f
 
 ### Phase 4: Project-Scoped Sessions and Hardened ADO Operations
 

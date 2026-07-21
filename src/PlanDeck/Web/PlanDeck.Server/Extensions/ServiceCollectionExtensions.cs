@@ -73,6 +73,7 @@ public static class ServiceCollectionExtensions
 
                 AddPlanDeckAuthorization(services);
                 services.AddScoped<IAzureDevOpsWorkItemClient, FakeAzureDevOpsWorkItemClient>();
+                services.AddScoped<IAdoConnectionContextResolver, FakeAdoConnectionContextResolver>();
 
                 return services;
             }
@@ -150,8 +151,8 @@ public static class ServiceCollectionExtensions
             }
 
             AddPlanDeckAuthorization(services);
-            services.Configure<AzureDevOpsOptions>(configuration.GetSection(AzureDevOpsOptions.SectionName));
             services.AddHttpClient<IAzureDevOpsWorkItemClient, AzureDevOpsWorkItemClient>();
+            services.AddScoped<IAdoConnectionContextResolver, AdoConnectionContextResolver>();
 
             return services;
         }

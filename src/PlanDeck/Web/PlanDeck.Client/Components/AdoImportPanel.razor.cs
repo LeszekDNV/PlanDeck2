@@ -23,6 +23,9 @@ public partial class AdoImportPanel
     private readonly HashSet<int> _selectedIds = [];
 
     [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
     public IReadOnlyCollection<int> AlreadyPresentIds { get; set; } = [];
 
     [Parameter]
@@ -53,6 +56,7 @@ public partial class AdoImportPanel
         try
         {
             _items = (await AdoService.ImportWorkItemsAsync(
+                ProjectId,
                 _selectedTypes.ToArray(),
                 _selectedStates.ToArray(),
                 _limit)).ToList();

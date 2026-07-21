@@ -1,10 +1,34 @@
 namespace PlanDeck.Application.Abstractions;
 
+/// <summary>
+/// Per-request connection context that replaces global ADO configuration.
+/// Resolved server-side from the project's stored connection and Key Vault secret.
+/// </summary>
+public sealed record AdoConnectionContext(
+    string OrganizationUrl,
+    string Project,
+    string PersonalAccessToken,
+    string EstimateField,
+    string DescriptionField,
+    string ReproStepsField,
+    string AcceptanceCriteriaField);
+
 public interface IAzureDevOpsWorkItemClient
 {
-    Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(AzureDevOpsImportRequest request, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(
+        AdoConnectionContext connection,
+        AzureDevOpsImportRequest request,
+        CancellationToken cancellationToken);
 
-    Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken);
+    Task<AzureDevOpsWorkItem?> GetWorkItemByIdAsync(
+        AdoConnectionContext connection,
+        int workItemId,
+        CancellationToken cancellationToken);
+
+    Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(
+        AdoConnectionContext connection,
+        AzureDevOpsWriteEstimateRequest request,
+        CancellationToken cancellationToken);
 }
 
 public sealed record AzureDevOpsImportRequest(string? WiqlWhereClause, int Limit);

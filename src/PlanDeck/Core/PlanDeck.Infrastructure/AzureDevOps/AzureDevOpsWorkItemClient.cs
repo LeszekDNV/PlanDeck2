@@ -3,20 +3,19 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Options;
 using PlanDeck.Application.Abstractions;
 
 namespace PlanDeck.Infrastructure.AzureDevOps;
 
-public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<AzureDevOpsOptions> options) : IAzureDevOpsWorkItemClient
+public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient) : IAzureDevOpsWorkItemClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private readonly AzureDevOpsOptions _options = options.Value;
 
-    public async Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(AzureDevOpsImportRequest request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(
+        AdoConnectionContext connection,
+        AzureDevOpsImportRequest request,
+        CancellationToken cancellationToken)
     {
-        EnsureConfigured();
-
         var limit = request.Limit <= 0 ? 100 : Math.Min(request.Limit, 200);
         var whereClause = string.IsNullOrWhiteSpace(request.WiqlWhereClause)
             ? "[System.WorkItemType] IN ('User Story', 'Product Backlog Item', 'Bug', 'Task')"
@@ -32,7 +31,7 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
                 """
         };
 
-        using var wiqlRequest = CreateRequest(HttpMethod.Post, $"{ProjectBaseUrl}/_apis/wit/wiql?api-version=7.2-preview.2");
+        using var wiqlRequest = CreateRequest(HttpMethod.Post, $"{ProjectBaseUrl(connection)}/_apis/wit/wiql?api-version=7.2-preview.2", connection);
         wiqlRequest.Content = JsonContent(wiql);
         using var wiqlResponse = await SendAsync(wiqlRequest, cancellationToken);
         await using var wiqlStream = await wiqlResponse.Content.ReadAsStreamAsync(cancellationToken);
@@ -53,34 +52,23 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             return [];
         }
 
-        var fields = new[]
-        {
-            "System.Id",
-            "System.Title",
-            "System.State",
-            "System.WorkItemType",
-            _options.EstimateField,
-            _options.DescriptionField,
-            _options.ReproStepsField,
-            _options.AcceptanceCriteriaField
-        };
-
-        using var batchRequest = CreateRequest(HttpMethod.Post, $"{OrganizationBaseUrl}/_apis/wit/workitemsbatch?api-version=7.2-preview.1");
-        batchRequest.Content = JsonContent(new { ids, fields, errorPolicy = "Omit" });
-        using var batchResponse = await SendAsync(batchRequest, cancellationToken);
-        await using var batchStream = await batchResponse.Content.ReadAsStreamAsync(cancellationToken);
-        using var batchDocument = await JsonDocument.ParseAsync(batchStream, cancellationToken: cancellationToken);
-
-        return batchDocument.RootElement.GetProperty("value")
-            .EnumerateArray()
-            .Select(ParseWorkItem)
-            .ToArray();
+        return await FetchWorkItemsByIdsAsync(connection, ids, cancellationToken);
     }
 
-    public async Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)
+    public async Task<AzureDevOpsWorkItem?> GetWorkItemByIdAsync(
+        AdoConnectionContext connection,
+        int workItemId,
+        CancellationToken cancellationToken)
     {
-        EnsureConfigured();
+        var items = await FetchWorkItemsByIdsAsync(connection, [workItemId], cancellationToken);
+        return items.Count == 0 ? null : items[0];
+    }
 
+    public async Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(
+        AdoConnectionContext connection,
+        AzureDevOpsWriteEstimateRequest request,
+        CancellationToken cancellationToken)
+    {
         if (request.WorkItemId <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(request), "Work item ID must be positive.");
@@ -92,9 +80,9 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             patchOperations.Add(new { op = "test", path = "/rev", value = request.ExpectedRevision.Value });
         }
 
-        patchOperations.Add(new { op = "add", path = $"/fields/{_options.EstimateField}", value = request.Estimate });
+        patchOperations.Add(new { op = "add", path = $"/fields/{connection.EstimateField}", value = request.Estimate });
 
-        using var writeRequest = CreateRequest(new HttpMethod("PATCH"), $"{OrganizationBaseUrl}/_apis/wit/workitems/{request.WorkItemId}?api-version=7.2-preview.3");
+        using var writeRequest = CreateRequest(new HttpMethod("PATCH"), $"{OrganizationBaseUrl(connection)}/_apis/wit/workitems/{request.WorkItemId}?api-version=7.2-preview.3", connection);
         writeRequest.Content = new StringContent(JsonSerializer.Serialize(patchOperations, JsonOptions), Encoding.UTF8, "application/json-patch+json");
         using var response = await SendAsync(writeRequest, cancellationToken);
         await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
@@ -105,7 +93,36 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             responseDocument.RootElement.GetProperty("rev").GetInt32());
     }
 
-    private AzureDevOpsWorkItem ParseWorkItem(JsonElement item)
+    private async Task<IReadOnlyList<AzureDevOpsWorkItem>> FetchWorkItemsByIdsAsync(
+        AdoConnectionContext connection,
+        int[] ids,
+        CancellationToken cancellationToken)
+    {
+        var fields = new[]
+        {
+            "System.Id",
+            "System.Title",
+            "System.State",
+            "System.WorkItemType",
+            connection.EstimateField,
+            connection.DescriptionField,
+            connection.ReproStepsField,
+            connection.AcceptanceCriteriaField
+        };
+
+        using var batchRequest = CreateRequest(HttpMethod.Post, $"{OrganizationBaseUrl(connection)}/_apis/wit/workitemsbatch?api-version=7.2-preview.1", connection);
+        batchRequest.Content = JsonContent(new { ids, fields, errorPolicy = "Omit" });
+        using var batchResponse = await SendAsync(batchRequest, cancellationToken);
+        await using var batchStream = await batchResponse.Content.ReadAsStreamAsync(cancellationToken);
+        using var batchDocument = await JsonDocument.ParseAsync(batchStream, cancellationToken: cancellationToken);
+
+        return batchDocument.RootElement.GetProperty("value")
+            .EnumerateArray()
+            .Select(item => ParseWorkItem(item, connection))
+            .ToArray();
+    }
+
+    private AzureDevOpsWorkItem ParseWorkItem(JsonElement item, AdoConnectionContext connection)
     {
         var fields = item.GetProperty("fields");
         return new AzureDevOpsWorkItem(
@@ -114,19 +131,19 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
             GetFieldString(fields, "System.State"),
             GetFieldString(fields, "System.WorkItemType"),
             item.TryGetProperty("rev", out var rev) ? rev.GetInt32() : 0,
-            GetFieldDouble(fields, _options.EstimateField),
-            BuildDescription(fields));
+            GetFieldDouble(fields, connection.EstimateField),
+            BuildDescription(fields, connection));
     }
 
-    private string? BuildDescription(JsonElement fields)
+    private static string? BuildDescription(JsonElement fields, AdoConnectionContext connection)
     {
-        var description = HtmlToText(GetFieldString(fields, _options.DescriptionField));
+        var description = HtmlToText(GetFieldString(fields, connection.DescriptionField));
         if (description.Length == 0)
         {
-            description = HtmlToText(GetFieldString(fields, _options.ReproStepsField));
+            description = HtmlToText(GetFieldString(fields, connection.ReproStepsField));
         }
 
-        var acceptance = HtmlToText(GetFieldString(fields, _options.AcceptanceCriteriaField));
+        var acceptance = HtmlToText(GetFieldString(fields, connection.AcceptanceCriteriaField));
 
         var builder = new StringBuilder();
         if (description.Length > 0)
@@ -210,10 +227,10 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
         return response;
     }
 
-    private HttpRequestMessage CreateRequest(HttpMethod method, string url)
+    private static HttpRequestMessage CreateRequest(HttpMethod method, string url, AdoConnectionContext connection)
     {
         var request = new HttpRequestMessage(method, url);
-        var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{_options.PersonalAccessToken}"));
+        var token = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{connection.PersonalAccessToken}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         return request;
@@ -224,18 +241,9 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient, IOptions<Az
         return new StringContent(JsonSerializer.Serialize(value, JsonOptions), Encoding.UTF8, "application/json");
     }
 
-    private string OrganizationBaseUrl => _options.OrganizationUrl.TrimEnd('/');
+    private static string OrganizationBaseUrl(AdoConnectionContext connection) =>
+        connection.OrganizationUrl.TrimEnd('/');
 
-    private string ProjectBaseUrl => $"{OrganizationBaseUrl}/{Uri.EscapeDataString(_options.Project)}";
-
-    private void EnsureConfigured()
-    {
-        if (string.IsNullOrWhiteSpace(_options.OrganizationUrl)
-            || string.IsNullOrWhiteSpace(_options.Project)
-            || string.IsNullOrWhiteSpace(_options.EstimateField)
-            || string.IsNullOrWhiteSpace(_options.PersonalAccessToken))
-        {
-            throw new InvalidOperationException("Azure DevOps integration requires OrganizationUrl, Project, EstimateField, and PersonalAccessToken configuration.");
-        }
-    }
+    private static string ProjectBaseUrl(AdoConnectionContext connection) =>
+        $"{OrganizationBaseUrl(connection)}/{Uri.EscapeDataString(connection.Project)}";
 }

@@ -13,6 +13,9 @@ public partial class AdoImportDialog
     public IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
     public IReadOnlyCollection<int> AlreadyPresentIds { get; set; } = [];
 
     private void OnCountChanged(int count) => _selectedCount = count;

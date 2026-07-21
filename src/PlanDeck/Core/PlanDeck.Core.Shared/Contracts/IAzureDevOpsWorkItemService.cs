@@ -10,8 +10,7 @@ public interface IAzureDevOpsWorkItemService
     [Operation]
     Task<ImportWorkItemsReply> ImportWorkItemsAsync(ImportWorkItemsRequest request, CallContext context = default);
 
-    [Operation]
-    Task<WriteEstimateReply> WriteEstimateAsync(WriteEstimateRequest request, CallContext context = default);
+    // WriteEstimateAsync removed in Phase 4 — field numbers 1/2/3 are tombstoned, do not reuse.
 }
 
 [DataContract]
@@ -25,6 +24,9 @@ public sealed class ImportWorkItemsRequest
 
     [DataMember(Order = 3)]
     public int Limit { get; set; } = 100;
+
+    [DataMember(Order = 4)]
+    public Guid ProjectId { get; set; }
 }
 
 [DataContract]

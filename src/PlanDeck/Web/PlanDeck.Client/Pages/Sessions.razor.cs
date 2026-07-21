@@ -55,6 +55,8 @@ public partial class Sessions
 
     private bool _isLocked => _selected?.Status == SessionStatusDto.Active;
 
+    private readonly List<int> _stagedAdoIds = [];
+
     private IReadOnlyCollection<int> StagedAdoIds =>
         _stagedTasks.Where(t => t.AdoWorkItemId.HasValue).Select(t => t.AdoWorkItemId!.Value).ToArray();
 
@@ -156,6 +158,7 @@ public partial class Sessions
     {
         var parameters = new DialogParameters<AdoImportDialog>
         {
+            { x => x.ProjectId, _newProjectId },
             { x => x.AlreadyPresentIds, StagedAdoIds }
         };
 
@@ -558,6 +561,7 @@ public partial class Sessions
 
         var parameters = new DialogParameters<AdoImportDialog>
         {
+            { x => x.ProjectId, _selected!.ProjectId },
             { x => x.AlreadyPresentIds, SelectedSessionAdoIds }
         };
 

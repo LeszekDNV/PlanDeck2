@@ -15,7 +15,8 @@ public sealed class SessionGrpcService(
     ICurrentUserContext currentUser,
     IPlanningRoomNotifier roomNotifier,
     IShareCodeGenerator shareCodeGenerator,
-    IAzureDevOpsWorkItemClient azureDevOpsClient) : ISessionService
+    IAzureDevOpsWorkItemClient azureDevOpsClient,
+    IAdoConnectionContextResolver connectionResolver) : ISessionService
 {
     private static readonly string[] FibonacciFaces = ["0", "1", "2", "3", "5", "8", "13", "21", "?", "☕"];
 
@@ -288,9 +289,28 @@ public sealed class SessionGrpcService(
         }
 
         AzureDevOpsWriteEstimateResult result;
+        AdoConnectionContext adoContext;
+        try
+        {
+            adoContext = await connectionResolver.ResolveAsync(session.ProjectId, context.CancellationToken);
+        }
+        catch (ProjectConnectionNotFoundException)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "No ADO connection is configured for this project."));
+        }
+        catch (ProjectConnectionDisabledException)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "The project ADO connection is disabled."));
+        }
+        catch (ProjectSecretStoreException)
+        {
+            throw new RpcException(new Status(StatusCode.Internal, "Failed to resolve ADO credentials."));
+        }
+
         try
         {
             result = await azureDevOpsClient.WriteEstimateAsync(
+                adoContext,
                 new AzureDevOpsWriteEstimateRequest(task.AdoWorkItemId.Value, task.AdoRevision, estimate),
                 context.CancellationToken);
         }

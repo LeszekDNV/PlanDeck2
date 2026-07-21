@@ -28,7 +28,7 @@ public sealed class SessionGrpcServiceTests
         _notifier = new RecordingPlanningRoomNotifier();
         _shareCodeGenerator = new StubShareCodeGenerator();
         _azureDevOpsClient = new FakeAzureDevOpsWorkItemClient();
-        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier, _shareCodeGenerator, _azureDevOpsClient);
+        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier, _shareCodeGenerator, _azureDevOpsClient, new StubAdoConnectionContextResolver());
     }
 
     [Test]
@@ -838,15 +838,29 @@ public sealed class SessionGrpcServiceTests
 
         public Func<AzureDevOpsWriteEstimateRequest, AzureDevOpsWriteEstimateResult>? OnWrite { get; set; }
 
-        public Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(AzureDevOpsImportRequest request, CancellationToken cancellationToken)
+        public Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(
+            AdoConnectionContext connection, AzureDevOpsImportRequest request, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyCollection<AzureDevOpsWorkItem>>([]);
 
-        public Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)
+        public Task<AzureDevOpsWorkItem?> GetWorkItemByIdAsync(
+            AdoConnectionContext connection, int workItemId, CancellationToken cancellationToken)
+            => Task.FromResult<AzureDevOpsWorkItem?>(null);
+
+        public Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(
+            AdoConnectionContext connection, AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)
         {
             LastWriteRequest = request;
             var result = OnWrite?.Invoke(request)
                 ?? new AzureDevOpsWriteEstimateResult(request.WorkItemId, request.ExpectedRevision.GetValueOrDefault() + 1);
             return Task.FromResult(result);
         }
+    }
+
+    private sealed class StubAdoConnectionContextResolver : IAdoConnectionContextResolver
+    {
+        public Task<AdoConnectionContext> ResolveAsync(Guid projectId, CancellationToken cancellationToken)
+            => Task.FromResult(new AdoConnectionContext(
+                "https://dev.azure.com/test", "TestProject", "fake-pat",
+                "Story Points", "Description", "Repro Steps", "Acceptance Criteria"));
     }
 }

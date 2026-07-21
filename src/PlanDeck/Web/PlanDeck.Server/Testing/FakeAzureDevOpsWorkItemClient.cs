@@ -18,15 +18,22 @@ public sealed class FakeAzureDevOpsWorkItemClient : IAzureDevOpsWorkItemClient
     ];
 
     public Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(
-        AzureDevOpsImportRequest request, CancellationToken cancellationToken)
+        AdoConnectionContext connection, AzureDevOpsImportRequest request, CancellationToken cancellationToken)
     {
         var limit = request.Limit > 0 ? request.Limit : WorkItems.Count;
         IReadOnlyCollection<AzureDevOpsWorkItem> result = WorkItems.Take(limit).ToList();
         return Task.FromResult(result);
     }
 
+    public Task<AzureDevOpsWorkItem?> GetWorkItemByIdAsync(
+        AdoConnectionContext connection, int workItemId, CancellationToken cancellationToken)
+    {
+        AzureDevOpsWorkItem? item = WorkItems.FirstOrDefault(w => w.Id == workItemId);
+        return Task.FromResult(item);
+    }
+
     public Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(
-        AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)
+        AdoConnectionContext connection, AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)
     {
         if (request.WorkItemId == 1004)
         {
