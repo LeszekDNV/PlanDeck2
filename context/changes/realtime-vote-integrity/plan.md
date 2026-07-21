@@ -540,11 +540,11 @@ None — no schema or data changes. Wire-contract change (`PlanningParticipantSt
 
 #### Automated
 
-- [x] 6.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 6.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 6.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
-- [x] 6.4 Anonymous hub connection is rejected by the real test-server pipeline
+- [x] 6.1 Solution builds: `dotnet build PlanDeck.slnx` — 01bb7c1
+- [x] 6.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — 01bb7c1
+- [x] 6.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"` — 01bb7c1
+- [x] 6.4 Anonymous hub connection is rejected by the real test-server pipeline — 01bb7c1
 
 #### Manual
 
-- [x] 6.5 Hub performs no room/group mutation before tenant-scoped Active-session validation succeeds
+- [x] 6.5 Hub performs no room/group mutation before tenant-scoped Active-session validation succeeds — 01bb7c1
