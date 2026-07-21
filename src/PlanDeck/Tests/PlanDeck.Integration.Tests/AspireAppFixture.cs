@@ -1,7 +1,10 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PlanDeck.Application.Abstractions;
+using PlanDeck.Infrastructure.Persistence;
 
 namespace PlanDeck.Integration.Tests;
 
@@ -27,14 +30,18 @@ public class AspireAppFixture
 
         var notifications = _app.Services.GetRequiredService<ResourceNotificationService>();
 
-        // Wait for the server: its Development startup applies the migration, so by the
-        // time it is Running the PlanDeckDb schema exists and tests avoid a DDL race.
         await notifications
             .WaitForResourceAsync("plandeck-server", KnownResourceStates.Running)
             .WaitAsync(TimeSpan.FromMinutes(5));
 
         ConnectionString = await _app.GetConnectionStringAsync("PlanDeckDb")
             ?? throw new InvalidOperationException("Connection string 'PlanDeckDb' was not provided by the AppHost.");
+
+        var options = new DbContextOptionsBuilder<PlanDeckDbContext>()
+            .UseSqlServer(ConnectionString, sql => sql.EnableRetryOnFailure())
+            .Options;
+        await using var db = new PlanDeckDbContext(options, MigrationUserContext.Instance);
+        await db.Database.MigrateAsync();
     }
 
     [OneTimeTearDown]
@@ -44,5 +51,20 @@ public class AspireAppFixture
         {
             await _app.DisposeAsync();
         }
+    }
+
+    private sealed class MigrationUserContext : ICurrentUserContext
+    {
+        public static MigrationUserContext Instance { get; } = new();
+
+        public Guid TenantId => Guid.Empty;
+
+        public Guid UserId => Guid.Empty;
+
+        public bool IsAuthenticated => false;
+
+        public string? DisplayName => null;
+
+        public string? Email => null;
     }
 }

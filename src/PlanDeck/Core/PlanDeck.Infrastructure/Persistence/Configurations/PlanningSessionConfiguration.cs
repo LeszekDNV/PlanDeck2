@@ -29,7 +29,9 @@ public sealed class PlanningSessionConfiguration : IEntityTypeConfiguration<Plan
         builder.Property(s => s.ShareCode)
             .HasMaxLength(16);
 
-        builder.HasIndex(s => s.TenantId);
+        builder.HasAlternateKey(s => new { s.TenantId, s.Id });
+
+        builder.HasIndex(s => new { s.TenantId, s.ProjectId, s.CreatedAtUtc });
 
         // Filtered unique index: share codes are tenant-agnostic join keys, so they must be
         // globally unique, but only across sessions that actually have one (Draft sessions are null).
@@ -37,9 +39,10 @@ public sealed class PlanningSessionConfiguration : IEntityTypeConfiguration<Plan
             .IsUnique()
             .HasFilter("[ShareCode] IS NOT NULL");
 
-        builder.HasMany(s => s.Tasks)
-            .WithOne()
-            .HasForeignKey(t => t.SessionId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<PlanDeckProject>()
+            .WithMany()
+            .HasForeignKey(s => new { s.TenantId, s.ProjectId })
+            .HasPrincipalKey(project => new { project.TenantId, project.Id })
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

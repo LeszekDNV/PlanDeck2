@@ -955,31 +955,31 @@ manual security/deployment review are accepted.
 
 #### Automated
 
-- [x] 1.1 Solution builds
-- [x] 1.2 Unit tests pass
-- [x] 1.3 gRPC-Web authentication tests reject anonymous and malformed callers
-- [x] 1.4 Production configuration fails closed without valid Entra settings
+- [x] 1.1 Solution builds — b264529
+- [x] 1.2 Unit tests pass — b264529
+- [x] 1.3 gRPC-Web authentication tests reject anonymous and malformed callers — b264529
+- [x] 1.4 Production configuration fails closed without valid Entra settings — b264529
 
 #### Manual
 
-- [x] 1.5 Member login provisions one stable AppUser
-- [x] 1.6 Guest voting remains scoped to one active session
-- [x] 1.7 Published manifest contains no forced Testing/test-auth settings
+- [x] 1.5 Member login provisions one stable AppUser — b264529
+- [x] 1.6 Guest voting remains scoped to one active session — b264529
+- [x] 1.7 Published manifest contains no forced Testing/test-auth settings — b264529
 
 ### Phase 2: Project Aggregate, Membership, and MVP Schema Reset
 
 #### Automated
 
-- [ ] 2.1 Solution builds
-- [ ] 2.2 Project role-matrix unit tests pass
-- [ ] 2.3 Persistence isolation and constraint tests pass
-- [ ] 2.4 Migration applies from the current schema with required ProjectId and no TeamId
+- [x] 2.1 Solution builds
+- [x] 2.2 Project role-matrix unit tests pass
+- [x] 2.3 Persistence isolation and constraint tests pass
+- [x] 2.4 Migration applies from the current schema with required ProjectId and no TeamId
 
 #### Manual
 
-- [ ] 2.5 Schema contains no PAT or secret-value columns
-- [ ] 2.6 Owner/Admin/Member capabilities match the approved matrix
-- [ ] 2.7 Backup and irreversible reset procedure is accepted
+- [x] 2.5 Schema contains no PAT or secret-value columns
+- [x] 2.6 Owner/Admin/Member capabilities match the approved matrix
+- [x] 2.7 Backup and irreversible reset procedure is accepted
 
 ### Phase 3: Project-Owned Azure DevOps Connection and Real Key Vault
 

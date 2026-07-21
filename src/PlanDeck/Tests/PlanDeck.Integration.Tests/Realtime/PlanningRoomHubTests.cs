@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using PlanDeck.Application.Domain;
 using PlanDeck.Core.Shared.Realtime;
 using PlanDeck.Infrastructure.Persistence;
+using PlanDeck.Integration.Tests;
 using PlanDeck.Server;
 using PlanDeck.Server.Hubs;
 using PlanDeck.Server.Identity;
@@ -719,6 +720,7 @@ public sealed class PlanningRoomHubTests
         {
             Id = sessionId,
             Name = "Hub Test Session",
+            ProjectId = PersistenceTestData.AddProject(db, createdByUserId ?? Guid.Empty),
             Status = status,
             ScaleType = VotingScaleType.Custom,
             ScaleValues = ["1", "2", "3", "5"],
@@ -774,6 +776,7 @@ public sealed class PlanningRoomHubTests
         {
             Id = sessionId,
             Name = "Hub Config Session",
+            ProjectId = PersistenceTestData.AddProject(db, createdByUserId ?? Guid.Empty),
             Status = SessionStatus.Active,
             ScaleType = VotingScaleType.Custom,
             ScaleValues = [.. scaleValues],

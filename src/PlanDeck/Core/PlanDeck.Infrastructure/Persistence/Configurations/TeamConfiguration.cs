@@ -21,11 +21,6 @@ public sealed class TeamConfiguration : IEntityTypeConfiguration<Team>
         builder.Property(t => t.Description)
             .HasMaxLength(1024);
 
-        builder.HasIndex(t => t.TenantId);
-
-        builder.HasMany<TeamMember>()
-            .WithOne()
-            .HasForeignKey(m => m.TeamId)
-            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasAlternateKey(t => new { t.TenantId, t.Id });
     }
 }

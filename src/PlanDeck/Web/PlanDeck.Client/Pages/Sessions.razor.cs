@@ -18,11 +18,11 @@ public partial class Sessions
     private bool _activating;
 
     private List<SessionDto> _sessions = [];
-    private List<TeamDto> _teams = [];
+    private List<ProjectDto> _projects = [];
     private SessionDto? _selected;
 
     private string _newName = string.Empty;
-    private Guid? _newTeamId;
+    private Guid _newProjectId;
     private VotingScaleTypeDto _newScaleType = VotingScaleTypeDto.Fibonacci;
     private string _newCustomValues = string.Empty;
     private string _adHocTitle = string.Empty;
@@ -32,8 +32,6 @@ public partial class Sessions
     private readonly List<NewSessionTaskDto> _stagedTasks = [];
 
     private string _configName = string.Empty;
-    private Guid? _configTeamId;
-    private List<TeamMemberDto> _teamMembers = [];
     private VotingScaleTypeDto _configScaleType = VotingScaleTypeDto.Fibonacci;
     private string _configCustomValues = string.Empty;
     private string _configTaskTitle = string.Empty;
@@ -69,7 +67,7 @@ public partial class Sessions
         if (state.User.Identity?.IsAuthenticated == true)
         {
             await LoadSessionsAsync();
-            await LoadTeamsAsync();
+            await LoadProjectsAsync();
         }
 
         _loading = false;
@@ -87,11 +85,11 @@ public partial class Sessions
         }
     }
 
-    private async Task LoadTeamsAsync()
+    private async Task LoadProjectsAsync()
     {
         try
         {
-            _teams = (await TeamService.GetTeamsAsync()).ToList();
+            _projects = (await ProjectService.GetProjectsAsync()).ToList();
         }
         catch (RpcException ex)
         {
@@ -102,7 +100,7 @@ public partial class Sessions
     private void OpenCreate()
     {
         _newName = string.Empty;
-        _newTeamId = null;
+        _newProjectId = _projects.FirstOrDefault()?.Id ?? Guid.Empty;
         _newScaleType = VotingScaleTypeDto.Fibonacci;
         _newCustomValues = string.Empty;
         _adHocTitle = string.Empty;
@@ -199,12 +197,18 @@ public partial class Sessions
             return;
         }
 
+        if (_newProjectId == Guid.Empty)
+        {
+            Snackbar.Add(L["Sessions_ProjectRequired"], Severity.Error);
+            return;
+        }
+
         _createSubmitting = true;
         try
         {
             var session = await SessionService.CreateSessionAsync(
                 _newName.Trim(),
-                _newTeamId,
+                _newProjectId,
                 _newScaleType,
                 ParseCustomValues(_newCustomValues),
                 _stagedTasks);
@@ -229,7 +233,6 @@ public partial class Sessions
         {
             _selected = await SessionService.GetSessionAsync(session.Id);
             _configName = _selected.Name;
-            _configTeamId = _selected.TeamId;
             _configScaleType = _selected.ScaleType;
             _configCustomValues = string.Join(", ", _selected.ScaleValues);
             _configTaskTitle = string.Empty;
@@ -238,30 +241,6 @@ public partial class Sessions
             _configBulkExpanded = false;
             _expandedTaskIds.Clear();
             await LoadMembersAsync();
-            await LoadTeamMembersAsync();
-        }
-        catch (RpcException ex)
-        {
-            ShowError(ex);
-        }
-    }
-
-    private async Task OnConfigTeamChangedAsync()
-    {
-        await LoadTeamMembersAsync();
-    }
-
-    private async Task LoadTeamMembersAsync()
-    {
-        if (_configTeamId is null)
-        {
-            _teamMembers = [];
-            return;
-        }
-
-        try
-        {
-            _teamMembers = (await TeamService.GetMembersAsync(_configTeamId.Value)).ToList();
         }
         catch (RpcException ex)
         {
@@ -365,7 +344,6 @@ public partial class Sessions
             var updated = await SessionService.UpdateSessionConfigAsync(
                 _selected.Id,
                 _configName.Trim(),
-                _configTeamId,
                 _configScaleType,
                 ParseCustomValues(_configCustomValues));
 

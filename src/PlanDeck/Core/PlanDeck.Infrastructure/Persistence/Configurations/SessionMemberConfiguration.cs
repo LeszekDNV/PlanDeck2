@@ -21,14 +21,13 @@ public sealed class SessionMemberConfiguration : IEntityTypeConfiguration<Sessio
         builder.Property(m => m.DisplayName)
             .HasMaxLength(256);
 
-        builder.HasIndex(m => m.TenantId);
-
         builder.HasIndex(m => new { m.TenantId, m.SessionId, m.Email })
             .IsUnique();
 
         builder.HasOne<PlanningSession>()
             .WithMany()
-            .HasForeignKey(m => m.SessionId)
+            .HasForeignKey(m => new { m.TenantId, m.SessionId })
+            .HasPrincipalKey(session => new { session.TenantId, session.Id })
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

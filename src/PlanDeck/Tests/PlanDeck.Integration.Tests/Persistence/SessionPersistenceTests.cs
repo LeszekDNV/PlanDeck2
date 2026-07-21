@@ -23,6 +23,7 @@ public sealed class SessionPersistenceTests
             var session = new PlanningSession
             {
                 Name = name,
+                ProjectId = PersistenceTestData.AddProject(write, userId),
                 CreatedByUserId = userId,
                 ScaleType = VotingScaleType.Fibonacci,
                 ScaleValues = ["1", "2", "3", "5", "8"],
@@ -76,6 +77,7 @@ public sealed class SessionPersistenceTests
             var session = new PlanningSession
             {
                 Name = $"session-{Guid.NewGuid():N}",
+                ProjectId = PersistenceTestData.AddProject(write, userId),
                 CreatedByUserId = userId,
                 Tasks = { new SessionTask { Title = "Task", Source = TaskSource.AdHoc } }
             };
@@ -145,6 +147,7 @@ public sealed class SessionPersistenceTests
             var session = new PlanningSession
             {
                 Name = $"session-{Guid.NewGuid():N}",
+                ProjectId = PersistenceTestData.AddProject(write, userId),
                 CreatedByUserId = userId,
                 Tasks =
                 {
@@ -178,7 +181,7 @@ public sealed class SessionPersistenceTests
     public async Task CreateSession_WithCustomScaleAndOrderedTasks_RoundTripsExactly()
     {
         var userId = Guid.NewGuid();
-        var teamId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
         var sessionName = $"custom-scale-{Guid.NewGuid():N}";
         Guid sessionId;
 
@@ -187,7 +190,7 @@ public sealed class SessionPersistenceTests
             var session = new PlanningSession
             {
                 Name = sessionName,
-                TeamId = teamId,
+                ProjectId = projectId,
                 CreatedByUserId = userId,
                 ScaleType = VotingScaleType.Custom,
                 ScaleValues = ["XS", "S", "M", "L"],
@@ -200,6 +203,12 @@ public sealed class SessionPersistenceTests
             };
 
             write.Sessions.Add(session);
+            write.Projects.Add(new PlanDeckProject
+            {
+                Id = projectId,
+                Name = $"project-{projectId:N}",
+                CreatedByUserId = userId
+            });
             await write.SaveChangesAsync();
             sessionId = session.Id;
         }
@@ -218,7 +227,7 @@ public sealed class SessionPersistenceTests
         Assert.Multiple(() =>
         {
             Assert.That(loaded.Name, Is.EqualTo(sessionName));
-            Assert.That(loaded.TeamId, Is.EqualTo(teamId));
+            Assert.That(loaded.ProjectId, Is.EqualTo(projectId));
             Assert.That(loaded.ScaleType, Is.EqualTo(VotingScaleType.Custom));
             Assert.That(loaded.ScaleValues, Is.EqualTo(new[] { "XS", "S", "M", "L" }));
             Assert.That(loaded.Tasks, Has.Count.EqualTo(3));
@@ -240,6 +249,7 @@ public sealed class SessionPersistenceTests
             var session = new PlanningSession
             {
                 Name = sessionName,
+                ProjectId = PersistenceTestData.AddProject(write, userId),
                 CreatedByUserId = userId,
                 Tasks =
                 {
@@ -278,7 +288,13 @@ public sealed class SessionPersistenceTests
     private static async Task<Guid> CreateSessionAsync(Guid tenantId, string name)
     {
         await using var context = CreateContext(new FakeCurrentUserContext(tenantId, Guid.NewGuid(), authenticated: true));
-        var session = new PlanningSession { Name = name, CreatedByUserId = Guid.NewGuid() };
+        var userId = Guid.NewGuid();
+        var session = new PlanningSession
+        {
+            Name = name,
+            ProjectId = PersistenceTestData.AddProject(context, userId),
+            CreatedByUserId = userId
+        };
         context.Sessions.Add(session);
         await context.SaveChangesAsync();
         return session.Id;

@@ -72,9 +72,6 @@ public sealed class SessionDto
     [DataMember(Order = 2)]
     public string Name { get; set; } = string.Empty;
 
-    [DataMember(Order = 3)]
-    public Guid? TeamId { get; set; }
-
     [DataMember(Order = 4)]
     public SessionStatusDto Status { get; set; }
 
@@ -92,6 +89,9 @@ public sealed class SessionDto
 
     [DataMember(Order = 9)]
     public string? ShareCode { get; set; }
+
+    [DataMember(Order = 10)]
+    public Guid ProjectId { get; set; }
 }
 
 [DataContract]
@@ -159,9 +159,6 @@ public sealed class CreateSessionRequest
     [DataMember(Order = 1)]
     public string Name { get; set; } = string.Empty;
 
-    [DataMember(Order = 2)]
-    public Guid? TeamId { get; set; }
-
     [DataMember(Order = 3)]
     public VotingScaleTypeDto ScaleType { get; set; }
 
@@ -170,6 +167,9 @@ public sealed class CreateSessionRequest
 
     [DataMember(Order = 5)]
     public List<NewSessionTaskDto> Tasks { get; set; } = [];
+
+    [DataMember(Order = 6)]
+    public Guid ProjectId { get; set; }
 }
 
 [DataContract]
@@ -220,8 +220,6 @@ public sealed class UpdateSessionConfigRequest
     [DataMember(Order = 4)]
     public List<string> CustomScaleValues { get; set; } = [];
 
-    [DataMember(Order = 5)]
-    public Guid? TeamId { get; set; }
 }
 
 [DataContract]

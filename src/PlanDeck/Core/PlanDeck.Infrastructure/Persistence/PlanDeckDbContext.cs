@@ -14,6 +14,12 @@ public sealed class PlanDeckDbContext(
 
     public DbSet<AppUser> AppUsers => Set<AppUser>();
 
+    public DbSet<PlanDeckProject> Projects => Set<PlanDeckProject>();
+
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
+
+    public DbSet<ProjectTeam> ProjectTeams => Set<ProjectTeam>();
+
     public DbSet<Team> Teams => Set<Team>();
 
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
@@ -83,7 +89,7 @@ public sealed class PlanDeckDbContext(
                         added.UpdatedAtUtc = now;
                     }
 
-                    NormalizeAppUser(entry.Entity);
+                    NormalizeIdentityEmail(entry.Entity);
                     break;
 
                 case EntityState.Modified:
@@ -93,7 +99,7 @@ public sealed class PlanDeckDbContext(
                         modified.UpdatedAtUtc = now;
                     }
 
-                    NormalizeAppUser(entry.Entity);
+                    NormalizeIdentityEmail(entry.Entity);
                     break;
 
                 case EntityState.Deleted:
@@ -103,12 +109,22 @@ public sealed class PlanDeckDbContext(
         }
     }
 
-    private static void NormalizeAppUser(ITenantScoped entity)
+    private static void NormalizeIdentityEmail(ITenantScoped entity)
     {
-        if (entity is AppUser user)
+        switch (entity)
         {
-            user.Email = user.Email.Trim();
-            user.NormalizedEmail = user.Email.ToUpperInvariant();
+            case AppUser user:
+                user.Email = user.Email.Trim();
+                user.NormalizedEmail = user.Email.ToUpperInvariant();
+                break;
+            case ProjectMember member:
+                member.Email = member.Email.Trim();
+                member.NormalizedEmail = member.Email.ToUpperInvariant();
+                break;
+            case TeamMember member:
+                member.Email = member.Email.Trim();
+                member.NormalizedEmail = member.Email.ToUpperInvariant();
+                break;
         }
     }
 

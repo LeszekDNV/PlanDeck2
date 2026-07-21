@@ -5,7 +5,7 @@
 @using PlanDeck.Core.Shared.Validation
 @inject ISessionClientService SessionService
 @inject ISessionMemberClientService MemberService
-@inject ITeamClientService TeamService
+@inject IProjectClientService ProjectService
 @inject IStringLocalizer<SharedResource> L
 @inject ISnackbar Snackbar
 @inject IDialogService Dialog
@@ -113,16 +113,6 @@
                                                           Variant="Variant.Outlined" Disabled="_isLocked" />
                                         </MudItem>
                                         <MudItem xs="12" sm="6">
-                                            <MudSelect T="Guid?" @bind-Value="_configTeamId" @bind-Value:after="OnConfigTeamChangedAsync"
-                                                       Label="@L["Sessions_Team"]" Clearable="true" Variant="Variant.Outlined"
-                                                       Disabled="_isLocked">
-                                                @foreach (var team in _teams)
-                                                {
-                                                    <MudSelectItem T="Guid?" Value="@((Guid?)team.Id)">@team.Name</MudSelectItem>
-                                                }
-                                            </MudSelect>
-                                        </MudItem>
-                                        <MudItem xs="12" sm="6">
                                             <MudSelect T="VotingScaleTypeDto" @bind-Value="_configScaleType" Label="@L["Sessions_Scale"]"
                                                        Variant="Variant.Outlined" Disabled="_isLocked">
                                                 <MudSelectItem Value="VotingScaleTypeDto.Fibonacci">@L["Scale_Fibonacci"]</MudSelectItem>
@@ -140,29 +130,6 @@
                                         }
                                     </MudGrid>
 
-                                    @if (_configTeamId is not null)
-                                    {
-                                        <MudText Typo="Typo.subtitle2" Class="mt-3">@L["Sessions_TeamMembers"]</MudText>
-                                        @if (_teamMembers.Count == 0)
-                                        {
-                                            <MudAlert Severity="Severity.Info" Dense="true" Class="my-2">@L["Sessions_NoTeamMembers"]</MudAlert>
-                                        }
-                                        else
-                                        {
-                                            <MudList T="TeamMemberDto" Dense="true" Class="mb-2">
-                                                @foreach (var teamMember in _teamMembers)
-                                                {
-                                                    <MudListItem T="TeamMemberDto">
-                                                        @teamMember.Email
-                                                        @if (!string.IsNullOrWhiteSpace(teamMember.DisplayName))
-                                                        {
-                                                            <MudChip T="string" Size="Size.Small" Class="ml-2">@teamMember.DisplayName</MudChip>
-                                                        }
-                                                    </MudListItem>
-                                                }
-                                            </MudList>
-                                        }
-                                    }
 
                                     <MudStack Row="true" Spacing="2" Class="mt-3">
                                         @if (!_isLocked)
@@ -348,11 +315,11 @@
                     <MudTextField @bind-Value="_newName" Label="@L["Sessions_Name"]"
                                   Required="true" Variant="Variant.Outlined" Class="mb-3" />
 
-                    <MudSelect T="Guid?" @bind-Value="_newTeamId" Label="@L["Sessions_Team"]"
-                               Clearable="true" Variant="Variant.Outlined" Class="mb-3">
-                        @foreach (var team in _teams)
+                    <MudSelect T="Guid" @bind-Value="_newProjectId" Label="@L["Sessions_Project"]"
+                               Required="true" Variant="Variant.Outlined" Class="mb-3">
+                        @foreach (var project in _projects)
                         {
-                            <MudSelectItem T="Guid?" Value="@((Guid?)team.Id)">@team.Name</MudSelectItem>
+                            <MudSelectItem T="Guid" Value="@project.Id">@project.Name</MudSelectItem>
                         }
                     </MudSelect>
 

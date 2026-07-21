@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PlanDeck.Application.Domain;
 using PlanDeck.Core.Shared.Realtime;
 using PlanDeck.Infrastructure.Persistence;
+using PlanDeck.Integration.Tests;
 using PlanDeck.Server;
 using PlanDeck.Server.Identity;
 
@@ -180,6 +181,7 @@ public sealed class GuestHubTests
         {
             Id = sessionId,
             Name = "Guest Hub Session",
+            ProjectId = PersistenceTestData.AddProject(db, Guid.Empty),
             Status = SessionStatus.Active,
             ScaleType = VotingScaleType.Custom,
             ScaleValues = ["1", "2", "3", "5"]

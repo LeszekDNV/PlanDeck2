@@ -67,6 +67,7 @@ public sealed class SessionRepositoryEstimateTests
         var session = new PlanningSession
         {
             Name = $"session-{Guid.NewGuid():N}",
+            ProjectId = PersistenceTestData.AddProject(context, userId),
             CreatedByUserId = userId,
             ScaleValues = ["1", "2", "3", "5", "8"],
             Tasks = { new SessionTask { Title = "Task", Source = TaskSource.AdHoc, SortOrder = 0 } }

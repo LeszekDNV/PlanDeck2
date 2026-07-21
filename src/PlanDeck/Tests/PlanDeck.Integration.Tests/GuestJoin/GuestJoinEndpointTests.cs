@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
 using PlanDeck.Infrastructure.Persistence;
+using PlanDeck.Integration.Tests;
 using PlanDeck.Server;
 using PlanDeck.Server.Identity;
 
@@ -172,6 +173,7 @@ public sealed class GuestJoinEndpointTests
         {
             Id = Guid.NewGuid(),
             Name = "Guest Join Session",
+            ProjectId = PersistenceTestData.AddProject(db, Guid.Empty),
             Status = status,
             ScaleType = VotingScaleType.Custom,
             ScaleValues = ["1", "2", "3", "5"],

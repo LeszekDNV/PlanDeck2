@@ -1,8 +1,8 @@
 namespace PlanDeck.Application.Domain;
 
-public sealed class TeamMember : TenantEntity
+public sealed class ProjectMember : TenantEntity
 {
-    public Guid TeamId { get; set; }
+    public Guid ProjectId { get; set; }
 
     public Guid? AppUserId { get; set; }
 
@@ -10,7 +10,7 @@ public sealed class TeamMember : TenantEntity
 
     public string NormalizedEmail { get; set; } = string.Empty;
 
-    public string? DisplayName { get; set; }
+    public ProjectRole Role { get; set; } = ProjectRole.Member;
 
     public InvitationStatus Status { get; set; } = InvitationStatus.Pending;
 

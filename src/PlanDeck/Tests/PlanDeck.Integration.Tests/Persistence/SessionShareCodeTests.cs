@@ -64,6 +64,7 @@ public sealed class SessionShareCodeTests
         var session = new PlanningSession
         {
             Name = $"session-{Guid.NewGuid():N}",
+            ProjectId = PersistenceTestData.AddProject(context, userId),
             CreatedByUserId = userId,
             Status = status,
             ShareCode = shareCode

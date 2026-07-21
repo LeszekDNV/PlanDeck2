@@ -151,6 +151,8 @@ app.MapGrpcService<AzureDevOpsWorkItemGrpcService>()
     .RequireAuthorization(PlanDeckPolicies.MemberAccount);
 app.MapGrpcService<TeamGrpcService>()
     .RequireAuthorization(PlanDeckPolicies.MemberAccount);
+app.MapGrpcService<ProjectGrpcService>()
+    .RequireAuthorization(PlanDeckPolicies.MemberAccount);
 app.MapGrpcService<SessionGrpcService>()
     .RequireAuthorization(PlanDeckPolicies.RoomIdentity);
 app.MapGrpcService<SessionMemberGrpcService>()

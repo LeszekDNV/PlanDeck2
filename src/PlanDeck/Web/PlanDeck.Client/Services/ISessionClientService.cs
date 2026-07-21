@@ -10,7 +10,7 @@ public interface ISessionClientService
 
     Task<SessionDto> CreateSessionAsync(
         string name,
-        Guid? teamId,
+        Guid projectId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues,
         IReadOnlyList<NewSessionTaskDto> tasks);
@@ -18,7 +18,6 @@ public interface ISessionClientService
     Task<SessionDto> UpdateSessionConfigAsync(
         Guid id,
         string name,
-        Guid? teamId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues);
 

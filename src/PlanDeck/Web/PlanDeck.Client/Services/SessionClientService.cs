@@ -22,7 +22,7 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
 
     public async Task<SessionDto> CreateSessionAsync(
         string name,
-        Guid? teamId,
+        Guid projectId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues,
         IReadOnlyList<NewSessionTaskDto> tasks)
@@ -31,7 +31,7 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
         var reply = await service.CreateSessionAsync(new CreateSessionRequest
         {
             Name = name,
-            TeamId = teamId,
+            ProjectId = projectId,
             ScaleType = scaleType,
             CustomScaleValues = customScaleValues.ToList(),
             Tasks = tasks.ToList()
@@ -42,7 +42,6 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
     public async Task<SessionDto> UpdateSessionConfigAsync(
         Guid id,
         string name,
-        Guid? teamId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues)
     {
@@ -51,7 +50,6 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
         {
             Id = id,
             Name = name,
-            TeamId = teamId,
             ScaleType = scaleType,
             CustomScaleValues = customScaleValues.ToList()
         });

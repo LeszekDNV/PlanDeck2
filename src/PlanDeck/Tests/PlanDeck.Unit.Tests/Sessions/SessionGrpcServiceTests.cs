@@ -10,6 +10,7 @@ namespace PlanDeck.Unit.Tests.Sessions;
 [TestFixture]
 public sealed class SessionGrpcServiceTests
 {
+    private static readonly Guid ProjectId = Guid.NewGuid();
     private FakeSessionRepository _repository = null!;
     private FakeSessionMemberRepository _memberRepository = null!;
     private FakeCurrentUserContext _currentUser = null!;
@@ -36,6 +37,7 @@ public sealed class SessionGrpcServiceTests
         var request = new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci
         };
 
@@ -51,6 +53,7 @@ public sealed class SessionGrpcServiceTests
         var request = new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.TShirt
         };
 
@@ -65,6 +68,7 @@ public sealed class SessionGrpcServiceTests
         var request = new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Custom,
             CustomScaleValues = [" 1 ", "2", "2", "", "  ", "3"]
         };
@@ -88,6 +92,21 @@ public sealed class SessionGrpcServiceTests
     }
 
     [Test]
+    public void CreateSession_WithoutProjectId_ThrowsInvalidArgument()
+    {
+        var request = new CreateSessionRequest
+        {
+            Name = "Sprint 1",
+            ScaleType = VotingScaleTypeDto.Fibonacci
+        };
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.CreateSessionAsync(request));
+
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+        Assert.That(ex.Status.Detail, Does.Contain("ProjectId"));
+    }
+
+    [Test]
     public void CreateSession_WithEmptyCustomScale_ThrowsInvalidArgument()
     {
         var request = new CreateSessionRequest
@@ -107,6 +126,7 @@ public sealed class SessionGrpcServiceTests
         var request = new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci,
             Tasks = [new NewSessionTaskDto { Title = "  " }]
         };
@@ -121,6 +141,7 @@ public sealed class SessionGrpcServiceTests
         var request = new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci,
             Tasks =
             [
@@ -141,6 +162,7 @@ public sealed class SessionGrpcServiceTests
         var request = new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci,
             Tasks =
             [
@@ -413,6 +435,7 @@ public sealed class SessionGrpcServiceTests
         var reply = await _service.CreateSessionAsync(new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci
         });
 
@@ -431,6 +454,7 @@ public sealed class SessionGrpcServiceTests
         await _service.CreateSessionAsync(new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci
         });
 
@@ -446,6 +470,7 @@ public sealed class SessionGrpcServiceTests
         Assert.DoesNotThrowAsync(() => _service.CreateSessionAsync(new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci
         }));
 
@@ -478,6 +503,7 @@ public sealed class SessionGrpcServiceTests
         var created = await _service.CreateSessionAsync(new CreateSessionRequest
         {
             Name = "Sprint 1",
+            ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci
         });
         var sessionId = created.Session.Id;

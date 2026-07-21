@@ -156,7 +156,12 @@ public sealed class SessionMemberPersistenceTests
     {
         var userId = createdBy ?? Guid.NewGuid();
         await using var context = CreateContext(new FakeCurrentUserContext(tenantId, userId, authenticated: true));
-        var session = new PlanningSession { Name = $"session-{Guid.NewGuid():N}", CreatedByUserId = userId };
+        var session = new PlanningSession
+        {
+            Name = $"session-{Guid.NewGuid():N}",
+            ProjectId = PersistenceTestData.AddProject(context, userId),
+            CreatedByUserId = userId
+        };
         context.Sessions.Add(session);
         await context.SaveChangesAsync();
         return session.Id;

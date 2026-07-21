@@ -30,12 +30,14 @@ public sealed class SessionTaskConfiguration : IEntityTypeConfiguration<SessionT
         builder.Property(t => t.AgreedEstimate)
             .HasMaxLength(32);
 
-        builder.HasIndex(t => t.TenantId);
-
-        builder.HasIndex(t => t.SessionId);
-
         builder.HasIndex(t => new { t.SessionId, t.AdoWorkItemId })
             .IsUnique()
             .HasFilter("[AdoWorkItemId] IS NOT NULL");
+
+        builder.HasOne<PlanningSession>()
+            .WithMany(session => session.Tasks)
+            .HasForeignKey(task => new { task.TenantId, task.SessionId })
+            .HasPrincipalKey(session => new { session.TenantId, session.Id })
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

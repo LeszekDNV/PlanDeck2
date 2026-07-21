@@ -26,13 +26,18 @@ public sealed class SessionGrpcService(
         GuestAccessGuard.RejectGuests(currentUser);
 
         var name = NormalizeName(request.Name);
+        if (request.ProjectId == Guid.Empty)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required."));
+        }
+
         var scaleType = (VotingScaleType)(int)request.ScaleType;
         var scaleValues = ResolveScaleValues(scaleType, request.CustomScaleValues);
 
         var session = new PlanningSession
         {
             Name = name,
-            TeamId = request.TeamId,
+            ProjectId = request.ProjectId,
             Status = SessionStatus.Draft,
             ScaleType = scaleType,
             ScaleValues = scaleValues
@@ -115,7 +120,6 @@ public sealed class SessionGrpcService(
         {
             var session = await LoadDraftAsync(request.Id, context.CancellationToken);
             session.Name = name;
-            session.TeamId = request.TeamId;
             session.ScaleType = scaleType;
             session.ScaleValues = scaleValues;
 
@@ -478,7 +482,7 @@ public sealed class SessionGrpcService(
     {
         Id = session.Id,
         Name = session.Name,
-        TeamId = session.TeamId,
+        ProjectId = session.ProjectId,
         Status = (SessionStatusDto)(int)session.Status,
         ScaleType = (VotingScaleTypeDto)(int)session.ScaleType,
         ScaleValues = [.. session.ScaleValues],

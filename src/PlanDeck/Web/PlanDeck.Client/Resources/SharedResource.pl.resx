@@ -142,6 +142,9 @@
   <data name="Sessions_Team" xml:space="preserve">
     <value>Zespół (opcjonalnie)</value>
   </data>
+  <data name="Sessions_Project" xml:space="preserve">
+    <value>Projekt</value>
+  </data>
   <data name="Sessions_Empty" xml:space="preserve">
     <value>Nie masz jeszcze żadnych sesji.</value>
   </data>
@@ -222,6 +225,9 @@
   </data>
   <data name="Sessions_NameRequired" xml:space="preserve">
     <value>Nazwa sesji jest wymagana.</value>
+  </data>
+  <data name="Sessions_ProjectRequired" xml:space="preserve">
+    <value>Wybierz projekt przed utworzeniem sesji.</value>
   </data>
   <data name="Sessions_TaskTitleRequired" xml:space="preserve">
     <value>Tytuł zadania jest wymagany.</value>

@@ -4,7 +4,7 @@ public sealed class PlanningSession : TenantEntity
 {
     public required string Name { get; set; }
 
-    public Guid? TeamId { get; set; }
+    public Guid ProjectId { get; set; }
 
     public Guid CreatedByUserId { get; set; }
 

@@ -169,6 +169,10 @@ public static class ServiceCollectionExtensions
             services.AddScoped<AzureDevOpsWorkItemGrpcService>();
             services.AddScoped<ITeamRepository, TeamRepository>();
             services.AddScoped<TeamGrpcService>();
+            services.AddScoped<IProjectRepository, ProjectRepository>();
+            services.AddScoped<IProjectAccessResolver, ProjectAccessResolver>();
+            services.AddScoped<ISessionAccessResolver, SessionAccessResolver>();
+            services.AddScoped<ProjectGrpcService>();
             services.AddScoped<ISessionRepository, SessionRepository>();
             services.AddSingleton<IShareCodeGenerator, ShareCodeGenerator>();
             services.AddScoped<SessionGrpcService>();
