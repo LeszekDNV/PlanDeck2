@@ -127,6 +127,38 @@ public class SessionsTests : PageTest
     }
 
     [Test]
+    public async Task WriteEstimateToAdo_OnConcurrencyConflict_ShowsLocalizedError()
+    {
+        const string adoTaskTitle = "Estimate write-back conflict";
+        var sessionName = $"E2E WriteBack Conflict {Guid.NewGuid():N}";
+        var seedTask = $"Seed {Guid.NewGuid():N}";
+
+        var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+
+        await sessions.GotoAsync();
+        await sessions.CreateSessionAsync(sessionName, seedTask);
+        await sessions.SelectSessionAsync(sessionName);
+        await sessions.ImportAdoWorkItemAsync(1004);
+        await sessions.ActivateAsync();
+
+        await sessions.JoinVotingAsync();
+        var voting = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
+        await voting.WaitForLoadedAsync();
+        await voting.SelectTaskAsync(adoTaskTitle);
+        await voting.VoteAsync("3");
+        await voting.RevealAsync();
+        await voting.PickEstimateAsync("3");
+        await Expect(voting.AgreedEstimate).ToContainTextAsync("3", new() { Timeout = 15_000 });
+
+        await sessions.GotoAsync();
+        await sessions.SelectSessionAsync(sessionName);
+        await sessions.WriteEstimateToAdoAsync(adoTaskTitle);
+
+        await Expect(Page.GetByText("The work item changed in Azure DevOps. Refresh and try again."))
+            .ToBeVisibleAsync(new() { Timeout = 15_000 });
+    }
+
+    [Test]
     public async Task Sessions_RendersOnMobileViewport()
     {
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);

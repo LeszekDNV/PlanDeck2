@@ -25,9 +25,9 @@ The codebase already has:
 ## Desired End State
 
 After this plan is complete:
-- Hub integration tests prove: reconnect yields consistent state, full disconnect marks participant offline while preserving vote state, reveal is atomic, persist-first estimate never broadcasts on failure, last-write-wins is clean, ADO write-back signals errors explicitly
+- Hub integration tests prove: reconnect yields consistent state, full disconnect marks participant offline while preserving vote state, reveal is atomic, persist-first local estimate never broadcasts on failure, and last-write-wins is clean; gRPC unit tests prove ADO write-back signals errors explicitly
 - A config-to-voting integration test proves: scale values propagate from session config into voting room validation
-- Three e2e tests prove in real browsers: two-user vote/reveal consistency, estimate persistence round-trip, and session config feeding into a voting round
+- Four e2e tests prove in real browsers: two-user vote/reveal consistency, estimate persistence round-trip, session config feeding into a voting round, and user-visible ADO write-back failure signaling
 - Test-plan §6.1 and §6.4 cookbook entries are filled with patterns from this phase
 
 Verification: `dotnet test PlanDeck.slnx` passes with all new tests green.
@@ -49,7 +49,7 @@ Extend existing test classes rather than creating new ones. Hub integration test
 
 ### Overview
 
-Add integration test methods to `PlanningRoomHubTests` covering disconnect/reconnect, reveal consistency, persist-first estimate guarantee, last-write-wins behavior, and ADO write-back error signaling.
+Add integration test methods to `PlanningRoomHubTests` covering disconnect/reconnect, reveal consistency, persist-first local estimate guarantee, and last-write-wins behavior. Validate ADO write-back signaling at its gRPC boundary in `SessionGrpcServiceTests`.
 
 ### Changes Required:
 
@@ -57,7 +57,7 @@ Add integration test methods to `PlanningRoomHubTests` covering disconnect/recon
 
 **File**: `Tests/PlanDeck.Integration.Tests/Realtime/PlanningRoomHubTests.cs`
 
-**Intent**: Add test methods proving the critical-path invariants for risks #1 and #2. Each test uses the existing fixture infrastructure (factory, `CreateConnection()`, `SeedSession()`, `WaitForBroadcastAsync()`).
+**Intent**: Add test methods proving the hub-owned critical-path invariants for risks #1 and #2. Each test uses the existing fixture infrastructure (factory, `CreateConnection()`, `SeedSession()`, `WaitForBroadcastAsync()`).
 
 **Contract**: New `[Test]` methods covering these scenarios:
 
@@ -72,17 +72,16 @@ Add integration test methods to `PlanningRoomHubTests` covering disconnect/recon
 - `SelectEstimate_PersistsToDatabase_BeforeBroadcast` — after `SelectEstimate`, verify DB has `AgreedEstimate` set AND the broadcast contains the value
 - `SelectEstimate_OnDbFailure_DoesNotBroadcast` — configure test to make `SetAgreedEstimateAsync` fail (task not found scenario via bad taskId); verify HubException thrown and no `RoomStateChanged` emitted with an agreed estimate
 - `SelectEstimate_LastWriteWins_NoConcurrencyError` — two rapid `SelectEstimate` calls with different values; second value persists cleanly, broadcast reflects the latest
-- `WriteEstimateToAdo_OnConcurrencyConflict_ReturnsAborted` — configure `FakeAzureDevOpsWorkItemClient` to throw `AzureDevOpsConcurrencyException`; verify gRPC call returns `StatusCode.Aborted`
-- `WriteEstimateToAdo_OnRateLimit_ReturnsResourceExhausted` — configure fake to throw `AzureDevOpsRateLimitException`; verify `StatusCode.ResourceExhausted`
-- `WriteEstimateToAdo_OnSuccess_UpdatesRevision` — configure fake to return success with new revision; verify response contains updated revision and DB is updated
-
 #### 2. ADO Write-Back gRPC Tests
 
 **File**: `Tests/PlanDeck.Unit.Tests/Sessions/SessionGrpcServiceTests.cs`
 
-**Intent**: Add unit test methods for `WriteTaskEstimateToAdoAsync` error paths using the existing `FakeAzureDevOpsWorkItemClient`. These complement the hub integration tests by covering validation preconditions (non-numeric estimate, non-ADO task, missing work item ID).
+**Intent**: Validate existing unit coverage for `WriteTaskEstimateToAdoAsync` using `FakeAzureDevOpsWorkItemClient`. These tests cover the gRPC operation's typed external failures, success path, and validation preconditions without duplicating them in the hub fixture.
 
-**Contract**: New `[Test]` methods:
+**Contract**: Existing `[Test]` coverage to validate:
+- `WriteTaskEstimateToAdo_OnConcurrencyConflict_ThrowsAborted`
+- `WriteTaskEstimateToAdo_OnRateLimit_ThrowsResourceExhausted`
+- `WriteTaskEstimateToAdo_HappyPath_ForwardsRequestAndPersistsRevision`
 - `WriteTaskEstimateToAdo_NonNumericEstimate_ThrowsFailedPrecondition`
 - `WriteTaskEstimateToAdo_NonAdoTask_ThrowsFailedPrecondition`
 - `WriteTaskEstimateToAdo_MissingAgreedEstimate_ThrowsFailedPrecondition`
@@ -93,7 +92,7 @@ Add integration test methods to `PlanningRoomHubTests` covering disconnect/recon
 #### Automated Verification:
 
 - All new hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests --filter "FullyQualifiedName~PlanningRoomHubTests"`
-- All new unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests --filter "FullyQualifiedName~SessionGrpcServiceTests"`
+- Existing ADO gRPC unit coverage passes: `dotnet test Tests/PlanDeck.Unit.Tests --filter "FullyQualifiedName~SessionGrpcServiceTests"`
 - Existing tests still pass (no regressions): `dotnet test PlanDeck.slnx`
 - Build succeeds: `dotnet build PlanDeck.slnx`
 
@@ -155,7 +154,7 @@ Add integration tests proving that session configuration (task selection, voting
 
 ### Overview
 
-Add 3 comprehensive Playwright e2e tests proving critical paths in real browsers: vote/reveal consistency (two users), estimate persistence round-trip, and session config feeding into a voting round.
+Add 4 comprehensive Playwright e2e tests proving critical paths in real browsers: vote/reveal consistency (two users), estimate persistence round-trip, session config feeding into a voting round, and user-visible ADO write-back failure signaling.
 
 ### Changes Required:
 
@@ -163,7 +162,7 @@ Add 3 comprehensive Playwright e2e tests proving critical paths in real browsers
 
 **File**: `Tests/PlanDeck.E2e.Tests/VotingRoomTests.cs`
 
-**Intent**: Add 3 new test methods following the existing two-browser-context pattern. Each test covers one risk's critical path end-to-end.
+**Intent**: Add 3 new test methods following the existing two-browser-context pattern. Each test covers one voting-room risk's critical path end-to-end.
 
 **Contract**: New `[Test]` methods using existing `VotingRoomPage`, `SessionsPage`, `SessionMembersPage` page objects:
 
@@ -173,7 +172,19 @@ Add 3 comprehensive Playwright e2e tests proving critical paths in real browsers
 
 - `SessionConfig_ScaleAndTasks_FeedIntoVotingRound` (Risk #5) — Create session with T-Shirt scale and 2 specific tasks, activate, join voting room, verify scale buttons match T-Shirt values and task list shows both tasks in order. Proves config→voting pipeline works end-to-end in browser.
 
-#### 2. Page Object Extensions (if needed)
+#### 2. ADO Write-Back Failure E2E
+
+**Files**:
+- `Tests/PlanDeck.E2e.Tests/SessionsTests.cs`
+- `Web/PlanDeck.Server/Testing/FakeAzureDevOpsWorkItemClient.cs`
+
+**Intent**: Prove the last mile of Risk #2: a typed ADO failure reaches the user as a localized error snackbar. Extend the existing test-scheme fake with a dedicated work item whose write-back deterministically throws `AzureDevOpsConcurrencyException`; do not add a new fixture.
+
+**Contract**:
+- `WriteEstimateToAdo_OnConcurrencyConflict_ShowsLocalizedError` — import the dedicated conflict work item, conclude a numeric voting round, trigger write-back, and assert the English `Sessions_WriteEstimateConflict` message: `The work item changed in Azure DevOps. Refresh and try again.`
+- The fake's normal work items retain the existing successful write-back behavior so `WriteEstimateToAdo_AfterAgreedNumericEstimate_ShowsSuccess` remains unchanged.
+
+#### 3. Page Object Extensions (if needed)
 
 **File**: `Tests/PlanDeck.E2e.Tests/Pages/VotingRoomPage.cs`
 
@@ -188,14 +199,17 @@ Add 3 comprehensive Playwright e2e tests proving critical paths in real browsers
 
 #### Automated Verification:
 
-- All new e2e tests pass locally (Podman running): `dotnet test Tests/PlanDeck.E2e.Tests --filter "FullyQualifiedName~VotingRoomTests"`
+- All new voting-room e2e tests pass locally (Podman running): `dotnet test Tests/PlanDeck.E2e.Tests --filter "FullyQualifiedName~VotingRoomTests"`
+- ADO conflict signaling e2e passes locally: `dotnet test Tests/PlanDeck.E2e.Tests --filter "FullyQualifiedName~SessionsTests.WriteEstimateToAdo_OnConcurrencyConflict_ShowsLocalizedError"`
 - Full solution build succeeds: `dotnet build PlanDeck.slnx`
 - No regressions in existing e2e: `dotnet test Tests/PlanDeck.E2e.Tests`
+- Post-addendum verification passes: `dotnet build PlanDeck.slnx`; `dotnet test Tests/PlanDeck.E2e.Tests`
 
 #### Manual Verification:
 
 - Watch one e2e test run in headed mode (`HEADED=1`) to confirm the flow matches real user behavior
 - Confirm tests are deterministic (run 3x, all pass)
+- Confirm the ADO conflict signaling e2e is deterministic (run 3x, all pass)
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
 
@@ -249,6 +263,7 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 - Two-user vote→reveal consistency with disconnect/reconnect
 - Estimate persistence survives page reload
 - Config (scale + tasks) visible in voting room
+- ADO concurrency failure visible to the user as a localized snackbar
 
 ### What's NOT tested here:
 
@@ -260,7 +275,7 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 
 - Hub integration tests use in-memory DB → fast (~1-5s each)
 - E2E tests require full Aspire startup → first test ~60s (boot), subsequent ~30-60s each
-- Total new test runtime estimate: ~5 minutes locally (integration: ~30s, e2e: ~4 min)
+- Total new test runtime estimate: ~6 minutes locally (integration: ~30s, e2e: ~5 min)
 
 ## References
 
@@ -308,17 +323,21 @@ Fill in test-plan.md §6.1 (integration test for session/voting flow) and §6.4 
 - [x] 3.1 All 3 new e2e tests pass locally (Podman running) — 7df807f
 - [x] 3.2 Solution builds cleanly — 7df807f
 - [x] 3.3 No regressions in existing e2e tests — 7df807f
+- [x] 3.6 ADO concurrency failure surfaces as a localized snackbar
+- [x] 3.7 Post-addendum build and E2E suite pass
 
 #### Manual
 
 - [x] 3.4 Watched one e2e test in headed mode — flow matches real user behavior — 7df807f
 - [x] 3.5 Tests are deterministic (3 consecutive runs pass) — 7df807f
+- [x] 3.8 ADO conflict signaling E2E passes 3 consecutive runs
 
 ### Phase 4: Cookbook Update (§6)
 
 #### Automated
 
 - [x] 4.1 test-plan.md is valid markdown with §6.1 and §6.4 filled — d36fd3e
+- [x] 4.3 Solution builds cleanly — d36fd3e
 
 #### Manual
 

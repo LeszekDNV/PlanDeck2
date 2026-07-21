@@ -14,6 +14,7 @@ public sealed class FakeAzureDevOpsWorkItemClient : IAzureDevOpsWorkItemClient
         new(1001, "Import work items from Azure DevOps", "Active", "User Story", 3, 5, "As a user I can import work items."),
         new(1002, "Fix login redirect loop", "New", "Bug", 1, null, "Steps to reproduce the redirect loop."),
         new(1003, "Add session export", "Active", "Task", 2, 8, null),
+        new(1004, "Estimate write-back conflict", "Active", "User Story", 4, null, "Simulates an Azure DevOps revision conflict."),
     ];
 
     public Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(
@@ -25,7 +26,14 @@ public sealed class FakeAzureDevOpsWorkItemClient : IAzureDevOpsWorkItemClient
     }
 
     public Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(
-        AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken) =>
-        Task.FromResult(new AzureDevOpsWriteEstimateResult(
+        AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)
+    {
+        if (request.WorkItemId == 1004)
+        {
+            throw new AzureDevOpsConcurrencyException("The test work item revision changed.");
+        }
+
+        return Task.FromResult(new AzureDevOpsWriteEstimateResult(
             request.WorkItemId, request.ExpectedRevision.GetValueOrDefault() + 1));
+    }
 }
