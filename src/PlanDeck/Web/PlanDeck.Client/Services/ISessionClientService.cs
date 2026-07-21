@@ -13,7 +13,8 @@ public interface ISessionClientService
         Guid projectId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues,
-        IReadOnlyList<NewSessionTaskDto> tasks);
+        IReadOnlyList<NewSessionTaskDto> tasks,
+        IReadOnlyList<int>? adoWorkItemIds = null);
 
     Task<SessionDto> UpdateSessionConfigAsync(
         Guid id,
@@ -24,6 +25,12 @@ public interface ISessionClientService
     Task<SessionDto> AddTaskAsync(Guid sessionId, NewSessionTaskDto task);
 
     Task<SessionDto> AddTasksAsync(Guid sessionId, IReadOnlyList<NewSessionTaskDto> tasks);
+
+    /// <summary>
+    /// Adds ADO work items to an existing session by ID only.
+    /// Server re-fetches authoritative metadata for each ID.
+    /// </summary>
+    Task<SessionDto> AddAdoTasksAsync(Guid sessionId, IReadOnlyList<int> adoWorkItemIds);
 
     Task<SessionDto> UpdateTaskAsync(Guid sessionId, Guid taskId, string title, string? description);
 

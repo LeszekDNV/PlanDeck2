@@ -516,6 +516,135 @@ public sealed class SessionGrpcServiceTests
         Assert.That(reply.Session.Id, Is.EqualTo(sessionId));
     }
 
+    [Test]
+    public async Task AddAdoTasks_RefetchesMetadataFromAdo_AndPersistsAuthoritativeData()
+    {
+        _azureDevOpsClient.SeedWorkItem(77, "Fetched Title", type: "Bug", revision: 3);
+        var session = _repository.Seed(SessionStatus.Draft);
+
+        var reply = await _service.AddAdoTasksAsync(new AddAdoTasksRequest
+        {
+            SessionId = session.Id,
+            AdoWorkItemIds = [77]
+        });
+
+        Assert.That(reply.Session.Tasks, Has.Count.EqualTo(1));
+        var task = reply.Session.Tasks[0];
+        Assert.That(task.AdoWorkItemId, Is.EqualTo(77));
+        Assert.That(task.Title, Is.EqualTo("Fetched Title"));
+        Assert.That(task.WorkItemType, Is.EqualTo("Bug"));
+        Assert.That(task.AdoRevision, Is.EqualTo(3));
+        Assert.That(task.Source, Is.EqualTo(TaskSourceDto.AzureDevOps));
+    }
+
+    [Test]
+    public async Task AddAdoTasks_DuplicateId_KeepsFirstOnly()
+    {
+        _azureDevOpsClient.SeedWorkItem(88, "Item 88");
+        var session = _repository.Seed(SessionStatus.Draft);
+        session.Tasks.Add(new SessionTask { Title = "Item 88", Source = TaskSource.AzureDevOps, AdoWorkItemId = 88 });
+
+        var reply = await _service.AddAdoTasksAsync(new AddAdoTasksRequest
+        {
+            SessionId = session.Id,
+            AdoWorkItemIds = [88]
+        });
+
+        Assert.That(reply.Session.Tasks.Count(t => t.AdoWorkItemId == 88), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void AddAdoTasks_WhenWorkItemNotFound_ThrowsNotFound()
+    {
+        // _azureDevOpsClient returns null for unknown IDs
+        var session = _repository.Seed(SessionStatus.Draft);
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.AddAdoTasksAsync(new AddAdoTasksRequest
+        {
+            SessionId = session.Id,
+            AdoWorkItemIds = [999]
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
+    }
+
+    [Test]
+    public void AddAdoTasks_AsGuest_ThrowsPermissionDenied()
+    {
+        _currentUser.IsGuest = true;
+        var session = _repository.Seed(SessionStatus.Draft);
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.AddAdoTasksAsync(new AddAdoTasksRequest
+        {
+            SessionId = session.Id,
+            AdoWorkItemIds = [1]
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
+    public void AddAdoTasks_WhenSessionMissing_ThrowsNotFound()
+    {
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.AddAdoTasksAsync(new AddAdoTasksRequest
+        {
+            SessionId = Guid.NewGuid(),
+            AdoWorkItemIds = [1]
+        }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
+    }
+
+    [Test]
+    public async Task CreateSession_WithAdoWorkItemIds_RefetchesAndPersistsAuthoritativeData()
+    {
+        _azureDevOpsClient.SeedWorkItem(42, "Authoritative Title", type: "Task", revision: 7);
+
+        var request = new CreateSessionRequest
+        {
+            Name = "Sprint ADO",
+            ProjectId = ProjectId,
+            ScaleType = VotingScaleTypeDto.Fibonacci,
+            AdoWorkItemIds = [42]
+        };
+
+        var reply = await _service.CreateSessionAsync(request);
+
+        Assert.That(reply.Session.Tasks, Has.Count.EqualTo(1));
+        var task = reply.Session.Tasks[0];
+        Assert.That(task.AdoWorkItemId, Is.EqualTo(42));
+        Assert.That(task.Title, Is.EqualTo("Authoritative Title"));
+        Assert.That(task.WorkItemType, Is.EqualTo("Task"));
+        Assert.That(task.AdoRevision, Is.EqualTo(7));
+    }
+
+    [Test]
+    public void CreateSession_WithAdoWorkItemIdNotFound_ThrowsNotFound()
+    {
+        var request = new CreateSessionRequest
+        {
+            Name = "Sprint ADO",
+            ProjectId = ProjectId,
+            ScaleType = VotingScaleTypeDto.Fibonacci,
+            AdoWorkItemIds = [999]
+        };
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.CreateSessionAsync(request));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
+    }
+
+    [Test]
+    public async Task AddAdoTasks_OnActiveSession_NotifiesRoom()
+    {
+        _azureDevOpsClient.SeedWorkItem(55, "Active task");
+        var session = _repository.Seed(SessionStatus.Active);
+
+        await _service.AddAdoTasksAsync(new AddAdoTasksRequest
+        {
+            SessionId = session.Id,
+            AdoWorkItemIds = [55]
+        });
+
+        Assert.That(_notifier.Calls, Has.Count.EqualTo(1));
+    }
+
     private SessionTask SeedAdoTask(PlanningSession session, string? agreedEstimate, int? adoWorkItemId = 1001, int? adoRevision = 4, TaskSource source = TaskSource.AzureDevOps)
     {
         var task = new SessionTask
@@ -838,13 +967,18 @@ public sealed class SessionGrpcServiceTests
 
         public Func<AzureDevOpsWriteEstimateRequest, AzureDevOpsWriteEstimateResult>? OnWrite { get; set; }
 
+        private readonly Dictionary<int, AzureDevOpsWorkItem> _workItems = [];
+
+        public void SeedWorkItem(int id, string title, string state = "Active", string type = "User Story", int revision = 1)
+            => _workItems[id] = new AzureDevOpsWorkItem(id, title, state, type, revision, null);
+
         public Task<IReadOnlyCollection<AzureDevOpsWorkItem>> ImportWorkItemsAsync(
             AdoConnectionContext connection, AzureDevOpsImportRequest request, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyCollection<AzureDevOpsWorkItem>>([]);
 
         public Task<AzureDevOpsWorkItem?> GetWorkItemByIdAsync(
             AdoConnectionContext connection, int workItemId, CancellationToken cancellationToken)
-            => Task.FromResult<AzureDevOpsWorkItem?>(null);
+            => Task.FromResult(_workItems.TryGetValue(workItemId, out var item) ? item : null);
 
         public Task<AzureDevOpsWriteEstimateResult> WriteEstimateAsync(
             AdoConnectionContext connection, AzureDevOpsWriteEstimateRequest request, CancellationToken cancellationToken)

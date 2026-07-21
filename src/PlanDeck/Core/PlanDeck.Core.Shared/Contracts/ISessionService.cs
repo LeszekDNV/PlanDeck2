@@ -38,6 +38,9 @@ public interface ISessionService
     Task<ActivateSessionReply> ActivateSessionAsync(ActivateSessionRequest request, CallContext context = default);
 
     [Operation]
+    Task<AddAdoTasksReply> AddAdoTasksAsync(AddAdoTasksRequest request, CallContext context = default);
+
+    [Operation]
     Task<DeleteSessionReply> DeleteSessionAsync(DeleteSessionRequest request, CallContext context = default);
 }
 
@@ -170,6 +173,13 @@ public sealed class CreateSessionRequest
 
     [DataMember(Order = 6)]
     public Guid ProjectId { get; set; }
+
+    /// <summary>
+    /// IDs of ADO work items to include. Server re-fetches authoritative metadata for each ID
+    /// using the project's stored connection — never trust client-supplied ADO field values.
+    /// </summary>
+    [DataMember(Order = 7)]
+    public List<int> AdoWorkItemIds { get; set; } = [];
 }
 
 [DataContract]
@@ -352,4 +362,24 @@ public sealed class DeleteSessionReply
 {
     [DataMember(Order = 1)]
     public bool Deleted { get; set; }
+}
+
+[DataContract]
+public sealed class AddAdoTasksRequest
+{
+    [DataMember(Order = 1)]
+    public Guid SessionId { get; set; }
+
+    /// <summary>
+    /// IDs of ADO work items to add. Server re-fetches authoritative metadata for each ID.
+    /// </summary>
+    [DataMember(Order = 2)]
+    public List<int> AdoWorkItemIds { get; set; } = [];
+}
+
+[DataContract]
+public sealed class AddAdoTasksReply
+{
+    [DataMember(Order = 1)]
+    public SessionDto Session { get; set; } = new();
 }

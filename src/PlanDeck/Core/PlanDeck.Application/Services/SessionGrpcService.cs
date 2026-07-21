@@ -57,6 +57,27 @@ public sealed class SessionGrpcService(
             sortOrder++;
         }
 
+        if (request.AdoWorkItemIds is { Count: > 0 })
+        {
+            var adoContext = await ResolveConnectionOrThrowAsync(request.ProjectId, context.CancellationToken);
+            foreach (var workItemId in request.AdoWorkItemIds)
+            {
+                if (IsDuplicateAdoTask(session.Tasks, workItemId))
+                {
+                    continue;
+                }
+
+                var workItem = await azureDevOpsClient.GetWorkItemByIdAsync(adoContext, workItemId, context.CancellationToken);
+                if (workItem is null)
+                {
+                    throw new RpcException(new Status(StatusCode.NotFound, $"ADO work item {workItemId} was not found."));
+                }
+
+                session.Tasks.Add(MapAdoWorkItem(workItem, sortOrder));
+                sortOrder++;
+            }
+        }
+
         var created = await repository.CreateSessionAsync(session, context.CancellationToken);
         await AddCreatorAsMemberAsync(created.Id, context.CancellationToken);
         return new CreateSessionReply { Session = ToDto(created) };
@@ -371,6 +392,67 @@ public sealed class SessionGrpcService(
         return new DeleteSessionReply { Deleted = deleted };
     }
 
+    public async Task<AddAdoTasksReply> AddAdoTasksAsync(AddAdoTasksRequest request, CallContext context = default)
+    {
+        GuestAccessGuard.RejectGuests(currentUser);
+
+        if (request.AdoWorkItemIds is null or { Count: 0 })
+        {
+            PlanningSession empty;
+            try
+            {
+                empty = await LoadEditableAsync(request.SessionId, context.CancellationToken);
+            }
+            catch (SessionNotFoundException ex)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+            }
+
+            return new AddAdoTasksReply { Session = ToDto(empty) };
+        }
+
+        PlanningSession session;
+        try
+        {
+            session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
+        }
+        catch (SessionNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+
+        var adoContext = await ResolveConnectionOrThrowAsync(session.ProjectId, context.CancellationToken);
+
+        var sortOrder = session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1;
+        var added = false;
+
+        foreach (var workItemId in request.AdoWorkItemIds)
+        {
+            if (IsDuplicateAdoTask(session.Tasks, workItemId))
+            {
+                continue;
+            }
+
+            var workItem = await azureDevOpsClient.GetWorkItemByIdAsync(adoContext, workItemId, context.CancellationToken);
+            if (workItem is null)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, $"ADO work item {workItemId} was not found."));
+            }
+
+            session.Tasks.Add(MapAdoWorkItem(workItem, sortOrder));
+            sortOrder++;
+            added = true;
+        }
+
+        if (added)
+        {
+            await repository.UpdateSessionAsync(session, context.CancellationToken);
+            await NotifyIfActiveAsync(session, context.CancellationToken);
+        }
+
+        return new AddAdoTasksReply { Session = ToDto(session) };
+    }
+
     private async Task<PlanningSession> LoadAsync(Guid id, CancellationToken cancellationToken)
     {
         return await repository.GetSessionAsync(id, cancellationToken)
@@ -475,6 +557,39 @@ public sealed class SessionGrpcService(
     {
         var trimmed = description?.Trim();
         return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
+
+    private static SessionTask MapAdoWorkItem(AzureDevOpsWorkItem workItem, int sortOrder)
+        => new()
+        {
+            Title = workItem.Title,
+            Description = string.IsNullOrWhiteSpace(workItem.Description) ? null : workItem.Description.Trim(),
+            Source = TaskSource.AzureDevOps,
+            SortOrder = sortOrder,
+            AdoWorkItemId = workItem.Id,
+            AdoRevision = workItem.Revision,
+            WorkItemType = workItem.WorkItemType,
+            State = workItem.State
+        };
+
+    private async Task<AdoConnectionContext> ResolveConnectionOrThrowAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await connectionResolver.ResolveAsync(projectId, cancellationToken);
+        }
+        catch (ProjectConnectionNotFoundException)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "No ADO connection is configured for this project."));
+        }
+        catch (ProjectConnectionDisabledException)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, "The project ADO connection is disabled."));
+        }
+        catch (ProjectSecretStoreException)
+        {
+            throw new RpcException(new Status(StatusCode.Internal, "Failed to resolve ADO credentials."));
+        }
     }
 
     private static SessionTask MapNewTask(NewSessionTaskDto task, int sortOrder)

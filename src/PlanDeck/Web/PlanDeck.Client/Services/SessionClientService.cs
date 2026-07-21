@@ -25,7 +25,8 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
         Guid projectId,
         VotingScaleTypeDto scaleType,
         IReadOnlyList<string> customScaleValues,
-        IReadOnlyList<NewSessionTaskDto> tasks)
+        IReadOnlyList<NewSessionTaskDto> tasks,
+        IReadOnlyList<int>? adoWorkItemIds = null)
     {
         var service = channel.CreateGrpcService<ISessionService>();
         var reply = await service.CreateSessionAsync(new CreateSessionRequest
@@ -34,7 +35,19 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
             ProjectId = projectId,
             ScaleType = scaleType,
             CustomScaleValues = customScaleValues.ToList(),
-            Tasks = tasks.ToList()
+            Tasks = tasks.ToList(),
+            AdoWorkItemIds = adoWorkItemIds?.ToList() ?? []
+        });
+        return reply.Session;
+    }
+
+    public async Task<SessionDto> AddAdoTasksAsync(Guid sessionId, IReadOnlyList<int> adoWorkItemIds)
+    {
+        var service = channel.CreateGrpcService<ISessionService>();
+        var reply = await service.AddAdoTasksAsync(new AddAdoTasksRequest
+        {
+            SessionId = sessionId,
+            AdoWorkItemIds = adoWorkItemIds.ToList()
         });
         return reply.Session;
     }

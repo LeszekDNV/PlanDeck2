@@ -209,12 +209,19 @@ public partial class Sessions
         _createSubmitting = true;
         try
         {
+            var adHocTasks = _stagedTasks.Where(t => t.Source == TaskSourceDto.AdHoc).ToList();
+            var adoIds = _stagedTasks
+                .Where(t => t.Source == TaskSourceDto.AzureDevOps && t.AdoWorkItemId.HasValue)
+                .Select(t => t.AdoWorkItemId!.Value)
+                .ToList();
+
             var session = await SessionService.CreateSessionAsync(
                 _newName.Trim(),
                 _newProjectId,
                 _newScaleType,
                 ParseCustomValues(_newCustomValues),
-                _stagedTasks);
+                adHocTasks,
+                adoIds);
 
             _sessions.Insert(0, session);
             _createOpen = false;
@@ -580,21 +587,12 @@ public partial class Sessions
             return;
         }
 
-        var newTasks = items
+        var newIds = items
             .Where(item => _selected.Tasks.All(t => t.AdoWorkItemId != item.Id))
-            .Select(item => new NewSessionTaskDto
-            {
-                Title = item.Title,
-                Description = item.Description,
-                Source = TaskSourceDto.AzureDevOps,
-                AdoWorkItemId = item.Id,
-                AdoRevision = item.Revision,
-                WorkItemType = item.WorkItemType,
-                State = item.State
-            })
+            .Select(item => item.Id)
             .ToList();
 
-        if (newTasks.Count == 0)
+        if (newIds.Count == 0)
         {
             return;
         }
@@ -602,7 +600,7 @@ public partial class Sessions
         _addingTask = true;
         try
         {
-            var updated = await SessionService.AddTasksAsync(_selected.Id, newTasks);
+            var updated = await SessionService.AddAdoTasksAsync(_selected.Id, newIds);
             ReplaceSelected(updated);
         }
         catch (RpcException ex)
