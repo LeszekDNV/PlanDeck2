@@ -8,6 +8,43 @@ namespace PlanDeck.Unit.Tests.Planning;
 public sealed class VotingRoundServiceTests
 {
     [Test]
+    public async Task AuthorizeAndLoadSeed_ReturnsSeed_ForActiveSession()
+    {
+        var userId = Guid.NewGuid();
+        var session = BuildSession(SessionStatus.Active, userId);
+        var service = new VotingRoundService(new FakeSessionRepository(session), new FakeSessionMemberRepository());
+
+        var seed = await service.AuthorizeAndLoadSeedAsync(
+            session.Id, userId, null, CancellationToken.None);
+
+        Assert.That(seed, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task AuthorizeAndLoadSeed_ReturnsNull_ForDraftSession()
+    {
+        var userId = Guid.NewGuid();
+        var session = BuildSession(SessionStatus.Draft, userId);
+        var service = new VotingRoundService(new FakeSessionRepository(session), new FakeSessionMemberRepository());
+
+        var seed = await service.AuthorizeAndLoadSeedAsync(
+            session.Id, userId, null, CancellationToken.None);
+
+        Assert.That(seed, Is.Null);
+    }
+
+    [Test]
+    public async Task AuthorizeAndLoadSeed_ReturnsNull_ForMissingSession()
+    {
+        var service = new VotingRoundService(new FakeSessionRepository(null), new FakeSessionMemberRepository());
+
+        var seed = await service.AuthorizeAndLoadSeedAsync(
+            Guid.NewGuid(), Guid.NewGuid(), "member@example.com", CancellationToken.None);
+
+        Assert.That(seed, Is.Null);
+    }
+
+    [Test]
     public async Task LoadActiveSessionSeed_ReturnsSeed_ForActiveSession()
     {
         var session = BuildSession(SessionStatus.Active);
@@ -44,7 +81,7 @@ public sealed class VotingRoundServiceTests
         Assert.That(seed, Is.Null);
     }
 
-    private static PlanningSession BuildSession(SessionStatus status)
+    private static PlanningSession BuildSession(SessionStatus status, Guid? createdByUserId = null)
     {
         var sessionId = Guid.NewGuid();
         return new PlanningSession
@@ -54,6 +91,7 @@ public sealed class VotingRoundServiceTests
             Status = status,
             ScaleType = VotingScaleType.Custom,
             ScaleValues = ["1", "2", "3"],
+            CreatedByUserId = createdByUserId ?? Guid.Empty,
             Tasks =
             [
                 new SessionTask { Id = Guid.NewGuid(), SessionId = sessionId, Title = "Second", SortOrder = 1 },

@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
+using System.Net;
 using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
@@ -9,6 +12,8 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PlanDeck.Application.Domain;
 using PlanDeck.Core.Shared.Realtime;
 using PlanDeck.Infrastructure.Persistence;
@@ -28,6 +33,7 @@ public sealed class PlanningRoomHubTests
     private const string TestTenantId = "11111111-1111-1111-1111-111111111111";
     private const string TestObjectId = "22222222-2222-2222-2222-222222222222";
     private const string TestEmail = "test.user@plandeck.local";
+    private const string NoResultScheme = "NoResult";
 
     private WebApplicationFactory<ServerEntryPoint> _factory = null!;
     private string _databaseName = null!;
@@ -80,6 +86,71 @@ public sealed class PlanningRoomHubTests
             .GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true);
 
         Assert.That(attributes, Is.Not.Empty, "PlanningRoomHub must be annotated with [Authorize].");
+    }
+
+    [Test]
+    public async Task AnonymousConnection_IsRejectedByTransportPipeline()
+    {
+        using var anonymousFactory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                services
+                    .AddAuthentication()
+                    .AddScheme<AuthenticationSchemeOptions, NoResultAuthenticationHandler>(
+                        NoResultScheme, null);
+                services.AddAuthorization(options =>
+                {
+                    options.AddPolicy(GuestAuthentication.RoomParticipantPolicy, policy =>
+                    {
+                        policy.RequireAuthenticatedUser();
+                        policy.AddAuthenticationSchemes(NoResultScheme);
+                    });
+                });
+            });
+        });
+        var connection = CreateConnection(anonymousFactory);
+
+        var exception = Assert.ThrowsAsync<HttpRequestException>(
+            async () => await connection.StartAsync());
+
+        Assert.That(
+            exception!.StatusCode,
+            Is.EqualTo(HttpStatusCode.Unauthorized).Or.EqualTo(HttpStatusCode.Forbidden));
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task UnknownSession_IsRejectedBeforeRoomBroadcast()
+    {
+        var connection = CreateConnection();
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", _ => signal.Release());
+        await connection.StartAsync();
+
+        var exception = Assert.ThrowsAsync<HubException>(
+            async () => await connection.InvokeAsync("JoinRoom", Guid.NewGuid().ToString()));
+
+        Assert.That(exception, Is.Not.Null);
+        Assert.That(await signal.WaitAsync(TimeSpan.FromMilliseconds(300)), Is.False);
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task InactiveSession_IsRejectedBeforeRoomBroadcast()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true, status: SessionStatus.Draft);
+        var connection = CreateConnection();
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", _ => signal.Release());
+        await connection.StartAsync();
+
+        var exception = Assert.ThrowsAsync<HubException>(
+            async () => await connection.InvokeAsync("JoinRoom", sessionId.ToString()));
+
+        Assert.That(exception, Is.Not.Null);
+        Assert.That(await signal.WaitAsync(TimeSpan.FromMilliseconds(300)), Is.False);
+        await connection.DisposeAsync();
     }
 
     [Test]
@@ -571,7 +642,10 @@ public sealed class PlanningRoomHubTests
         await connection.DisposeAsync();
     }
 
-    private (Guid SessionId, Guid FirstTaskId, Guid SecondTaskId) SeedSession(bool assignTestUser, Guid? createdByUserId = null)
+    private (Guid SessionId, Guid FirstTaskId, Guid SecondTaskId) SeedSession(
+        bool assignTestUser,
+        Guid? createdByUserId = null,
+        SessionStatus status = SessionStatus.Active)
     {
         using var scope = _factory.Services.CreateScope();
         scope.ServiceProvider.GetRequiredService<RequestPrincipalAccessor>().Principal = BuildTestPrincipal();
@@ -585,7 +659,7 @@ public sealed class PlanningRoomHubTests
         {
             Id = sessionId,
             Name = "Hub Test Session",
-            Status = SessionStatus.Active,
+            Status = status,
             ScaleType = VotingScaleType.Custom,
             ScaleValues = ["1", "2", "3", "5"],
             CreatedByUserId = createdByUserId ?? Guid.Empty
@@ -671,10 +745,17 @@ public sealed class PlanningRoomHubTests
 
     private HubConnection CreateConnection(Action<HttpConnectionOptions>? configure = null)
     {
+        return CreateConnection(_factory, configure);
+    }
+
+    private static HubConnection CreateConnection(
+        WebApplicationFactory<ServerEntryPoint> factory,
+        Action<HttpConnectionOptions>? configure = null)
+    {
         return new HubConnectionBuilder()
-            .WithUrl(new Uri(_factory.Server.BaseAddress, "hubs/planning-room"), options =>
+            .WithUrl(new Uri(factory.Server.BaseAddress, "hubs/planning-room"), options =>
             {
-                options.HttpMessageHandlerFactory = _ => _factory.Server.CreateHandler();
+                options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
                 options.Transports = HttpTransportType.LongPolling;
                 configure?.Invoke(options);
             })
@@ -691,5 +772,17 @@ public sealed class PlanningRoomHubTests
     {
         var entered = await signal.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.That(entered, Is.True, "Timed out waiting for a RoomStateChanged broadcast.");
+    }
+
+    private sealed class NoResultAuthenticationHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
     }
 }

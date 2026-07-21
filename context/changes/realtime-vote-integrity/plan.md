@@ -528,23 +528,23 @@ None — no schema or data changes. Wire-contract change (`PlanningParticipantSt
 
 #### Automated
 
-- [x] 5.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 5.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 5.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [x] 5.1 Solution builds: `dotnet build PlanDeck.slnx` — ceb30f4
+- [x] 5.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — ceb30f4
+- [x] 5.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"` — ceb30f4
 
 #### Manual
 
-- [x] 5.4 `Join`, `JoinRoom`, and `JoinRoomAsync` enforce one room per connection and retain only successful reconnect state
+- [x] 5.4 `Join`, `JoinRoom`, and `JoinRoomAsync` enforce one room per connection and retain only successful reconnect state — ceb30f4
 
 ### Phase 6: Active persisted-session validation
 
 #### Automated
 
-- [ ] 6.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 6.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [ ] 6.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
-- [ ] 6.4 Anonymous hub connection is rejected by the real test-server pipeline
+- [x] 6.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 6.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 6.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [x] 6.4 Anonymous hub connection is rejected by the real test-server pipeline
 
 #### Manual
 
-- [ ] 6.5 Hub performs no room/group mutation before tenant-scoped Active-session validation succeeds
+- [x] 6.5 Hub performs no room/group mutation before tenant-scoped Active-session validation succeeds

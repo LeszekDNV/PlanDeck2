@@ -22,7 +22,9 @@ public sealed class VotingRoundService(
     {
         // Single session load shared by authorization and seeding, so JoinRoom hits the DB once.
         var session = await sessionRepository.GetSessionAsync(sessionId, cancellationToken);
-        if (session is null || !await IsAuthorizedAsync(session, userId, email, cancellationToken))
+        if (session is null
+            || session.Status != SessionStatus.Active
+            || !await IsAuthorizedAsync(session, userId, email, cancellationToken))
         {
             return null;
         }
