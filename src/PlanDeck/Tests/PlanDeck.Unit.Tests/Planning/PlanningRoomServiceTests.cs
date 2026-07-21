@@ -220,6 +220,26 @@ public sealed class PlanningRoomServiceTests
     }
 
     [Test]
+    public void Join_WithConnectionOwnedByAnotherRoom_IsRejectedAndDisconnectUpdatesOriginalRoom()
+    {
+        var otherKey = new RoomKey(_key.TenantId, Guid.NewGuid());
+        _service.EnsureSeeded(otherKey, [Task(Guid.NewGuid(), "Other task", 0)], Scale);
+        _service.Join(_key, "alice", "Alice", "conn-a");
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => _service.Join(otherKey, "alice", "Alice", "conn-a"));
+
+        Assert.That(exception!.Message, Does.Contain("different planning room"));
+        Assert.That(_service.GetState(otherKey).Participants, Is.Empty);
+
+        var disconnected = _service.Disconnect("conn-a");
+
+        Assert.That(disconnected, Is.Not.Null);
+        Assert.That(disconnected!.Value.Key, Is.EqualTo(_key));
+        Assert.That(Participant(disconnected.Value.State, "alice").IsOnline, Is.False);
+    }
+
+    [Test]
     public void ConcurrentCasts_FromDistinctParticipants_AllLand()
     {
         const int participantCount = 50;

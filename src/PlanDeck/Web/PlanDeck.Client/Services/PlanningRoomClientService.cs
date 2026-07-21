@@ -49,14 +49,20 @@ public sealed class PlanningRoomClientService(NavigationManager navigationManage
 
     public async Task JoinRoomAsync(string sessionId)
     {
+        if (_joinedSessionId is { } previousSessionId
+            && !string.Equals(previousSessionId, sessionId, StringComparison.Ordinal))
+        {
+            await LeaveRoomAsync(previousSessionId);
+        }
+
         if (!string.Equals(_joinedSessionId, sessionId, StringComparison.Ordinal)
             || !string.Equals(_joinedConnectionId, _hubConnection.ConnectionId, StringComparison.Ordinal))
         {
             _revisionGate.Reset();
         }
 
-        _joinedSessionId = sessionId;
         await _hubConnection.InvokeAsync("JoinRoom", sessionId);
+        _joinedSessionId = sessionId;
         _joinedConnectionId = _hubConnection.ConnectionId;
     }
 

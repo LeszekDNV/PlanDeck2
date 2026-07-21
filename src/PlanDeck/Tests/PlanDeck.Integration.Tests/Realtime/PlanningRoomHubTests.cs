@@ -236,6 +236,52 @@ public sealed class PlanningRoomHubTests
     }
 
     [Test]
+    public async Task JoinRoom_SecondRoomIsRejected_WithoutSubscribingConnectionToItsGroup()
+    {
+        var (firstSessionId, _, _) = SeedSession(assignTestUser: true);
+        var (secondSessionId, _, _) = SeedSession(assignTestUser: true);
+        var first = CreateConnection();
+        var firstSignal = new SemaphoreSlim(0);
+        var firstStates = new ConcurrentQueue<PlanningRoomState>();
+        first.On<PlanningRoomState>("RoomStateChanged", state =>
+        {
+            firstStates.Enqueue(state);
+            firstSignal.Release();
+        });
+
+        await first.StartAsync();
+        await first.InvokeAsync("JoinRoom", firstSessionId.ToString());
+        await WaitForBroadcastAsync(firstSignal);
+        while (firstStates.TryDequeue(out _))
+        {
+        }
+
+        var exception = Assert.ThrowsAsync<HubException>(
+            async () => await first.InvokeAsync("JoinRoom", secondSessionId.ToString()));
+        Assert.That(exception, Is.Not.Null);
+
+        var second = CreateConnection();
+        var secondSignal = new SemaphoreSlim(0);
+        second.On<PlanningRoomState>("RoomStateChanged", _ => secondSignal.Release());
+        await second.StartAsync();
+        await second.InvokeAsync("JoinRoom", secondSessionId.ToString());
+        await WaitForBroadcastAsync(secondSignal);
+        await second.InvokeAsync("CastVote", secondSessionId.ToString(), "3");
+        await WaitForBroadcastAsync(secondSignal);
+
+        var receivedSecondRoomState = firstStates.Any(
+            state => state.SessionId == secondSessionId.ToString());
+        Assert.That(receivedSecondRoomState, Is.False);
+        Assert.That(
+            await firstSignal.WaitAsync(TimeSpan.FromMilliseconds(300)),
+            Is.False,
+            "Rejected connection must not receive broadcasts from the second room.");
+
+        await second.DisposeAsync();
+        await first.DisposeAsync();
+    }
+
+    [Test]
     public async Task Disconnect_WithoutLeave_KeepsVote_AndMarksParticipantOffline()
     {
         var (sessionId, _, _) = SeedSession(assignTestUser: true);

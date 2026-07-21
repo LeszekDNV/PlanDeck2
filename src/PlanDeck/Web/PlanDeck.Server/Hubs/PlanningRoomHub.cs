@@ -34,8 +34,17 @@ public sealed class PlanningRoomHub(
 
         planningRoomService.EnsureSeeded(key, seed.Tasks, seed.ScaleValues);
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, key.GroupName, Context.ConnectionAborted);
         var state = planningRoomService.Join(key, ParticipantId, DisplayName, Context.ConnectionId);
+        try
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, key.GroupName, Context.ConnectionAborted);
+        }
+        catch
+        {
+            planningRoomService.Disconnect(Context.ConnectionId);
+            throw;
+        }
+
         await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
     }
 

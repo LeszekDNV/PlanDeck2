@@ -516,25 +516,25 @@ None — no schema or data changes. Wire-contract change (`PlanningParticipantSt
 
 #### Automated
 
-- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [x] 4.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [x] 4.3 Ordering regression proves synthetic revisions `2, 1, 3` are observed as `2, 3`
+- [x] 4.1 Solution builds: `dotnet build PlanDeck.slnx` — f6df781
+- [x] 4.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj` — f6df781
+- [x] 4.3 Ordering regression proves synthetic revisions `2, 1, 3` are observed as `2, 3` — f6df781
 
 #### Manual
 
-- [x] 4.4 Every `RoomStateChanged` consumer routes incoming snapshots through the revision gate
+- [x] 4.4 Every `RoomStateChanged` consumer routes incoming snapshots through the revision gate — f6df781
 
 ### Phase 5: Single-room connection ownership
 
 #### Automated
 
-- [ ] 5.1 Solution builds: `dotnet build PlanDeck.slnx`
-- [ ] 5.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
-- [ ] 5.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
+- [x] 5.1 Solution builds: `dotnet build PlanDeck.slnx`
+- [x] 5.2 Unit tests pass: `dotnet test Tests/PlanDeck.Unit.Tests/PlanDeck.Unit.Tests.csproj`
+- [x] 5.3 Focused hub integration tests pass: `dotnet test Tests/PlanDeck.Integration.Tests/PlanDeck.Integration.Tests.csproj --filter "FullyQualifiedName~PlanningRoomHubTests"`
 
 #### Manual
 
-- [ ] 5.4 `Join`, `JoinRoom`, and `JoinRoomAsync` enforce one room per connection and retain only successful reconnect state
+- [x] 5.4 `Join`, `JoinRoom`, and `JoinRoomAsync` enforce one room per connection and retain only successful reconnect state
 
 ### Phase 6: Active persisted-session validation
 

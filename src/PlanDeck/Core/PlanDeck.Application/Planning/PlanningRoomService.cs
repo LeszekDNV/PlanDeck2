@@ -110,40 +110,61 @@ public sealed class PlanningRoomService : IPlanningRoomService
             throw new ArgumentException("Connection ID is required.", nameof(connectionId));
         }
 
-        var room = GetRoom(key);
-        lock (room)
+        var owner = new ConnectionOwner(key, participantId);
+        var reserved = ReserveConnection(connectionId, owner);
+
+        try
         {
-            var changed = false;
-            if (!room.Participants.TryGetValue(participantId, out var participant))
+            var room = GetRoom(key);
+            lock (room)
             {
-                participant = new Participant(displayName);
-                room.Participants[participantId] = participant;
-                changed = true;
+                var changed = false;
+                if (!room.Participants.TryGetValue(participantId, out var participant))
+                {
+                    participant = new Participant(displayName);
+                    room.Participants[participantId] = participant;
+                    changed = true;
+                }
+
+                var wasOnline = participant.Connections.Count > 0;
+                participant.Connections.Add(connectionId);
+                if (!wasOnline)
+                {
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    room.Revision++;
+                }
+
+                return ToState(key, room);
+            }
+        }
+        catch
+        {
+            if (reserved)
+            {
+                _connections.TryRemove(new KeyValuePair<string, ConnectionOwner>(connectionId, owner));
             }
 
-            var wasOnline = participant.Connections.Count > 0;
-            participant.Connections.Add(connectionId);
-            _connections[connectionId] = new ConnectionOwner(key, participantId);
-            if (!wasOnline)
-            {
-                changed = true;
-            }
-
-            if (changed)
-            {
-                room.Revision++;
-            }
-
-            return ToState(key, room);
+            throw;
         }
     }
 
     public PlanningRoomState Leave(RoomKey key, string participantId, string connectionId)
     {
+        var owner = new ConnectionOwner(key, participantId);
+        if (_connections.TryGetValue(connectionId, out var currentOwner) && currentOwner != owner)
+        {
+            throw new InvalidOperationException(
+                "Connection belongs to a different planning room or participant.");
+        }
+
         var room = GetRoom(key);
         lock (room)
         {
-            _connections.TryRemove(connectionId, out _);
+            _connections.TryRemove(new KeyValuePair<string, ConnectionOwner>(connectionId, owner));
 
             if (room.Participants.TryGetValue(participantId, out var participant))
             {
@@ -325,6 +346,27 @@ public sealed class PlanningRoomService : IPlanningRoomService
     private PlanningRoom GetRoom(RoomKey key)
     {
         return _rooms.GetOrAdd(key, _ => new PlanningRoom());
+    }
+
+    private bool ReserveConnection(string connectionId, ConnectionOwner owner)
+    {
+        while (!_connections.TryAdd(connectionId, owner))
+        {
+            if (!_connections.TryGetValue(connectionId, out var currentOwner))
+            {
+                continue;
+            }
+
+            if (currentOwner == owner)
+            {
+                return false;
+            }
+
+            throw new InvalidOperationException(
+                "Connection is already joined to a different planning room or participant.");
+        }
+
+        return true;
     }
 
     private static RoomTask? ActiveTask(PlanningRoom room)
