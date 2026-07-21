@@ -10,12 +10,18 @@ public sealed class VotingRoundService(
     public async Task<bool> IsAuthorizedParticipantAsync(Guid sessionId, Guid userId, string? email, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetSessionAsync(sessionId, cancellationToken);
-        if (session is null)
+        if (session is null || session.Status != SessionStatus.Active)
         {
             return false;
         }
 
         return await IsAuthorizedAsync(session, userId, email, cancellationToken);
+    }
+
+    public async Task<bool> IsActiveSessionAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        var session = await sessionRepository.GetSessionAsync(sessionId, cancellationToken);
+        return session?.Status == SessionStatus.Active;
     }
 
     public async Task<RoomSeed?> AuthorizeAndLoadSeedAsync(Guid sessionId, Guid userId, string? email, CancellationToken cancellationToken)

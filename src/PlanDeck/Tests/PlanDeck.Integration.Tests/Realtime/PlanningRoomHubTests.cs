@@ -154,6 +154,46 @@ public sealed class PlanningRoomHubTests
     }
 
     [Test]
+    public async Task MemberMutation_AfterSessionBecomesInactive_IsRejected()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: true);
+        var connection = CreateConnection();
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", _ => signal.Release());
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sessionId.ToString());
+        await WaitForBroadcastAsync(signal);
+        SetSessionStatus(sessionId, SessionStatus.Draft);
+
+        var exception = Assert.ThrowsAsync<HubException>(
+            async () => await connection.InvokeAsync("CastVote", sessionId.ToString(), "3"));
+
+        Assert.That(exception, Is.Not.Null);
+        Assert.That(await signal.WaitAsync(TimeSpan.FromMilliseconds(300)), Is.False);
+        await connection.DisposeAsync();
+    }
+
+    [Test]
+    public async Task GuestMutation_AfterSessionBecomesInactive_IsRejected()
+    {
+        var (sessionId, _, _) = SeedSession(assignTestUser: false);
+        var connection = CreateGuestConnection(sessionId);
+        var signal = new SemaphoreSlim(0);
+        connection.On<PlanningRoomState>("RoomStateChanged", _ => signal.Release());
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinRoom", sessionId.ToString());
+        await WaitForBroadcastAsync(signal);
+        SetSessionStatus(sessionId, SessionStatus.Draft);
+
+        var exception = Assert.ThrowsAsync<HubException>(
+            async () => await connection.InvokeAsync("CastVote", sessionId.ToString(), "3"));
+
+        Assert.That(exception!.Message, Does.Contain("not open for guests"));
+        Assert.That(await signal.WaitAsync(TimeSpan.FromMilliseconds(300)), Is.False);
+        await connection.DisposeAsync();
+    }
+
+    [Test]
     public async Task NonAssignedMember_IsRejected_OnJoin()
     {
         var (sessionId, _, _) = SeedSession(assignTestUser: false);
@@ -686,6 +726,16 @@ public sealed class PlanningRoomHubTests
             .AsNoTracking()
             .Single(task => task.Id == taskId && task.SessionId == sessionId)
             .AgreedEstimate;
+    }
+
+    private void SetSessionStatus(Guid sessionId, SessionStatus status)
+    {
+        using var scope = _factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<RequestPrincipalAccessor>().Principal = BuildTestPrincipal();
+        var db = scope.ServiceProvider.GetRequiredService<PlanDeckDbContext>();
+        var session = db.Sessions.Single(candidate => candidate.Id == sessionId);
+        session.Status = status;
+        db.SaveChanges();
     }
 
     private (Guid SessionId, Guid[] TaskIds) SeedSessionWithConfig(

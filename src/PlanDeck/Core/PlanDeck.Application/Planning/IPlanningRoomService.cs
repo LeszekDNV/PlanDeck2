@@ -22,7 +22,7 @@ public interface IPlanningRoomService
 
     PlanningRoomState RevealVotes(RoomKey key);
 
-    PlanningRoomState ResetRound(RoomKey key);
+    PlanningRoomState ResetRound(RoomKey key, Guid taskId);
 
     PlanningRoomState SetActiveTask(RoomKey key, Guid taskId);
 
@@ -31,4 +31,6 @@ public interface IPlanningRoomService
     bool IsValidEstimate(RoomKey key, string? estimate);
 
     PlanningRoomState GetState(RoomKey key);
+
+    int RemoveInactiveRooms(DateTimeOffset inactiveSince);
 }

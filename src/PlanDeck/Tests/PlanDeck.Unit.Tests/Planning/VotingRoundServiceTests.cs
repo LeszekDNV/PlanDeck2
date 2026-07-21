@@ -8,6 +8,31 @@ namespace PlanDeck.Unit.Tests.Planning;
 public sealed class VotingRoundServiceTests
 {
     [Test]
+    public async Task IsAuthorizedParticipant_ReturnsFalse_ForDraftCreator()
+    {
+        var userId = Guid.NewGuid();
+        var session = BuildSession(SessionStatus.Draft, userId);
+        var service = new VotingRoundService(new FakeSessionRepository(session), new FakeSessionMemberRepository());
+
+        var authorized = await service.IsAuthorizedParticipantAsync(
+            session.Id, userId, null, CancellationToken.None);
+
+        Assert.That(authorized, Is.False);
+    }
+
+    [TestCase(SessionStatus.Active, true)]
+    [TestCase(SessionStatus.Draft, false)]
+    public async Task IsActiveSession_ReflectsPersistedStatus(SessionStatus status, bool expected)
+    {
+        var session = BuildSession(status);
+        var service = new VotingRoundService(new FakeSessionRepository(session), new FakeSessionMemberRepository());
+
+        var active = await service.IsActiveSessionAsync(session.Id, CancellationToken.None);
+
+        Assert.That(active, Is.EqualTo(expected));
+    }
+
+    [Test]
     public async Task AuthorizeAndLoadSeed_ReturnsSeed_ForActiveSession()
     {
         var userId = Guid.NewGuid();

@@ -8,6 +8,12 @@ public sealed class PlanningRoomService : IPlanningRoomService
 {
     private readonly ConcurrentDictionary<RoomKey, PlanningRoom> _rooms = new();
     private readonly ConcurrentDictionary<string, ConnectionOwner> _connections = new(StringComparer.Ordinal);
+    private readonly TimeProvider _timeProvider;
+
+    public PlanningRoomService(TimeProvider? timeProvider = null)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
 
     public PlanningRoomState EnsureSeeded(
         RoomKey key,
@@ -128,6 +134,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
 
                 var wasOnline = participant.Connections.Count > 0;
                 participant.Connections.Add(connectionId);
+                room.InactiveSince = null;
                 if (!wasOnline)
                 {
                     changed = true;
@@ -177,6 +184,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 }
             }
 
+            MarkInactiveIfEmpty(room);
             return ToState(key, room);
         }
     }
@@ -205,6 +213,7 @@ public sealed class PlanningRoomService : IPlanningRoomService
                 }
             }
 
+            MarkInactiveIfEmpty(room);
             return (owner.Key, ToState(owner.Key, room));
         }
     }
@@ -261,13 +270,13 @@ public sealed class PlanningRoomService : IPlanningRoomService
         }
     }
 
-    public PlanningRoomState ResetRound(RoomKey key)
+    public PlanningRoomState ResetRound(RoomKey key, Guid taskId)
     {
         var room = GetRoom(key);
         lock (room)
         {
-            var task = ActiveTask(room)
-                ?? throw new InvalidOperationException("There is no active task to reset.");
+            var task = room.Tasks.FirstOrDefault(candidate => candidate.TaskId == taskId)
+                ?? throw new InvalidOperationException("Task does not belong to this planning room.");
 
             if (task.IsRevealed || task.Votes.Count > 0 || task.AgreedEstimate is not null)
             {
@@ -343,9 +352,42 @@ public sealed class PlanningRoomService : IPlanningRoomService
         }
     }
 
+    public int RemoveInactiveRooms(DateTimeOffset inactiveSince)
+    {
+        var removedCount = 0;
+        foreach (var (key, room) in _rooms)
+        {
+            lock (room)
+            {
+                if (room.InactiveSince is null
+                    || room.InactiveSince > inactiveSince
+                    || room.Participants.Any(participant => participant.Value.Connections.Count > 0)
+                    || _connections.Values.Any(owner => owner.Key == key))
+                {
+                    continue;
+                }
+
+                if (_rooms.TryRemove(new KeyValuePair<RoomKey, PlanningRoom>(key, room)))
+                {
+                    removedCount++;
+                }
+            }
+        }
+
+        return removedCount;
+    }
+
     private PlanningRoom GetRoom(RoomKey key)
     {
-        return _rooms.GetOrAdd(key, _ => new PlanningRoom());
+        return _rooms.GetOrAdd(key, _ => new PlanningRoom(_timeProvider.GetUtcNow()));
+    }
+
+    private void MarkInactiveIfEmpty(PlanningRoom room)
+    {
+        if (room.Participants.All(participant => participant.Value.Connections.Count == 0))
+        {
+            room.InactiveSince ??= _timeProvider.GetUtcNow();
+        }
     }
 
     private bool ReserveConnection(string connectionId, ConnectionOwner owner)
@@ -425,8 +467,10 @@ public sealed class PlanningRoomService : IPlanningRoomService
 
     private readonly record struct ConnectionOwner(RoomKey Key, string ParticipantId);
 
-    private sealed class PlanningRoom
+    private sealed class PlanningRoom(DateTimeOffset inactiveSince)
     {
+        public DateTimeOffset? InactiveSince { get; set; } = inactiveSince;
+
         public bool Seeded { get; set; }
 
         public long Revision { get; set; }

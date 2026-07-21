@@ -135,9 +135,11 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddLocalServices()
         {
             services.AddHttpContextAccessor();
+            services.AddSingleton(TimeProvider.System);
             services.AddScoped<RequestPrincipalAccessor>();
             services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
+            services.AddHostedService<PlanningRoomCleanupService>();
             services.AddScoped<IPlanningRoomNotifier, SignalRPlanningRoomNotifier>();
             services.AddScoped<IVotingRoundService, VotingRoundService>();
             services.AddScoped<HelloGrpcService>();

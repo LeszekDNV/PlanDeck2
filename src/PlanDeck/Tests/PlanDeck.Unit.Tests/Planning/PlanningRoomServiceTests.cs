@@ -113,7 +113,7 @@ public sealed class PlanningRoomServiceTests
         _service.CastVote(_key, "alice", "5");
         _service.RevealVotes(_key);
 
-        var state = _service.ResetRound(_key);
+        var state = _service.ResetRound(_key, _taskId);
 
         Assert.That(state.IsRevealed, Is.False);
         Assert.That(Participant(state, "alice").Vote, Is.Null);
@@ -240,6 +240,42 @@ public sealed class PlanningRoomServiceTests
     }
 
     [Test]
+    public void RemoveInactiveRooms_RemovesRoomOnlyAfterFifteenMinutes()
+    {
+        var clock = new ManualTimeProvider();
+        var service = new PlanningRoomService(clock);
+        var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
+        var taskId = Guid.NewGuid();
+        service.EnsureSeeded(key, [Task(taskId, "Task", 0)], Scale);
+        service.Join(key, "alice", "Alice", "conn-a");
+        service.Disconnect("conn-a");
+
+        clock.Advance(TimeSpan.FromMinutes(14));
+        Assert.That(service.RemoveInactiveRooms(clock.GetUtcNow() - TimeSpan.FromMinutes(15)), Is.Zero);
+        Assert.That(service.GetState(key).Tasks, Has.Count.EqualTo(1));
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.That(service.RemoveInactiveRooms(clock.GetUtcNow() - TimeSpan.FromMinutes(15)), Is.EqualTo(1));
+        Assert.That(service.GetState(key).Tasks, Is.Empty);
+    }
+
+    [Test]
+    public void RemoveInactiveRooms_KeepsRoomWithOnlineParticipant()
+    {
+        var clock = new ManualTimeProvider();
+        var service = new PlanningRoomService(clock);
+        var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
+        service.EnsureSeeded(key, [Task(Guid.NewGuid(), "Task", 0)], Scale);
+        service.Join(key, "alice", "Alice", "conn-a");
+        clock.Advance(TimeSpan.FromHours(1));
+
+        var removed = service.RemoveInactiveRooms(clock.GetUtcNow() - TimeSpan.FromMinutes(15));
+
+        Assert.That(removed, Is.Zero);
+        Assert.That(service.GetState(key).Participants, Has.Count.EqualTo(1));
+    }
+
+    [Test]
     public void ConcurrentCasts_FromDistinctParticipants_AllLand()
     {
         const int participantCount = 50;
@@ -358,7 +394,7 @@ public sealed class PlanningRoomServiceTests
         Assert.That(Participant(firstState, "alice").Vote, Is.EqualTo("5"));
 
         _service.SetActiveTask(key, second);
-        _service.ResetRound(key);
+        _service.ResetRound(key, second);
 
         var firstAfterReset = _service.SetActiveTask(key, first);
         Assert.That(firstAfterReset.IsRevealed, Is.True);
@@ -403,10 +439,33 @@ public sealed class PlanningRoomServiceTests
         var picked = _service.ApplyAgreedEstimate(_key, _taskId, "5");
         Assert.That(picked.Tasks.Single(t => t.TaskId == _taskId).AgreedEstimate, Is.EqualTo("5"));
 
-        var afterReset = _service.ResetRound(_key);
+        var afterReset = _service.ResetRound(_key, _taskId);
         Assert.That(afterReset.Tasks.Single(t => t.TaskId == _taskId).AgreedEstimate, Is.Null);
         Assert.That(afterReset.IsRevealed, Is.False);
         Assert.That(Participant(afterReset, "alice").HasVoted, Is.False);
+    }
+
+    [Test]
+    public void ResetRound_TargetsExpectedTask_WhenActiveTaskChanges()
+    {
+        var key = new RoomKey(Guid.NewGuid(), Guid.NewGuid());
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+        _service.EnsureSeeded(key, [Task(first, "Task 1", 0), Task(second, "Task 2", 1)], Scale);
+        _service.Join(key, "alice", "Alice", "conn-a");
+        _service.CastVote(key, "alice", "5");
+        _service.RevealVotes(key);
+        _service.ApplyAgreedEstimate(key, first, "5");
+        _service.SetActiveTask(key, second);
+
+        var state = _service.ResetRound(key, first);
+
+        Assert.That(state.CurrentTaskId, Is.EqualTo(second));
+        Assert.That(state.Tasks.Single(task => task.TaskId == first).AgreedEstimate, Is.Null);
+
+        var firstState = _service.SetActiveTask(key, first);
+        Assert.That(firstState.IsRevealed, Is.False);
+        Assert.That(Participant(firstState, "alice").HasVoted, Is.False);
     }
 
     [Test]
@@ -482,5 +541,14 @@ public sealed class PlanningRoomServiceTests
 
         Assert.That(state.Tasks, Is.Empty);
         Assert.That(state.CurrentTaskId, Is.Null);
+    }
+
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        private DateTimeOffset _utcNow = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => _utcNow;
+
+        public void Advance(TimeSpan duration) => _utcNow += duration;
     }
 }

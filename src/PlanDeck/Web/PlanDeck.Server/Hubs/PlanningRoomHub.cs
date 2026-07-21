@@ -45,7 +45,7 @@ public sealed class PlanningRoomHub(
             throw;
         }
 
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
     }
 
     public async Task LeaveRoom(string sessionId)
@@ -53,14 +53,14 @@ public sealed class PlanningRoomHub(
         var key = BuildKey(sessionId);
         var state = planningRoomService.Leave(key, ParticipantId, Context.ConnectionId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, key.GroupName, Context.ConnectionAborted);
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
     }
 
     public async Task CastVote(string sessionId, string vote)
     {
         var key = await AuthorizeAsync(sessionId);
         var state = planningRoomService.CastVote(key, ParticipantId, vote);
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
     }
 
     public async Task RevealVotes(string sessionId)
@@ -68,7 +68,7 @@ public sealed class PlanningRoomHub(
         EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
         var state = planningRoomService.RevealVotes(key);
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
     }
 
     public async Task ResetRound(string sessionId)
@@ -78,18 +78,17 @@ public sealed class PlanningRoomHub(
 
         // Persist the agreed-estimate clear BEFORE mutating in-memory state so a DB failure
         // cannot leave memory and the database out of sync (mirrors SelectEstimate's persist-first order).
-        if (planningRoomService.GetState(key).CurrentTaskId is { } taskId)
+        var taskId = planningRoomService.GetState(key).CurrentTaskId
+            ?? throw new HubException("There is no active task to reset.");
+        var persisted = await votingRoundService.SelectEstimateAsync(
+            key.SessionId, taskId, null, Context.ConnectionAborted);
+        if (!persisted)
         {
-            var persisted = await votingRoundService.SelectEstimateAsync(
-                key.SessionId, taskId, null, Context.ConnectionAborted);
-            if (!persisted)
-            {
-                throw new HubException("The agreed estimate could not be cleared.");
-            }
+            throw new HubException("The agreed estimate could not be cleared.");
         }
 
-        var state = planningRoomService.ResetRound(key);
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        var state = planningRoomService.ResetRound(key, taskId);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
     }
 
     public async Task SetActiveTask(string sessionId, string taskId)
@@ -97,7 +96,7 @@ public sealed class PlanningRoomHub(
         EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
         var state = planningRoomService.SetActiveTask(key, ParseTaskId(taskId));
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
     }
 
     public async Task SelectEstimate(string sessionId, string taskId, string value)
@@ -119,7 +118,7 @@ public sealed class PlanningRoomHub(
         }
 
         var state = planningRoomService.ApplyAgreedEstimate(key, taskGuid, value);
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state, Context.ConnectionAborted);
+        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -144,6 +143,13 @@ public sealed class PlanningRoomHub(
         // the validated guest cookie — they never go through the member/creator lookup.
         if (IsGuest)
         {
+            var isActive = await votingRoundService.IsActiveSessionAsync(
+                key.SessionId, Context.ConnectionAborted);
+            if (!isActive)
+            {
+                throw new HubException("This session is not open for guests.");
+            }
+
             return key;
         }
 
