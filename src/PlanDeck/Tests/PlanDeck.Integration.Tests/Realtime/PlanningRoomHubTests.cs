@@ -242,10 +242,16 @@ public sealed class PlanningRoomHubTests
         var emittedBeforeReveal = new ConcurrentQueue<PlanningRoomState>();
         var connection = CreateConnection();
         PlanningRoomState? latest = null;
+        string? persistedAtEstimateBroadcast = null;
         var signal = new SemaphoreSlim(0);
         connection.On<PlanningRoomState>("RoomStateChanged", state =>
         {
             latest = state;
+            if (state.Tasks.Any(task => task.TaskId == secondTaskId && task.AgreedEstimate is not null))
+            {
+                persistedAtEstimateBroadcast = ReadPersistedEstimate(sessionId, secondTaskId);
+            }
+
             if (!state.IsRevealed)
             {
                 emittedBeforeReveal.Enqueue(state);
@@ -288,6 +294,10 @@ public sealed class PlanningRoomHubTests
 
         var activeTask = latest!.Tasks.Single(task => task.TaskId == secondTaskId);
         Assert.That(activeTask.AgreedEstimate, Is.EqualTo("5"), "Estimate must be broadcast on the task.");
+        Assert.That(
+            persistedAtEstimateBroadcast,
+            Is.EqualTo("5"),
+            "Estimate must already be persisted when its broadcast is observed.");
 
         await connection.DisposeAsync();
 
@@ -563,36 +573,45 @@ public sealed class PlanningRoomHubTests
     }
 
     [Test]
-    public async Task SelectEstimate_LastWriteWins_NoConcurrencyError()
+    public async Task SelectEstimate_ConcurrentWrites_FinalBroadcastMatchesPersistence()
     {
         var (sessionId, _, secondTaskId) = SeedSession(assignTestUser: true);
         var sid = sessionId.ToString();
 
-        var connection = CreateConnection();
+        var first = CreateConnection();
+        var second = CreateConnection();
         PlanningRoomState? latest = null;
         var signal = new SemaphoreSlim(0);
-        connection.On<PlanningRoomState>("RoomStateChanged", state =>
+        first.On<PlanningRoomState>("RoomStateChanged", state =>
         {
             latest = state;
             signal.Release();
         });
 
-        await connection.StartAsync();
-        await connection.InvokeAsync("JoinRoom", sid);
-        await WaitForBroadcastAsync(signal);
-        await connection.InvokeAsync("SetActiveTask", sid, secondTaskId.ToString());
+        await first.StartAsync();
+        await first.InvokeAsync("JoinRoom", sid);
         await WaitForBroadcastAsync(signal);
 
-        await connection.InvokeAsync("SelectEstimate", sid, secondTaskId.ToString(), "3");
-        await WaitForBroadcastAsync(signal);
-        await connection.InvokeAsync("SelectEstimate", sid, secondTaskId.ToString(), "5");
+        await second.StartAsync();
+        await second.InvokeAsync("JoinRoom", sid);
         await WaitForBroadcastAsync(signal);
 
+        await first.InvokeAsync("SetActiveTask", sid, secondTaskId.ToString());
+        await WaitForBroadcastAsync(signal);
+
+        await Task.WhenAll(
+            first.InvokeAsync("SelectEstimate", sid, secondTaskId.ToString(), "3"),
+            second.InvokeAsync("SelectEstimate", sid, secondTaskId.ToString(), "5"));
+        await WaitForBroadcastAsync(signal);
+        await WaitForBroadcastAsync(signal);
+
+        var persistedEstimate = ReadPersistedEstimate(sessionId, secondTaskId);
         var taskState = latest!.Tasks.Single(task => task.TaskId == secondTaskId);
-        Assert.That(taskState.AgreedEstimate, Is.EqualTo("5"));
-        Assert.That(ReadPersistedEstimate(sessionId, secondTaskId), Is.EqualTo("5"));
+        Assert.That(persistedEstimate, Is.AnyOf("3", "5"));
+        Assert.That(taskState.AgreedEstimate, Is.EqualTo(persistedEstimate));
 
-        await connection.DisposeAsync();
+        await second.DisposeAsync();
+        await first.DisposeAsync();
     }
 
     [Test]

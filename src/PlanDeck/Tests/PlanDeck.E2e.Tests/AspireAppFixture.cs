@@ -9,12 +9,13 @@ namespace PlanDeck.E2e.Tests;
 public class AspireAppFixture
 {
     /// <summary>
-    /// When set (e.g. on a CI / test / prod environment), the tests run against this
+    /// When set for an explicitly identified non-production environment, the tests run against this
     /// already-deployed URL and Aspire is NOT started. When empty, Aspire is launched
     /// locally on the developer machine. Configured via the <c>BaseUrl</c>
     /// <c>TestRunParameters</c> entry in <c>.runsettings</c>.
     /// </summary>
     private const string BaseUrlParameter = "BaseUrl";
+    private const string RemoteEnvironmentParameter = "RemoteEnvironment";
 
     private DistributedApplication? _app;
 
@@ -26,6 +27,14 @@ public class AspireAppFixture
         var externalBaseUrl = TestContext.Parameters.Get(BaseUrlParameter);
         if (!string.IsNullOrWhiteSpace(externalBaseUrl))
         {
+            var remoteEnvironment = TestContext.Parameters.Get(RemoteEnvironmentParameter);
+            if (!string.Equals(remoteEnvironment, "Test", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(remoteEnvironment, "Staging", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "Remote E2E requires RemoteEnvironment=Test or Staging. Production targets are not allowed.");
+            }
+
             // Remote environment: the server is already running, go straight to it.
             BaseUrl = externalBaseUrl;
             return;

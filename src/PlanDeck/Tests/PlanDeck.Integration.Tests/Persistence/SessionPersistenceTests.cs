@@ -179,13 +179,14 @@ public sealed class SessionPersistenceTests
     {
         var userId = Guid.NewGuid();
         var teamId = Guid.NewGuid();
+        var sessionName = $"custom-scale-{Guid.NewGuid():N}";
         Guid sessionId;
 
         await using (var write = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true)))
         {
             var session = new PlanningSession
             {
-                Name = $"custom-scale-{Guid.NewGuid():N}",
+                Name = sessionName,
                 TeamId = teamId,
                 CreatedByUserId = userId,
                 ScaleType = VotingScaleType.Custom,
@@ -216,12 +217,61 @@ public sealed class SessionPersistenceTests
 
         Assert.Multiple(() =>
         {
+            Assert.That(loaded.Name, Is.EqualTo(sessionName));
             Assert.That(loaded.TeamId, Is.EqualTo(teamId));
             Assert.That(loaded.ScaleType, Is.EqualTo(VotingScaleType.Custom));
             Assert.That(loaded.ScaleValues, Is.EqualTo(new[] { "XS", "S", "M", "L" }));
             Assert.That(loaded.Tasks, Has.Count.EqualTo(3));
             Assert.That(orderedTitles, Is.EqualTo(new[] { "Task 1", "Task 2", "Task 3" }));
             Assert.That(loaded.Tasks.Single(task => task.Title == "Task 1").AdoWorkItemId, Is.EqualTo(77));
+        });
+    }
+
+    [Test]
+    public async Task CreateSession_WhenTaskConstraintFails_NoPartialAggregatePersists()
+    {
+        var userId = Guid.NewGuid();
+        var sessionName = $"atomic-failure-{Guid.NewGuid():N}";
+        var firstTaskTitle = $"duplicate-a-{Guid.NewGuid():N}";
+        var secondTaskTitle = $"duplicate-b-{Guid.NewGuid():N}";
+
+        await using (var write = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true)))
+        {
+            var session = new PlanningSession
+            {
+                Name = sessionName,
+                CreatedByUserId = userId,
+                Tasks =
+                {
+                    new SessionTask
+                    {
+                        Title = firstTaskTitle,
+                        Source = TaskSource.AzureDevOps,
+                        AdoWorkItemId = 88
+                    },
+                    new SessionTask
+                    {
+                        Title = secondTaskTitle,
+                        Source = TaskSource.AzureDevOps,
+                        AdoWorkItemId = 88
+                    }
+                }
+            };
+
+            write.Sessions.Add(session);
+            Assert.That(
+                async () => await write.SaveChangesAsync(),
+                Throws.TypeOf<DbUpdateException>());
+        }
+        await using var read = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true));
+        var sessionExists = await read.Sessions.AnyAsync(session => session.Name == sessionName);
+        var taskExists = await read.SessionTasks.AnyAsync(task =>
+            task.Title == firstTaskTitle || task.Title == secondTaskTitle);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sessionExists, Is.False);
+            Assert.That(taskExists, Is.False);
         });
     }
 

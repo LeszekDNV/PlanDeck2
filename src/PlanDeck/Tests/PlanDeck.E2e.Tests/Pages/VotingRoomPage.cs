@@ -15,11 +15,16 @@ public class VotingRoomPage
 
     public ILocator Participants => _page.Locator("[data-testid=participant]");
 
+    public ILocator Participant(string displayName) =>
+        Participants.Filter(new() { HasText = displayName });
+
     public ILocator VotedStatuses => _page.Locator("[data-testid=voted-status]");
 
     public ILocator RevealedVotes => _page.Locator("[data-testid=revealed-vote]");
 
     public ILocator AgreedEstimate => _page.Locator("[data-testid=agreed-estimate]");
+
+    public ILocator TaskListItems => _page.Locator("[data-testid=voting-task]");
 
     public ILocator VoteButton(string value) => _page.Locator($"[data-testid='vote-{value}']");
 
@@ -28,7 +33,7 @@ public class VotingRoomPage
     public ILocator ResetButton => _page.Locator("[data-testid=reset]");
 
     public ILocator TaskListItem(string title) =>
-        _page.Locator(".mud-list-item").Filter(new() { HasText = title });
+        TaskListItems.Filter(new() { HasText = title });
 
     public ILocator TaskDescription => _page.Locator("[data-testid=task-description]");
 
@@ -53,8 +58,7 @@ public class VotingRoomPage
         });
 
     public async Task SelectTaskAsync(string taskTitle) =>
-        await _page.Locator(".mud-list-item")
-            .Filter(new() { HasText = taskTitle })
+        await TaskListItems.Filter(new() { HasText = taskTitle })
             .First
             .ClickAsync();
 

@@ -51,6 +51,7 @@
                                 {
                                     var isActive = _state.CurrentTaskId == task.TaskId;
                                     <MudListItem T="Guid" Value="@task.TaskId"
+                                                 data-testid="voting-task"
                                                  Disabled="_isGuest"
                                                  Icon="@(isActive ? Icons.Material.Filled.RadioButtonChecked : Icons.Material.Filled.RadioButtonUnchecked)"
                                                  OnClick="@(() => SetActiveTaskAsync(task.TaskId))">
@@ -164,7 +165,8 @@
                                 <MudList T="string" Dense="true">
                                     @foreach (var participant in _state.Participants)
                                     {
-                                        <MudListItem T="string" Value="@participant.ParticipantId" data-testid="participant">
+                                        <MudListItem T="string" Value="@participant.ParticipantId" data-testid="participant"
+                                                     data-online="@participant.IsOnline.ToString().ToLowerInvariant()">
                                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                                 <MudText Typo="Typo.body2">@participant.DisplayName</MudText>
                                                 @if (_state.IsRevealed && participant.HasVoted)

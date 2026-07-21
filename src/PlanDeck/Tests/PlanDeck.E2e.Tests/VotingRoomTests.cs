@@ -71,6 +71,8 @@ public class VotingRoomTests : PageTest
         // Reveal surfaces both votes together in both contexts.
         await votingA.RevealAsync();
         await Expect(votingA.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
+        await Expect(votingA.RevealedVotes.Filter(new() { HasText = "3" })).ToHaveCountAsync(1);
+        await Expect(votingA.RevealedVotes.Filter(new() { HasText = "5" })).ToHaveCountAsync(1);
         await Expect(votingB.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
         await Expect(votingB.RevealedVotes.Filter(new() { HasText = "3" })).ToHaveCountAsync(1);
         await Expect(votingB.RevealedVotes.Filter(new() { HasText = "5" })).ToHaveCountAsync(1);
@@ -166,6 +168,8 @@ public class VotingRoomTests : PageTest
         await Expect(votingA.VotedStatuses).ToHaveCountAsync(2, new() { Timeout = 15_000 });
 
         await pageB.CloseAsync();
+        await Expect(votingA.Participant("Test User B"))
+            .ToHaveAttributeAsync("data-online", "false", new() { Timeout = 15_000 });
         await votingA.RevealAsync();
         await Expect(votingA.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
 
@@ -185,25 +189,37 @@ public class VotingRoomTests : PageTest
         var taskTitle = $"Persist Task {Guid.NewGuid():N}";
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var members = new SessionMembersPage(Page);
         await sessions.GotoAsync();
         await sessions.CreateSessionAsync(sessionName, taskTitle);
+        await members.AssignMemberAsync(UserBEmail);
         await sessions.ActivateAsync();
 
         var sessionId = await sessions.JoinVotingAsync();
-        var voting = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
-        await voting.WaitForLoadedAsync();
+        var votingA = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
+        await votingA.WaitForLoadedAsync();
 
-        await voting.SelectTaskAsync(taskTitle);
-        await voting.VoteAsync("5");
-        await voting.RevealAsync();
-        await Expect(voting.RevealedVotes).ToHaveCountAsync(1, new() { Timeout = 15_000 });
+        await using var contextB = await CreateUserBContextAsync();
+        var pageB = await contextB.NewPageAsync();
+        var votingB = new VotingRoomPage(pageB, AspireAppFixture.BaseUrl);
+        await votingB.GotoAsync(sessionId);
 
-        await voting.PickEstimateAsync("5");
-        await Expect(voting.AgreedEstimate).ToContainTextAsync("5", new() { Timeout = 15_000 });
+        await votingA.SelectTaskAsync(taskTitle);
+        await Expect(votingB.VoteButton("3")).ToBeEnabledAsync(new() { Timeout = 15_000 });
+        await votingA.VoteAsync("3");
+        await votingB.VoteAsync("5");
+        await Expect(votingA.VotedStatuses).ToHaveCountAsync(2, new() { Timeout = 15_000 });
 
-        await voting.GotoAsync(sessionId);
-        await voting.SelectTaskAsync(taskTitle);
-        await Expect(voting.AgreedEstimate).ToContainTextAsync("5", new() { Timeout = 15_000 });
+        await votingA.RevealAsync();
+        await Expect(votingA.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
+        await Expect(votingB.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
+
+        await votingA.PickEstimateAsync("5");
+        await Expect(votingB.AgreedEstimate).ToContainTextAsync("5", new() { Timeout = 15_000 });
+
+        await votingA.GotoAsync(sessionId);
+        await votingA.SelectTaskAsync(taskTitle);
+        await Expect(votingA.AgreedEstimate).ToContainTextAsync("5", new() { Timeout = 15_000 });
     }
 
     [Test]
@@ -227,8 +243,7 @@ public class VotingRoomTests : PageTest
         var voting = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
         await voting.GotoAsync(sessionId);
 
-        await Expect(voting.TaskListItem(taskA)).ToBeVisibleAsync(new() { Timeout = 15_000 });
-        await Expect(voting.TaskListItem(taskB)).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await Expect(voting.TaskListItems).ToHaveTextAsync([taskA, taskB], new() { Timeout = 15_000 });
         await Expect(voting.VoteButton("XS")).ToBeVisibleAsync();
         await Expect(voting.VoteButton("S")).ToBeVisibleAsync();
         await Expect(voting.VoteButton("M")).ToBeVisibleAsync();
