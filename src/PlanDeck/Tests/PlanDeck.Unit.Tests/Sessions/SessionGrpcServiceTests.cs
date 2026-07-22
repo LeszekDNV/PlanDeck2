@@ -13,7 +13,10 @@ public sealed class SessionGrpcServiceTests
     private static readonly Guid ProjectId = Guid.NewGuid();
     private FakeSessionRepository _repository = null!;
     private FakeSessionMemberRepository _memberRepository = null!;
+    private FakeProjectAzureDevOpsConnectionRepository _projectConnectionRepository = null!;
     private FakeCurrentUserContext _currentUser = null!;
+    private FakeProjectAccessResolver _projectAccessResolver = null!;
+    private FakeSessionAccessResolver _sessionAccessResolver = null!;
     private RecordingPlanningRoomNotifier _notifier = null!;
     private StubShareCodeGenerator _shareCodeGenerator = null!;
     private FakeAzureDevOpsWorkItemClient _azureDevOpsClient = null!;
@@ -24,11 +27,24 @@ public sealed class SessionGrpcServiceTests
     {
         _repository = new FakeSessionRepository();
         _memberRepository = new FakeSessionMemberRepository();
+        _projectConnectionRepository = new FakeProjectAzureDevOpsConnectionRepository();
         _currentUser = new FakeCurrentUserContext();
+        _projectAccessResolver = new FakeProjectAccessResolver();
+        _sessionAccessResolver = new FakeSessionAccessResolver(_repository);
         _notifier = new RecordingPlanningRoomNotifier();
         _shareCodeGenerator = new StubShareCodeGenerator();
         _azureDevOpsClient = new FakeAzureDevOpsWorkItemClient();
-        _service = new SessionGrpcService(_repository, _memberRepository, _currentUser, _notifier, _shareCodeGenerator, _azureDevOpsClient, new StubAdoConnectionContextResolver());
+        _service = new SessionGrpcService(
+            _repository,
+            _projectConnectionRepository,
+            _memberRepository,
+            _currentUser,
+            _projectAccessResolver,
+            _sessionAccessResolver,
+            _notifier,
+            _shareCodeGenerator,
+            _azureDevOpsClient,
+            new StubAdoConnectionContextResolver());
     }
 
     [Test]
@@ -128,7 +144,7 @@ public sealed class SessionGrpcServiceTests
             Name = "Sprint 1",
             ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci,
-            Tasks = [new NewSessionTaskDto { Title = "  " }]
+            Tasks = [new NewAdHocTaskDto { Title = "  " }]
         };
 
         var ex = Assert.ThrowsAsync<RpcException>(() => _service.CreateSessionAsync(request));
@@ -145,8 +161,8 @@ public sealed class SessionGrpcServiceTests
             ScaleType = VotingScaleTypeDto.Fibonacci,
             Tasks =
             [
-                new NewSessionTaskDto { Title = "First" },
-                new NewSessionTaskDto { Title = "Second" }
+                new NewAdHocTaskDto { Title = "First" },
+                new NewAdHocTaskDto { Title = "Second" }
             ]
         };
 
@@ -159,37 +175,37 @@ public sealed class SessionGrpcServiceTests
     [Test]
     public async Task CreateSession_WithDuplicateAdoWorkItems_KeepsFirstOnly()
     {
+        _azureDevOpsClient.SeedWorkItem(101, "Item 101");
+        _azureDevOpsClient.SeedWorkItem(102, "Item 102");
+
         var request = new CreateSessionRequest
         {
             Name = "Sprint 1",
             ProjectId = ProjectId,
             ScaleType = VotingScaleTypeDto.Fibonacci,
-            Tasks =
-            [
-                new NewSessionTaskDto { Title = "Item 101", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 101 },
-                new NewSessionTaskDto { Title = "Item 101 again", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 101 },
-                new NewSessionTaskDto { Title = "Item 102", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 102 }
-            ]
+            AdoWorkItemIds = [101, 101, 102]
         };
 
         var reply = await _service.CreateSessionAsync(request);
 
         Assert.That(reply.Session.Tasks.Select(t => t.AdoWorkItemId), Is.EqualTo(new int?[] { 101, 102 }));
         Assert.That(reply.Session.Tasks.Select(t => t.SortOrder), Is.EqualTo(new[] { 0, 1 }));
+        Assert.That(_projectConnectionRepository.LockedProjectIds, Is.EqualTo(new[] { ProjectId }));
     }
 
     [Test]
     public async Task AddTask_WithExistingAdoWorkItem_IsIdempotent()
     {
         var session = _repository.Seed(SessionStatus.Draft);
-        var request = new AddTaskRequest
+        _azureDevOpsClient.SeedWorkItem(101, "Item 101");
+        var request = new AddAdoTasksRequest
         {
             SessionId = session.Id,
-            Task = new NewSessionTaskDto { Title = "Item 101", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 101 }
+            AdoWorkItemIds = [101]
         };
 
-        await _service.AddTaskAsync(request);
-        var reply = await _service.AddTaskAsync(request);
+        await _service.AddAdoTasksAsync(request);
+        var reply = await _service.AddAdoTasksAsync(request);
 
         Assert.That(reply.Session.Tasks.Count(t => t.AdoWorkItemId == 101), Is.EqualTo(1));
     }
@@ -218,7 +234,7 @@ public sealed class SessionGrpcServiceTests
         var request = new AddTaskRequest
         {
             SessionId = session.Id,
-            Task = new NewSessionTaskDto { Title = "Late task" }
+            Task = new NewAdHocTaskDto { Title = "Late task" }
         };
 
         var reply = await _service.AddTaskAsync(request);
@@ -237,7 +253,7 @@ public sealed class SessionGrpcServiceTests
         await _service.AddTaskAsync(new AddTaskRequest
         {
             SessionId = session.Id,
-            Task = new NewSessionTaskDto { Title = "Draft task" }
+            Task = new NewAdHocTaskDto { Title = "Draft task" }
         });
 
         Assert.That(_notifier.Calls, Is.Empty);
@@ -250,7 +266,7 @@ public sealed class SessionGrpcServiceTests
         await _service.AddTaskAsync(new AddTaskRequest
         {
             SessionId = session.Id,
-            Task = new NewSessionTaskDto { Title = "Original" }
+            Task = new NewAdHocTaskDto { Title = "Original" }
         });
         var taskId = session.Tasks.Single().Id;
 
@@ -274,7 +290,7 @@ public sealed class SessionGrpcServiceTests
         await _service.AddTaskAsync(new AddTaskRequest
         {
             SessionId = session.Id,
-            Task = new NewSessionTaskDto { Title = "Original", Description = "old" }
+            Task = new NewAdHocTaskDto { Title = "Original", Description = "old" }
         });
         var taskId = session.Tasks.Single().Id;
 
@@ -347,14 +363,14 @@ public sealed class SessionGrpcServiceTests
             SessionId = session.Id,
             Tasks =
             [
-                new NewSessionTaskDto { Title = "Bulk A" },
-                new NewSessionTaskDto { Title = "Bulk B", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 55 },
-                new NewSessionTaskDto { Title = "Bulk B dup", Source = TaskSourceDto.AzureDevOps, AdoWorkItemId = 55 }
+                new NewAdHocTaskDto { Title = "Bulk A" },
+                new NewAdHocTaskDto { Title = "Bulk B" },
+                new NewAdHocTaskDto { Title = "Bulk B dup" }
             ]
         });
 
-        Assert.That(reply.Session.Tasks.Select(t => t.Title), Is.EqualTo(new[] { "Existing", "Bulk A", "Bulk B" }));
-        Assert.That(reply.Session.Tasks.Select(t => t.SortOrder), Is.EqualTo(new[] { 0, 1, 2 }));
+        Assert.That(reply.Session.Tasks.Select(t => t.Title), Is.EqualTo(new[] { "Existing", "Bulk A", "Bulk B", "Bulk B dup" }));
+        Assert.That(reply.Session.Tasks.Select(t => t.SortOrder), Is.EqualTo(new[] { 0, 1, 2, 3 }));
     }
 
     [Test]
@@ -367,8 +383,8 @@ public sealed class SessionGrpcServiceTests
             SessionId = session.Id,
             Tasks =
             [
-                new NewSessionTaskDto { Title = "A" },
-                new NewSessionTaskDto { Title = "B" }
+                new NewAdHocTaskDto { Title = "A" },
+                new NewAdHocTaskDto { Title = "B" }
             ]
         });
 
@@ -535,6 +551,7 @@ public sealed class SessionGrpcServiceTests
         Assert.That(task.WorkItemType, Is.EqualTo("Bug"));
         Assert.That(task.AdoRevision, Is.EqualTo(3));
         Assert.That(task.Source, Is.EqualTo(TaskSourceDto.AzureDevOps));
+        Assert.That(_projectConnectionRepository.LockedProjectIds, Is.EqualTo(new[] { session.ProjectId }));
     }
 
     [Test]
@@ -959,6 +976,47 @@ public sealed class SessionGrpcServiceTests
 
         public Task<bool> ShareCodeExistsAsync(string shareCode, CancellationToken cancellationToken)
             => Task.FromResult(_sessions.Any(s => s.ShareCode == shareCode));
+    }
+
+    private sealed class FakeProjectAccessResolver : IProjectAccessResolver
+    {
+        public Task<ProjectRole?> GetEffectiveRoleAsync(Guid projectId, CancellationToken cancellationToken)
+            => Task.FromResult<ProjectRole?>(ProjectRole.Member);
+
+        public Task<ProjectRole> RequireRoleAsync(Guid projectId, ProjectRole minimumRole, CancellationToken cancellationToken)
+            => Task.FromResult(ProjectRole.Member);
+    }
+
+    private sealed class FakeProjectAzureDevOpsConnectionRepository : IProjectAzureDevOpsConnectionRepository
+    {
+        public List<Guid> LockedProjectIds { get; } = [];
+
+        public Task<ProjectAzureDevOpsConnection?> GetAsync(Guid projectId, CancellationToken cancellationToken)
+            => Task.FromResult<ProjectAzureDevOpsConnection?>(null);
+
+        public Task AddAsync(ProjectAzureDevOpsConnection connection, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        public Task UpdateAsync(ProjectAzureDevOpsConnection connection, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        public Task DeleteAsync(ProjectAzureDevOpsConnection connection, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        public Task LockTargetAsync(Guid projectId, CancellationToken cancellationToken)
+        {
+            LockedProjectIds.Add(projectId);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeSessionAccessResolver(FakeSessionRepository repository) : ISessionAccessResolver
+    {
+        public async Task<(Guid ProjectId, ProjectRole Role)?> ResolveProjectAccessAsync(Guid sessionId, CancellationToken cancellationToken)
+        {
+            var session = await repository.GetSessionAsync(sessionId, cancellationToken);
+            return session is null ? null : (session.ProjectId, ProjectRole.Member);
+        }
     }
 
     private sealed class FakeAzureDevOpsWorkItemClient : IAzureDevOpsWorkItemClient

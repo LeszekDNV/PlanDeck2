@@ -11,8 +11,11 @@ namespace PlanDeck.Application.Services;
 
 public sealed class SessionGrpcService(
     ISessionRepository repository,
+    IProjectAzureDevOpsConnectionRepository projectConnectionRepository,
     ISessionMemberRepository memberRepository,
     ICurrentUserContext currentUser,
+    IProjectAccessResolver projectAccessResolver,
+    ISessionAccessResolver sessionAccessResolver,
     IPlanningRoomNotifier roomNotifier,
     IShareCodeGenerator shareCodeGenerator,
     IAzureDevOpsWorkItemClient azureDevOpsClient,
@@ -31,6 +34,8 @@ public sealed class SessionGrpcService(
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required."));
         }
+
+        await RequireProjectMemberAccessAsync(request.ProjectId, context.CancellationToken);
 
         var scaleType = (VotingScaleType)(int)request.ScaleType;
         var scaleValues = ResolveScaleValues(scaleType, request.CustomScaleValues);
@@ -57,6 +62,7 @@ public sealed class SessionGrpcService(
             sortOrder++;
         }
 
+        var importedAdoTaskAdded = false;
         if (request.AdoWorkItemIds is { Count: > 0 })
         {
             var adoContext = await ResolveConnectionOrThrowAsync(request.ProjectId, context.CancellationToken);
@@ -75,7 +81,13 @@ public sealed class SessionGrpcService(
 
                 session.Tasks.Add(MapAdoWorkItem(workItem, sortOrder));
                 sortOrder++;
+                importedAdoTaskAdded = true;
             }
+        }
+
+        if (importedAdoTaskAdded)
+        {
+            await projectConnectionRepository.LockTargetAsync(request.ProjectId, context.CancellationToken);
         }
 
         var created = await repository.CreateSessionAsync(session, context.CancellationToken);
@@ -107,7 +119,16 @@ public sealed class SessionGrpcService(
         GuestAccessGuard.RejectGuests(currentUser);
 
         var sessions = await repository.GetSessionsAsync(context.CancellationToken);
-        return new ListSessionsReply { Sessions = sessions.Select(ToDto).ToList() };
+        var accessibleSessions = new List<PlanningSession>(sessions.Count);
+        foreach (var session in sessions)
+        {
+            if (await HasSessionAccessAsync(session.Id, context.CancellationToken))
+            {
+                accessibleSessions.Add(session);
+            }
+        }
+
+        return new ListSessionsReply { Sessions = accessibleSessions.Select(ToDto).ToList() };
     }
 
     public async Task<GetSessionReply> GetSessionAsync(GetSessionRequest request, CallContext context = default)
@@ -121,6 +142,7 @@ public sealed class SessionGrpcService(
 
         try
         {
+            await RequireSessionAccessAsync(request.Id, context.CancellationToken);
             var session = await LoadAsync(request.Id, context.CancellationToken);
             return new GetSessionReply { Session = ToDto(session) };
         }
@@ -140,6 +162,7 @@ public sealed class SessionGrpcService(
 
         try
         {
+            await RequireSessionAccessAsync(request.Id, context.CancellationToken);
             var session = await LoadDraftAsync(request.Id, context.CancellationToken);
             session.Name = name;
             session.ScaleType = scaleType;
@@ -164,6 +187,7 @@ public sealed class SessionGrpcService(
 
         try
         {
+            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
 
             var mapped = MapNewTask(request.Task, session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1);
@@ -190,6 +214,7 @@ public sealed class SessionGrpcService(
 
         try
         {
+            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
 
             var sortOrder = session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1;
@@ -209,6 +234,7 @@ public sealed class SessionGrpcService(
 
             if (added)
             {
+                await projectConnectionRepository.LockTargetAsync(session.ProjectId, context.CancellationToken);
                 await repository.UpdateSessionAsync(session, context.CancellationToken);
                 await NotifyIfActiveAsync(session, context.CancellationToken);
             }
@@ -233,6 +259,7 @@ public sealed class SessionGrpcService(
 
         try
         {
+            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId)
                 ?? throw new SessionTaskNotFoundException(request.TaskId);
@@ -260,6 +287,7 @@ public sealed class SessionGrpcService(
 
         try
         {
+            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId);
             if (task is not null)
@@ -284,6 +312,7 @@ public sealed class SessionGrpcService(
         PlanningSession session;
         try
         {
+            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
             session = await LoadAsync(request.SessionId, context.CancellationToken);
         }
         catch (SessionNotFoundException ex)
@@ -335,17 +364,17 @@ public sealed class SessionGrpcService(
                 new AzureDevOpsWriteEstimateRequest(task.AdoWorkItemId.Value, task.AdoRevision, estimate),
                 context.CancellationToken);
         }
-        catch (AzureDevOpsConcurrencyException ex)
+        catch (AzureDevOpsConcurrencyException)
         {
-            throw new RpcException(new Status(StatusCode.Aborted, ex.Message));
+            throw new RpcException(new Status(StatusCode.Aborted, "Azure DevOps work item revision changed before write-back completed."));
         }
-        catch (AzureDevOpsRateLimitException ex)
+        catch (AzureDevOpsRateLimitException)
         {
-            throw new RpcException(new Status(StatusCode.ResourceExhausted, ex.Message));
+            throw new RpcException(new Status(StatusCode.ResourceExhausted, "Azure DevOps rate limit reached. Retry the write-back shortly."));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            throw new RpcException(new Status(StatusCode.Unavailable, $"Azure DevOps write-back failed: {ex.Message}"));
+            throw new RpcException(new Status(StatusCode.Unavailable, "Azure DevOps write-back failed."));
         }
 
         await repository.SetAdoRevisionAsync(request.SessionId, request.TaskId, result.Revision, context.CancellationToken);
@@ -365,6 +394,7 @@ public sealed class SessionGrpcService(
 
         try
         {
+            await RequireSessionAccessAsync(request.Id, context.CancellationToken);
             var session = await LoadAsync(request.Id, context.CancellationToken);
             if (session.Status != SessionStatus.Active)
             {
@@ -388,6 +418,7 @@ public sealed class SessionGrpcService(
     {
         GuestAccessGuard.RejectGuests(currentUser);
 
+        await RequireSessionAccessAsync(request.Id, context.CancellationToken);
         var deleted = await repository.DeleteSessionAsync(request.Id, context.CancellationToken);
         return new DeleteSessionReply { Deleted = deleted };
     }
@@ -401,6 +432,7 @@ public sealed class SessionGrpcService(
             PlanningSession empty;
             try
             {
+                await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
                 empty = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             }
             catch (SessionNotFoundException ex)
@@ -414,6 +446,7 @@ public sealed class SessionGrpcService(
         PlanningSession session;
         try
         {
+            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
             session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
         }
         catch (SessionNotFoundException ex)
@@ -446,6 +479,7 @@ public sealed class SessionGrpcService(
 
         if (added)
         {
+            await projectConnectionRepository.LockTargetAsync(session.ProjectId, context.CancellationToken);
             await repository.UpdateSessionAsync(session, context.CancellationToken);
             await NotifyIfActiveAsync(session, context.CancellationToken);
         }
@@ -489,6 +523,33 @@ public sealed class SessionGrpcService(
 
     private async Task<PlanningSession> LoadEditableAsync(Guid id, CancellationToken cancellationToken)
         => await LoadAsync(id, cancellationToken);
+
+    private async Task<bool> HasSessionAccessAsync(Guid sessionId, CancellationToken cancellationToken)
+        => await sessionAccessResolver.ResolveProjectAccessAsync(sessionId, cancellationToken) is not null;
+
+    private async Task RequireSessionAccessAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        if (!await HasSessionAccessAsync(sessionId, cancellationToken))
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, $"Session '{sessionId}' was not found."));
+        }
+    }
+
+    private async Task RequireProjectMemberAccessAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _ = await projectAccessResolver.RequireRoleAsync(projectId, ProjectRole.Member, cancellationToken);
+        }
+        catch (ProjectNotFoundException ex)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
+        catch (ProjectPermissionDeniedException ex)
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied, ex.Message));
+        }
+    }
 
     private async Task NotifyIfActiveAsync(PlanningSession session, CancellationToken cancellationToken)
     {
@@ -592,7 +653,7 @@ public sealed class SessionGrpcService(
         }
     }
 
-    private static SessionTask MapNewTask(NewSessionTaskDto task, int sortOrder)
+    private static SessionTask MapNewTask(NewAdHocTaskDto task, int sortOrder)
     {
         var title = task.Title?.Trim() ?? string.Empty;
         if (title.Length == 0)
@@ -604,12 +665,8 @@ public sealed class SessionGrpcService(
         {
             Title = title,
             Description = NormalizeDescription(task.Description),
-            Source = (TaskSource)(int)task.Source,
+            Source = TaskSource.AdHoc,
             SortOrder = sortOrder,
-            AdoWorkItemId = task.AdoWorkItemId,
-            AdoRevision = task.AdoRevision,
-            WorkItemType = task.WorkItemType,
-            State = task.State
         };
     }
 

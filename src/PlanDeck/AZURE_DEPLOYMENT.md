@@ -64,7 +64,9 @@ The AppHost publish model exposes these as the `entra-tenant-id`, `entra-client-
 Production startup fails when any required Entra value is absent. Test authentication is restricted to
 explicit Development/Testing runs and must never be set on a published Container App.
 
-Store application secrets such as `Authentication__Microsoft__ClientSecret` and `AzureDevOps__PersonalAccessToken` in Key Vault or secure pipeline variables only.
+Store application secrets such as `Authentication__Microsoft__ClientSecret` in Key Vault or secure pipeline variables only. Azure DevOps credentials are project-scoped and resolved from the configured project Key Vault secret URI.
+
+Real Key Vault integration verification is opt-in by default (`PLANDECK_RUN_REAL_KEYVAULT_TESTS=true`). In CI security gates, also set `PLANDECK_REQUIRE_REAL_KEYVAULT_TESTS=true` to fail fast instead of silently skipping the test.
 
 ## Support runbooks
 

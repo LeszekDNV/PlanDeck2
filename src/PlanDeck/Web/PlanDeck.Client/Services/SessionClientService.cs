@@ -35,7 +35,7 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
             ProjectId = projectId,
             ScaleType = scaleType,
             CustomScaleValues = customScaleValues.ToList(),
-            Tasks = tasks.ToList(),
+            Tasks = tasks.Select(MapToAdHocTask).ToList(),
             AdoWorkItemIds = adoWorkItemIds?.ToList() ?? []
         });
         return reply.Session;
@@ -72,14 +72,22 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
     public async Task<SessionDto> AddTaskAsync(Guid sessionId, NewSessionTaskDto task)
     {
         var service = channel.CreateGrpcService<ISessionService>();
-        var reply = await service.AddTaskAsync(new AddTaskRequest { SessionId = sessionId, Task = task });
+        var reply = await service.AddTaskAsync(new AddTaskRequest
+        {
+            SessionId = sessionId,
+            Task = MapToAdHocTask(task)
+        });
         return reply.Session;
     }
 
     public async Task<SessionDto> AddTasksAsync(Guid sessionId, IReadOnlyList<NewSessionTaskDto> tasks)
     {
         var service = channel.CreateGrpcService<ISessionService>();
-        var reply = await service.AddTasksAsync(new AddTasksRequest { SessionId = sessionId, Tasks = tasks.ToList() });
+        var reply = await service.AddTasksAsync(new AddTasksRequest
+        {
+            SessionId = sessionId,
+            Tasks = tasks.Select(MapToAdHocTask).ToList()
+        });
         return reply.Session;
     }
 
@@ -126,4 +134,11 @@ public sealed class SessionClientService(GrpcChannel channel) : ISessionClientSe
         var reply = await service.DeleteSessionAsync(new DeleteSessionRequest { Id = id });
         return reply.Deleted;
     }
+
+    private static NewAdHocTaskDto MapToAdHocTask(NewSessionTaskDto task) =>
+        new()
+        {
+            Title = task.Title,
+            Description = task.Description
+        };
 }

@@ -220,8 +220,7 @@ public sealed class AzureDevOpsWorkItemClient(HttpClient httpClient) : IAzureDev
 
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"Azure DevOps request failed with {(int)response.StatusCode} {response.ReasonPhrase}: {body}");
+            throw new HttpRequestException($"Azure DevOps request failed with {(int)response.StatusCode} {response.ReasonPhrase}.");
         }
 
         return response;

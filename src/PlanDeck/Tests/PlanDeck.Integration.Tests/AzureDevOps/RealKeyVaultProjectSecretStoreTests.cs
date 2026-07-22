@@ -64,11 +64,23 @@ public sealed class RealKeyVaultProjectSecretStoreTests
 
     private static void RequireExplicitNonProductionOptIn()
     {
-        if (!string.Equals(
-                Environment.GetEnvironmentVariable("PLANDECK_RUN_REAL_KEYVAULT_TESTS"),
-                "true",
-                StringComparison.OrdinalIgnoreCase))
+        var runRealVaultTests = string.Equals(
+            Environment.GetEnvironmentVariable("PLANDECK_RUN_REAL_KEYVAULT_TESTS"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+        var requireRealVaultTests = string.Equals(
+            Environment.GetEnvironmentVariable("PLANDECK_REQUIRE_REAL_KEYVAULT_TESTS"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
+        if (!runRealVaultTests)
         {
+            if (requireRealVaultTests)
+            {
+                Assert.Fail(
+                    "PLANDECK_REQUIRE_REAL_KEYVAULT_TESTS=true requires PLANDECK_RUN_REAL_KEYVAULT_TESTS=true.");
+            }
+
             Assert.Ignore(
                 "Set PLANDECK_RUN_REAL_KEYVAULT_TESTS=true to run against the Aspire-provisioned vault.");
         }

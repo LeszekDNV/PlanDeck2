@@ -132,6 +132,16 @@ public sealed class SessionTaskDto
 }
 
 [DataContract]
+public sealed class NewAdHocTaskDto
+{
+    [DataMember(Order = 1)]
+    public string Title { get; set; } = string.Empty;
+
+    [DataMember(Order = 2)]
+    public string? Description { get; set; }
+}
+
+[DataContract]
 public sealed class NewSessionTaskDto
 {
     [DataMember(Order = 1)]
@@ -169,7 +179,7 @@ public sealed class CreateSessionRequest
     public List<string> CustomScaleValues { get; set; } = [];
 
     [DataMember(Order = 5)]
-    public List<NewSessionTaskDto> Tasks { get; set; } = [];
+    public List<NewAdHocTaskDto> Tasks { get; set; } = [];
 
     [DataMember(Order = 6)]
     public Guid ProjectId { get; set; }
@@ -246,7 +256,7 @@ public sealed class AddTaskRequest
     public Guid SessionId { get; set; }
 
     [DataMember(Order = 2)]
-    public NewSessionTaskDto Task { get; set; } = new();
+    public NewAdHocTaskDto Task { get; set; } = new();
 }
 
 [DataContract]
@@ -263,7 +273,7 @@ public sealed class AddTasksRequest
     public Guid SessionId { get; set; }
 
     [DataMember(Order = 2)]
-    public List<NewSessionTaskDto> Tasks { get; set; } = [];
+    public List<NewAdHocTaskDto> Tasks { get; set; } = [];
 }
 
 [DataContract]
