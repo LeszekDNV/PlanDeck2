@@ -3,6 +3,7 @@ using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Services;
 using PlanDeck.Server.Hubs;
 using PlanDeck.Server.Identity;
+using PlanDeck.Server.Testing;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -40,6 +41,14 @@ else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
+}
+
+if (TestAppUserSeeder.ShouldRun(app.Environment, app.Configuration))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider
+        .GetRequiredService<TestAppUserSeeder>()
+        .SeedAsync();
 }
 
 app.UseHttpsRedirection();

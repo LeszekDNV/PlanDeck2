@@ -436,4 +436,208 @@
   <data name="Sessions_WriteEstimateFailed" xml:space="preserve">
     <value>Nie udało się zapisać estymaty do Azure DevOps.</value>
   </data>
+  <data name="Nav_Projects" xml:space="preserve">
+    <value>Projekty</value>
+  </data>
+  <data name="Projects_Title" xml:space="preserve">
+    <value>Projekty</value>
+  </data>
+  <data name="Projects_GuestNoAccess" xml:space="preserve">
+    <value>Goście mogą głosować w sesji, ale nie mają dostępu do administracji projektem.</value>
+  </data>
+  <data name="Projects_Create" xml:space="preserve">
+    <value>Utwórz projekt</value>
+  </data>
+  <data name="Projects_Empty" xml:space="preserve">
+    <value>Nie masz jeszcze żadnych projektów.</value>
+  </data>
+  <data name="Projects_SelectPrompt" xml:space="preserve">
+    <value>Wybierz projekt, aby zarządzać członkami, zespołami i połączeniem Azure DevOps.</value>
+  </data>
+  <data name="Projects_Name" xml:space="preserve">
+    <value>Nazwa</value>
+  </data>
+  <data name="Projects_Description" xml:space="preserve">
+    <value>Opis</value>
+  </data>
+  <data name="Projects_OptionalConnection" xml:space="preserve">
+    <value>Opcjonalnie: skonfiguruj teraz połączenie Azure DevOps</value>
+  </data>
+  <data name="Projects_Save" xml:space="preserve">
+    <value>Zapisz</value>
+  </data>
+  <data name="Projects_DeleteProject" xml:space="preserve">
+    <value>Usuń projekt</value>
+  </data>
+  <data name="Projects_DeleteProjectConfirm" xml:space="preserve">
+    <value>Usunąć ten projekt? Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Projects_Connection" xml:space="preserve">
+    <value>Połączenie Azure DevOps</value>
+  </data>
+  <data name="Projects_AdoOrganizationUrl" xml:space="preserve">
+    <value>URL organizacji Azure DevOps</value>
+  </data>
+  <data name="Projects_AdoProject" xml:space="preserve">
+    <value>Projekt Azure DevOps</value>
+  </data>
+  <data name="Projects_AdoEstimateField" xml:space="preserve">
+    <value>Pole estymaty</value>
+  </data>
+  <data name="Projects_AdoDescriptionField" xml:space="preserve">
+    <value>Pole opisu</value>
+  </data>
+  <data name="Projects_AdoReproStepsField" xml:space="preserve">
+    <value>Pole kroków reprodukcji</value>
+  </data>
+  <data name="Projects_AdoAcceptanceCriteriaField" xml:space="preserve">
+    <value>Pole kryteriów akceptacji</value>
+  </data>
+  <data name="Projects_AdoPat" xml:space="preserve">
+    <value>Personal access token (PAT)</value>
+  </data>
+  <data name="Projects_AdoPatRotate" xml:space="preserve">
+    <value>Nowy personal access token (PAT)</value>
+  </data>
+  <data name="Projects_ConnectionConfigure" xml:space="preserve">
+    <value>Skonfiguruj połączenie</value>
+  </data>
+  <data name="Projects_ConnectionUpdate" xml:space="preserve">
+    <value>Aktualizuj ustawienia połączenia</value>
+  </data>
+  <data name="Projects_ConnectionDisable" xml:space="preserve">
+    <value>Wyłącz połączenie</value>
+  </data>
+  <data name="Projects_ConnectionEnable" xml:space="preserve">
+    <value>Włącz połączenie</value>
+  </data>
+  <data name="Projects_ConnectionRotatePat" xml:space="preserve">
+    <value>Rotuj PAT</value>
+  </data>
+  <data name="Projects_ConnectionRemove" xml:space="preserve">
+    <value>Usuń połączenie</value>
+  </data>
+  <data name="Projects_ConnectionRemoveConfirm" xml:space="preserve">
+    <value>Usunąć połączenie Azure DevOps z tego projektu?</value>
+  </data>
+  <data name="Projects_Members" xml:space="preserve">
+    <value>Członkowie</value>
+  </data>
+  <data name="Projects_InviteEmail" xml:space="preserve">
+    <value>E-mail członka</value>
+  </data>
+  <data name="Projects_InviteRole" xml:space="preserve">
+    <value>Rola</value>
+  </data>
+  <data name="Projects_Invite" xml:space="preserve">
+    <value>Zaproś</value>
+  </data>
+  <data name="Projects_RemoveMember" xml:space="preserve">
+    <value>Usuń członka</value>
+  </data>
+  <data name="Projects_RemoveMemberTitle" xml:space="preserve">
+    <value>Usuń członka</value>
+  </data>
+  <data name="Projects_RemoveMemberConfirm" xml:space="preserve">
+    <value>Usunąć {0} z tego projektu?</value>
+  </data>
+  <data name="Projects_RoleOwner" xml:space="preserve">
+    <value>Właściciel</value>
+  </data>
+  <data name="Projects_RoleAdmin" xml:space="preserve">
+    <value>Administrator</value>
+  </data>
+  <data name="Projects_RoleMember" xml:space="preserve">
+    <value>Członek</value>
+  </data>
+  <data name="Projects_StatusPending" xml:space="preserve">
+    <value>Oczekujące</value>
+  </data>
+  <data name="Projects_StatusAccepted" xml:space="preserve">
+    <value>Zaakceptowane</value>
+  </data>
+  <data name="Projects_TransferOwnership" xml:space="preserve">
+    <value>Przenieś własność</value>
+  </data>
+  <data name="Projects_NewOwner" xml:space="preserve">
+    <value>Nowy właściciel</value>
+  </data>
+  <data name="Projects_TransferOwnershipConfirm" xml:space="preserve">
+    <value>Przenieść własność do wybranego członka?</value>
+  </data>
+  <data name="Projects_Teams" xml:space="preserve">
+    <value>Przypisane zespoły</value>
+  </data>
+  <data name="Projects_AssignTeam" xml:space="preserve">
+    <value>Zespół do przypisania</value>
+  </data>
+  <data name="Projects_Assign" xml:space="preserve">
+    <value>Przypisz</value>
+  </data>
+  <data name="Projects_UnassignTeam" xml:space="preserve">
+    <value>Odłącz zespół</value>
+  </data>
+  <data name="Projects_NoTeams" xml:space="preserve">
+    <value>Do tego projektu nie przypisano jeszcze żadnych zespołów.</value>
+  </data>
+  <data name="Projects_NotAuthorized" xml:space="preserve">
+    <value>Zaloguj się, aby zarządzać projektami.</value>
+  </data>
+  <data name="Projects_NameRequired" xml:space="preserve">
+    <value>Nazwa projektu jest wymagana.</value>
+  </data>
+  <data name="Projects_InviteEmailRequired" xml:space="preserve">
+    <value>Do zaproszenia członka wymagany jest poprawny adres e-mail.</value>
+  </data>
+  <data name="Projects_PatRequired" xml:space="preserve">
+    <value>Personal access token jest wymagany.</value>
+  </data>
+  <data name="Projects_ValidationError" xml:space="preserve">
+    <value>Sprawdź dane projektu i ustawienia Azure DevOps.</value>
+  </data>
+  <data name="Projects_PermissionDenied" xml:space="preserve">
+    <value>Nie masz uprawnień do tej operacji projektu.</value>
+  </data>
+  <data name="Projects_FailedPrecondition" xml:space="preserve">
+    <value>Tej operacji nie można wykonać w obecnym stanie projektu.</value>
+  </data>
+  <data name="Projects_NotFound" xml:space="preserve">
+    <value>Wybrany projekt już nie istnieje albo nie masz do niego dostępu.</value>
+  </data>
+  <data name="Projects_ConnectionNotConfigured" xml:space="preserve">
+    <value>Połączenie nie jest skonfigurowane.</value>
+  </data>
+  <data name="Projects_ConnectionEnabled" xml:space="preserve">
+    <value>Włączone</value>
+  </data>
+  <data name="Projects_ConnectionDisabled" xml:space="preserve">
+    <value>Wyłączone</value>
+  </data>
+  <data name="Projects_ConnectionValid" xml:space="preserve">
+    <value>Zweryfikowane</value>
+  </data>
+  <data name="Projects_ConnectionInvalid" xml:space="preserve">
+    <value>Nieprawidłowe</value>
+  </data>
+  <data name="Projects_ConnectionNotValidated" xml:space="preserve">
+    <value>Niezweryfikowane</value>
+  </data>
+  <data name="Teams_AssignedProjects" xml:space="preserve">
+    <value>Przypisane projekty</value>
+  </data>
+  <data name="Teams_NoAssignedProjects" xml:space="preserve">
+    <value>Ten zespół nie jest jeszcze przypisany do żadnego projektu.</value>
+  </data>
+  <data name="Teams_AssignmentManagedInProjects" xml:space="preserve">
+    <value>Przypisanie do projektów jest zarządzane w administracji projektu.</value>
+  </data>
+  <data name="Sessions_NoProjectsForCreate" xml:space="preserve">
+    <value>Utwórz projekt przed utworzeniem sesji.</value>
+  </data>
+  <data name="Sessions_GoToProjects" xml:space="preserve">
+    <value>Przejdź do projektów</value>
+  </data>
+  <data name="Sessions_DefaultProjectName" xml:space="preserve">
+    <value>Mój projekt</value>
+  </data>
 </root>

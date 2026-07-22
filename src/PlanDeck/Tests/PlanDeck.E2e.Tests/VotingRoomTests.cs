@@ -25,9 +25,10 @@ public class VotingRoomTests : PageTest
         // --- Context A: default identity (Test User) creates and owns the session. ---
         var sessionsA = new SessionsPage(Page, AspireAppFixture.BaseUrl);
         var membersA = new SessionMembersPage(Page);
+        var projectName = await CreateProjectAsync("E2E Voting Project");
 
         await sessionsA.GotoAsync();
-        await sessionsA.CreateSessionAsync(sessionName, taskTitle);
+        await sessionsA.CreateSessionAsync(sessionName, taskTitle, projectName);
         await membersA.AssignMemberAsync(UserBEmail);
         await sessionsA.ActivateAsync();
 
@@ -98,9 +99,10 @@ public class VotingRoomTests : PageTest
         // --- Context A (owner) creates + activates the session, then joins the room. ---
         var sessionsA = new SessionsPage(Page, AspireAppFixture.BaseUrl);
         var membersA = new SessionMembersPage(Page);
+        var projectName = await CreateProjectAsync("E2E Live Project");
 
         await sessionsA.GotoAsync();
-        await sessionsA.CreateSessionAsync(sessionName, seedTask);
+        await sessionsA.CreateSessionAsync(sessionName, seedTask, projectName);
         await membersA.AssignMemberAsync(UserBEmail);
         await sessionsA.ActivateAsync();
 
@@ -146,8 +148,9 @@ public class VotingRoomTests : PageTest
 
         var sessionsA = new SessionsPage(Page, AspireAppFixture.BaseUrl);
         var membersA = new SessionMembersPage(Page);
+        var projectName = await CreateProjectAsync("E2E Reconnect Project");
         await sessionsA.GotoAsync();
-        await sessionsA.CreateSessionAsync(sessionName, taskTitle);
+        await sessionsA.CreateSessionAsync(sessionName, taskTitle, projectName);
         await membersA.AssignMemberAsync(UserBEmail);
         await sessionsA.ActivateAsync();
 
@@ -190,8 +193,9 @@ public class VotingRoomTests : PageTest
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
         var members = new SessionMembersPage(Page);
+        var projectName = await CreateProjectAsync("E2E Persist Project");
         await sessions.GotoAsync();
-        await sessions.CreateSessionAsync(sessionName, taskTitle);
+        await sessions.CreateSessionAsync(sessionName, taskTitle, projectName);
         await members.AssignMemberAsync(UserBEmail);
         await sessions.ActivateAsync();
 
@@ -231,10 +235,12 @@ public class VotingRoomTests : PageTest
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
         var members = new SessionMembersPage(Page);
+        var projectName = await CreateProjectAsync("E2E Config Project");
         await sessions.GotoAsync();
         await sessions.CreateSessionWithBulkAsync(
             sessionName,
             $"{taskA}{Environment.NewLine}{taskB}",
+            projectName,
             "T-shirt sizes");
         await members.AssignMemberAsync(UserBEmail);
         await sessions.ActivateAsync();
@@ -267,4 +273,7 @@ public class VotingRoomTests : PageTest
 
         return context;
     }
+
+    private Task<string> CreateProjectAsync(string prefix) =>
+        new ProjectsPage(Page, AspireAppFixture.BaseUrl).CreateUniqueProjectAsync(prefix);
 }

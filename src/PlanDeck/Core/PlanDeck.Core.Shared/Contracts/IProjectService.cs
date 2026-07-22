@@ -308,7 +308,7 @@ public sealed class ProjectConnectionDto
     public ProjectConnectionValidationStateDto ValidationState { get; set; }
 
     [DataMember(Order = 3)]
-    public DateTimeOffset? LastValidatedAtUtc { get; set; }
+    public DateTime? LastValidatedAtUtc { get; set; }
 }
 
 [DataContract]

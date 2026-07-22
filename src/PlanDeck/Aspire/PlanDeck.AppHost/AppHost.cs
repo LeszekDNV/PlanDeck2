@@ -85,6 +85,9 @@ else
 
     planDeckServer
         .WithReference(sqlDatabase, "DefaultConnection")
+        // Local runs should use developer credentials instead of probing managed identity,
+        // because stale MSI certs on a workstation can break DefaultAzureCredential.
+        .WithEnvironment("AZURE_TOKEN_CREDENTIALS", "AzureCliCredential")
         .WithEnvironment("EmailSettings__Host", "localhost")
         .WithEnvironment("EmailSettings__Port", "1025")
         .WaitFor(sqlDatabase)

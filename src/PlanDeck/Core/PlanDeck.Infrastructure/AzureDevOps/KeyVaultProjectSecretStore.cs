@@ -28,6 +28,10 @@ public sealed class KeyVaultProjectSecretStore(
         {
             throw Map(exception);
         }
+        catch (Exception exception) when (IsAuthenticationFailure(exception))
+        {
+            throw new ProjectSecretUnavailableException();
+        }
     }
 
     public async Task<string> GetLatestAsync(
@@ -62,6 +66,10 @@ public sealed class KeyVaultProjectSecretStore(
         {
             throw Map(exception);
         }
+        catch (Exception exception) when (IsAuthenticationFailure(exception))
+        {
+            throw new ProjectSecretUnavailableException();
+        }
         finally
         {
             secretLock.Release();
@@ -83,6 +91,10 @@ public sealed class KeyVaultProjectSecretStore(
         catch (RequestFailedException exception)
         {
             throw Map(exception);
+        }
+        catch (Exception exception) when (IsAuthenticationFailure(exception))
+        {
+            throw new ProjectSecretUnavailableException();
         }
         finally
         {
@@ -111,6 +123,10 @@ public sealed class KeyVaultProjectSecretStore(
         {
             throw Map(exception);
         }
+        catch (Exception exception) when (IsAuthenticationFailure(exception))
+        {
+            throw new ProjectSecretUnavailableException();
+        }
         finally
         {
             secretLock.Release();
@@ -126,6 +142,12 @@ public sealed class KeyVaultProjectSecretStore(
             401 or 403 => new ProjectSecretForbiddenException(),
             _ => new ProjectSecretUnavailableException()
         };
+
+    private static bool IsAuthenticationFailure(Exception exception) =>
+        string.Equals(
+            exception.GetType().FullName,
+            "Azure.Identity.AuthenticationFailedException",
+            StringComparison.Ordinal);
 
     private sealed record CacheEntry(string Value, DateTimeOffset ExpiresAtUtc);
 }

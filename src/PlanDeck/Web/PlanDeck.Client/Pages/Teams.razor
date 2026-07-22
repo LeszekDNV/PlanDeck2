@@ -4,6 +4,7 @@
 @using PlanDeck.Core.Shared.Contracts
 @using PlanDeck.Core.Shared.Validation
 @inject ITeamClientService TeamService
+@inject IProjectClientService ProjectService
 @inject IStringLocalizer<SharedResource> L
 @inject ISnackbar Snackbar
 @inject IDialogService Dialog
@@ -95,6 +96,31 @@
                                 }
                             </MudList>
                         }
+                    </MudCardContent>
+                </MudCard>
+
+                <MudCard Class="mt-4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@L["Teams_AssignedProjects"]</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @if (_assignedProjectNames.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info">@L["Teams_NoAssignedProjects"]</MudAlert>
+                        }
+                        else
+                        {
+                            <MudList T="string" Dense="true">
+                                @foreach (var projectName in _assignedProjectNames)
+                                {
+                                    <MudListItem T="string">@projectName</MudListItem>
+                                }
+                            </MudList>
+                        }
+
+                        <MudText Typo="Typo.caption">@L["Teams_AssignmentManagedInProjects"]</MudText>
                     </MudCardContent>
                 </MudCard>
             }

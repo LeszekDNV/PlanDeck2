@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
+using PlanDeck.Server.Testing;
 
 namespace PlanDeck.Server.Identity;
 
@@ -37,17 +38,6 @@ public sealed class TestAuthenticationHandler(
 
     public const string IdentityShapeHeader = "X-Test-Identity";
 
-    private const string TestTenantId = "11111111-1111-1111-1111-111111111111";
-    private const string TestObjectId = "22222222-2222-2222-2222-222222222222";
-    private const string TestAppUserId = "aaaaaaaa-2222-2222-2222-222222222222";
-    private const string TestDisplayName = "Test User";
-    private const string TestEmail = "test.user@plandeck.local";
-
-    private const string SecondObjectId = "33333333-3333-3333-3333-333333333333";
-    private const string SecondAppUserId = "bbbbbbbb-3333-3333-3333-333333333333";
-    private const string SecondDisplayName = "Test User B";
-    private const string SecondEmail = "test.userb@plandeck.local";
-
     private const string GuestObjectId = "44444444-4444-4444-4444-444444444444";
     private const string GuestDisplayName = "Guest User";
 
@@ -82,7 +72,7 @@ public sealed class TestAuthenticationHandler(
 
             return Task.FromResult(BuildResult(
             [
-                new Claim("tid", TestTenantId),
+                new Claim("tid", TestMemberIdentities.TenantId.ToString()),
                 new Claim("oid", GuestObjectId),
                 new Claim("name", GuestDisplayName),
                 new Claim(GuestAuthentication.SessionIdClaim, parsedGuestSid.ToString()),
@@ -94,19 +84,18 @@ public sealed class TestAuthenticationHandler(
             Request.Cookies.TryGetValue(UserSelectionCookie, out var selection)
             && string.Equals(selection, "b", StringComparison.OrdinalIgnoreCase);
 
-        var objectId = isSecondUser ? SecondObjectId : TestObjectId;
-        var appUserId = isSecondUser ? SecondAppUserId : TestAppUserId;
-        var displayName = isSecondUser ? SecondDisplayName : TestDisplayName;
-        var email = isSecondUser ? SecondEmail : TestEmail;
+        var member = isSecondUser
+            ? TestMemberIdentities.Second
+            : TestMemberIdentities.Default;
 
         return Task.FromResult(BuildResult(
         [
-            new Claim("tid", TestTenantId),
-            new Claim("oid", objectId),
-            new Claim(PlanDeckIdentity.AppUserIdClaim, appUserId),
+            new Claim("tid", TestMemberIdentities.TenantId.ToString()),
+            new Claim("oid", member.EntraObjectId.ToString()),
+            new Claim(PlanDeckIdentity.AppUserIdClaim, member.AppUserId.ToString()),
             new Claim(PlanDeckIdentity.ActiveUserClaim, bool.TrueString),
-            new Claim("name", displayName),
-            new Claim("email", email)
+            new Claim("name", member.DisplayName),
+            new Claim("email", member.Email)
         ]));
     }
 

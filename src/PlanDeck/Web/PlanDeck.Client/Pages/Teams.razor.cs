@@ -16,6 +16,7 @@ public partial class Teams
     private List<TeamDto> _teams = [];
     private List<TeamMemberDto> _members = [];
     private TeamDto? _selectedTeam;
+    private List<string> _assignedProjectNames = [];
 
     private string _newTeamName = string.Empty;
     private string? _newTeamDescription;
@@ -82,6 +83,7 @@ public partial class Teams
     {
         _selectedTeam = team;
         await LoadMembersAsync();
+        await LoadAssignedProjectsAsync();
     }
 
     private async Task LoadMembersAsync()
@@ -103,6 +105,38 @@ public partial class Teams
         finally
         {
             _membersLoading = false;
+        }
+    }
+
+    private async Task LoadAssignedProjectsAsync()
+    {
+        if (_selectedTeam is null)
+        {
+            _assignedProjectNames = [];
+            return;
+        }
+
+        try
+        {
+            var projects = await ProjectService.GetProjectsAsync();
+            var assigned = new List<string>();
+            foreach (var project in projects)
+            {
+                var detail = await ProjectService.GetProjectAsync(project.Id);
+                if (detail.Teams.Any(team => team.TeamId == _selectedTeam.Id))
+                {
+                    assigned.Add(project.Name);
+                }
+            }
+
+            _assignedProjectNames = assigned
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
         }
     }
 

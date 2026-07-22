@@ -16,6 +16,7 @@ public partial class Sessions
     private bool _savingConfig;
     private bool _addingTask;
     private bool _activating;
+    private string? _operationError;
 
     private List<SessionDto> _sessions = [];
     private List<ProjectDto> _projects = [];
@@ -101,8 +102,13 @@ public partial class Sessions
 
     private void OpenCreate()
     {
+        if (_projects.Count == 0)
+        {
+            return;
+        }
+
         _newName = string.Empty;
-        _newProjectId = _projects.FirstOrDefault()?.Id ?? Guid.Empty;
+        _newProjectId = Guid.Empty;
         _newScaleType = VotingScaleTypeDto.Fibonacci;
         _newCustomValues = string.Empty;
         _adHocTitle = string.Empty;
@@ -194,6 +200,7 @@ public partial class Sessions
 
     private async Task SubmitCreateAsync()
     {
+        _operationError = null;
         if (string.IsNullOrWhiteSpace(_newName))
         {
             Snackbar.Add(L["Sessions_NameRequired"], Severity.Error);
@@ -717,6 +724,7 @@ public partial class Sessions
             _ => L["Error_Generic"]
         };
 
+        _operationError = message;
         Snackbar.Add(message, Severity.Error);
     }
 

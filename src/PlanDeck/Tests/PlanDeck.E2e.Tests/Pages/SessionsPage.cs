@@ -32,6 +32,8 @@ public class SessionsPage
     private ILocator SaveButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true });
 
+    private ILocator OperationError => _page.GetByTestId("session-operation-error");
+
     private ILocator BulkToggle =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Paste multiple tasks" });
 
@@ -53,11 +55,16 @@ public class SessionsPage
         });
     }
 
-    public async Task CreateSessionAsync(string name, string adHocTaskTitle, string? scaleName = null)
+    public async Task CreateSessionAsync(
+        string name,
+        string adHocTaskTitle,
+        string projectName,
+        string? scaleName = null)
     {
         await CreateSessionButton.ClickAsync();
         await NameField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
         await NameField.FillAsync(name);
+        await SelectProjectAsync(projectName);
         await SelectScaleAsync(scaleName);
 
         await TaskTitleField.FillAsync(adHocTaskTitle);
@@ -66,14 +73,19 @@ public class SessionsPage
         await SaveButton.ClickAsync();
 
         // The created session appears in the list and is auto-selected.
-        await SessionEntry(name).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await WaitForSessionCreationAsync(name);
     }
 
-    public async Task CreateSessionWithBulkAsync(string name, string bulkText, string? scaleName = null)
+    public async Task CreateSessionWithBulkAsync(
+        string name,
+        string bulkText,
+        string projectName,
+        string? scaleName = null)
     {
         await CreateSessionButton.ClickAsync();
         await NameField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
         await NameField.FillAsync(name);
+        await SelectProjectAsync(projectName);
         await SelectScaleAsync(scaleName);
 
         await BulkToggle.ClickAsync();
@@ -82,7 +94,7 @@ public class SessionsPage
         await BulkAddButton.ClickAsync();
 
         await SaveButton.ClickAsync();
-        await SessionEntry(name).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await WaitForSessionCreationAsync(name);
     }
 
     private async Task SelectScaleAsync(string? scaleName)
@@ -98,6 +110,30 @@ public class SessionsPage
             .First
             .ClickAsync();
         await _page.GetByRole(AriaRole.Option, new() { Name = scaleName, Exact = true }).ClickAsync();
+    }
+
+    private async Task SelectProjectAsync(string projectName)
+    {
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            throw new ArgumentException("A project name is required.", nameof(projectName));
+        }
+
+        await _page.GetByTestId("session-project-select").ClickAsync();
+        await _page.GetByRole(AriaRole.Option, new() { Name = projectName, Exact = true }).ClickAsync();
+    }
+
+    private async Task WaitForSessionCreationAsync(string sessionName)
+    {
+        await SessionEntry(sessionName)
+            .Or(OperationError)
+            .First
+            .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        if (await OperationError.IsVisibleAsync())
+        {
+            throw new InvalidOperationException(
+                $"Session creation failed: {await OperationError.InnerTextAsync()}");
+        }
     }
 
     private ILocator ActivateButton =>

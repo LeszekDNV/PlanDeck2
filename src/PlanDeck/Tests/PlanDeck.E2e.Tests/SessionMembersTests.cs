@@ -20,9 +20,11 @@ public class SessionMembersTests : PageTest
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
         var members = new SessionMembersPage(Page);
+        var projectName = await new ProjectsPage(Page, AspireAppFixture.BaseUrl)
+            .CreateUniqueProjectAsync("E2E Members Project");
 
         await sessions.GotoAsync();
-        await sessions.CreateSessionAsync(sessionName, taskTitle);
+        await sessions.CreateSessionAsync(sessionName, taskTitle, projectName);
 
         // Creating a session auto-selects it, revealing the Members section.
         await members.AssignMemberAsync(email);

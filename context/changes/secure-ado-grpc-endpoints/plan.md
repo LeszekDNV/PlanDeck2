@@ -649,6 +649,13 @@ raw write operation.
 Expose the new project boundary through localized MudBlazor UI and update session creation/import to
 operate in an explicit project context.
 
+Step 5.4 was replanned after the initial E2E run exposed a shared setup failure rather than fourteen
+independent browser regressions. Test-auth claims referenced AppUser IDs that were not present in SQL,
+the Sessions page attempted to create a fallback project as an initialization side effect, and the
+page objects converted actionable UI/RPC failures into generic 15-second timeouts. The revised scope
+below makes project setup explicit and deterministic without pulling the real-vault security journey
+from Phase 6 into this phase.
+
 ### Changes Required:
 
 #### 1. Project client service and navigation
@@ -710,7 +717,9 @@ from authorized project UI. Team pages do not expose ADO settings.
 ADO inputs.
 
 **Contract**:
-- Load accessible projects before sessions; select a project explicitly.
+- Load accessible projects before enabling session creation; select a project explicitly.
+- When no project is accessible, show a localized empty state with navigation to Projects. Do not
+  create a fallback project from the Sessions page.
 - Create session with ProjectId and no TeamId.
 - Import preview passes ProjectId.
 - Selected imported items contribute only work-item IDs to create/add requests; displayed metadata is
@@ -735,15 +744,47 @@ flows.
 #### 6. Client tests
 
 **Files**:
-- E2E page objects for Projects, Teams, Sessions, and VotingRoom
+- `src/PlanDeck/Tests/PlanDeck.E2e.Tests/Pages/ProjectsPage.cs`
+- `src/PlanDeck/Tests/PlanDeck.E2e.Tests/Pages/SessionsPage.cs`
+- session-dependent E2E fixtures in `src/PlanDeck/Tests/PlanDeck.E2e.Tests/`
 - focused component/client tests if an existing runner supports them
 
 **Intent**: Verify role-sensitive presentation and safe request shapes without treating UI hiding as
-authorization.
+authorization, and make every session-dependent browser test establish its project prerequisite
+explicitly.
 
-**Contract**: Cover PAT field clearing, Owner/Admin/Member control visibility, pending invitation,
-team assignment, required project selection, no TeamId control, preview-only ADO metadata, and
-localized feedback.
+**Contract**:
+- Add a shared page-object/helper flow that creates a uniquely named project, waits until it is
+  selected successfully, and passes its exact name to session creation. Do not share one mutable
+  project across tests.
+- Make project selection required in session-creation page-object APIs. Existing Sessions,
+  GuestVoting, SessionMembers, and VotingRoom scenarios use the helper rather than relying on
+  implicit page state or test ordering.
+- Add one focused scenario that proves project creation, explicit selection in the session dialog,
+  and creation of a visible project-owned session with an ad-hoc task.
+- Creation helpers wait for either the expected success state or a stable localized error surface.
+  On failure they throw with the visible sanitized message instead of timing out while waiting only
+  for a list entry.
+- Retain coverage for PAT field clearing, Owner/Admin/Member control visibility, pending invitation,
+  team assignment, required project selection, no TeamId control, preview-only ADO metadata, and
+  localized feedback.
+
+#### 7. Deterministic test-auth identities
+
+**Files**:
+- `src/PlanDeck/Web/PlanDeck.Server/Identity/TestAuthenticationHandler.cs`
+- new test-only AppUser seeding service under `src/PlanDeck/Web/PlanDeck.Server/Testing/`
+- `src/PlanDeck/Web/PlanDeck.Server/Program.cs`
+- focused server/integration tests
+
+**Intent**: Ensure every deterministic test-auth claim references an active AppUser that satisfies
+project/member foreign keys before browser tests create secured resources.
+
+**Contract**: Define the two deterministic member identities once and idempotently seed matching
+AppUser rows after Development migrations complete. Run the seeder only when
+`Authentication:UseTestScheme=true` in Development or Testing; production and normal local Entra
+runs must never invoke it. Tests prove repeated startup is idempotent and that the environment gate
+fails closed.
 
 ### Success Criteria:
 
@@ -752,7 +793,12 @@ localized feedback.
 - Solution builds: `dotnet build PlanDeck.slnx`
 - Unit/client wrapper tests pass
 - Both localization files contain every new key
-- E2E page objects can create/select a project and create a project-owned session
+- Test-auth startup seeds matching deterministic AppUsers idempotently and remains disabled outside
+  Development/Testing test-auth
+- Focused E2E creates/selects a unique project and creates a project-owned session:
+  `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --filter "FullyQualifiedName~ProjectFirstSession"`
+- Session-dependent E2E fixtures pass using explicit unique projects:
+  `dotnet test Tests/PlanDeck.E2e.Tests/PlanDeck.E2e.Tests.csproj --filter "FullyQualifiedName~SessionsTests|FullyQualifiedName~GuestVotingTests|FullyQualifiedName~SessionMembersTests|FullyQualifiedName~VotingRoomTests"`
 
 #### Manual Verification:
 
@@ -887,6 +933,9 @@ manual security/deployment review are accepted.
 - Real gRPC-Web endpoint policies and cross-project concealment.
 - SignalR member/session-member/guest authorization.
 - Denied requests prove zero calls to ADO and Key Vault.
+- Test-auth startup idempotently creates the deterministic AppUsers required by project/session E2E.
+- Browser session fixtures create a unique project explicitly; no test relies on a fallback project,
+  shared mutable project, or test execution order.
 
 ### Manual Testing Steps:
 
@@ -1015,16 +1064,16 @@ manual security/deployment review are accepted.
 
 #### Automated
 
-- [ ] 5.1 Solution builds
-- [ ] 5.2 Client wrapper and related unit tests pass
-- [ ] 5.3 English and Polish resource files contain every new key
-- [ ] 5.4 E2E page objects create/select a project and a project-owned session
+- [x] 5.1 Solution builds
+- [x] 5.2 Client wrapper and related unit tests pass
+- [x] 5.3 English and Polish resource files contain every new key
+- [x] 5.4 E2E page objects create/select a project and a project-owned session
 
 #### Manual
 
-- [ ] 5.5 Role-sensitive navigation and controls match server permissions
-- [ ] 5.6 PAT is never redisplayed and is cleared from browser state
-- [ ] 5.7 English and Polish project flows are complete and accessible
+- [x] 5.5 Role-sensitive navigation and controls match server permissions
+- [x] 5.6 PAT is never redisplayed and is cleared from browser state
+- [x] 5.7 English and Polish project flows are complete and accessible
 
 ### Phase 6: Security Verification, Real-Vault E2E, and Deployment
 

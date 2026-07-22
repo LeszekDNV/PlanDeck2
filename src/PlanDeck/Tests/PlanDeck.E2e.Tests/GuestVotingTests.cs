@@ -26,8 +26,10 @@ public class GuestVotingTests : PageTest
 
         // --- Context A: organizer (Test User) creates and activates the session. ---
         var sessionsA = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var projectName = await new ProjectsPage(Page, AspireAppFixture.BaseUrl)
+            .CreateUniqueProjectAsync("E2E Guest Project");
         await sessionsA.GotoAsync();
-        await sessionsA.CreateSessionAsync(sessionName, taskTitle);
+        await sessionsA.CreateSessionAsync(sessionName, taskTitle, projectName);
         await sessionsA.ActivateAsync();
 
         var sessionId = await sessionsA.JoinVotingAsync();

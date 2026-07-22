@@ -470,7 +470,7 @@ public sealed class ProjectGrpcService(
         IsEnabled = connection.IsEnabled,
         ValidationState =
             (ProjectConnectionValidationStateDto)(int)connection.ValidationState,
-        LastValidatedAtUtc = connection.LastValidatedAtUtc
+        LastValidatedAtUtc = connection.LastValidatedAtUtc?.UtcDateTime
     };
 
     private static ProjectConnectionReply Reply(ProjectAzureDevOpsConnection connection) =>

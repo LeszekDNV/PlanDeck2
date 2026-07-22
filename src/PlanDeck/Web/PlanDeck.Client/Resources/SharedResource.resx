@@ -436,4 +436,208 @@
   <data name="Sessions_WriteEstimateFailed" xml:space="preserve">
     <value>Could not write the estimate to Azure DevOps.</value>
   </data>
+  <data name="Nav_Projects" xml:space="preserve">
+    <value>Projects</value>
+  </data>
+  <data name="Projects_Title" xml:space="preserve">
+    <value>Projects</value>
+  </data>
+  <data name="Projects_GuestNoAccess" xml:space="preserve">
+    <value>Guests can vote in a session but cannot access project administration.</value>
+  </data>
+  <data name="Projects_Create" xml:space="preserve">
+    <value>Create project</value>
+  </data>
+  <data name="Projects_Empty" xml:space="preserve">
+    <value>You don't have any projects yet.</value>
+  </data>
+  <data name="Projects_SelectPrompt" xml:space="preserve">
+    <value>Select a project to manage members, teams, and Azure DevOps connection settings.</value>
+  </data>
+  <data name="Projects_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Projects_Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Projects_OptionalConnection" xml:space="preserve">
+    <value>Optional: configure Azure DevOps connection now</value>
+  </data>
+  <data name="Projects_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Projects_DeleteProject" xml:space="preserve">
+    <value>Delete project</value>
+  </data>
+  <data name="Projects_DeleteProjectConfirm" xml:space="preserve">
+    <value>Delete this project? This cannot be undone.</value>
+  </data>
+  <data name="Projects_Connection" xml:space="preserve">
+    <value>Azure DevOps connection</value>
+  </data>
+  <data name="Projects_AdoOrganizationUrl" xml:space="preserve">
+    <value>Azure DevOps organization URL</value>
+  </data>
+  <data name="Projects_AdoProject" xml:space="preserve">
+    <value>Azure DevOps project</value>
+  </data>
+  <data name="Projects_AdoEstimateField" xml:space="preserve">
+    <value>Estimate field</value>
+  </data>
+  <data name="Projects_AdoDescriptionField" xml:space="preserve">
+    <value>Description field</value>
+  </data>
+  <data name="Projects_AdoReproStepsField" xml:space="preserve">
+    <value>Repro steps field</value>
+  </data>
+  <data name="Projects_AdoAcceptanceCriteriaField" xml:space="preserve">
+    <value>Acceptance criteria field</value>
+  </data>
+  <data name="Projects_AdoPat" xml:space="preserve">
+    <value>Personal access token (PAT)</value>
+  </data>
+  <data name="Projects_AdoPatRotate" xml:space="preserve">
+    <value>New personal access token (PAT)</value>
+  </data>
+  <data name="Projects_ConnectionConfigure" xml:space="preserve">
+    <value>Configure connection</value>
+  </data>
+  <data name="Projects_ConnectionUpdate" xml:space="preserve">
+    <value>Update connection settings</value>
+  </data>
+  <data name="Projects_ConnectionDisable" xml:space="preserve">
+    <value>Disable connection</value>
+  </data>
+  <data name="Projects_ConnectionEnable" xml:space="preserve">
+    <value>Enable connection</value>
+  </data>
+  <data name="Projects_ConnectionRotatePat" xml:space="preserve">
+    <value>Rotate PAT</value>
+  </data>
+  <data name="Projects_ConnectionRemove" xml:space="preserve">
+    <value>Remove connection</value>
+  </data>
+  <data name="Projects_ConnectionRemoveConfirm" xml:space="preserve">
+    <value>Remove Azure DevOps connection from this project?</value>
+  </data>
+  <data name="Projects_Members" xml:space="preserve">
+    <value>Members</value>
+  </data>
+  <data name="Projects_InviteEmail" xml:space="preserve">
+    <value>Member email</value>
+  </data>
+  <data name="Projects_InviteRole" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Projects_Invite" xml:space="preserve">
+    <value>Invite</value>
+  </data>
+  <data name="Projects_RemoveMember" xml:space="preserve">
+    <value>Remove member</value>
+  </data>
+  <data name="Projects_RemoveMemberTitle" xml:space="preserve">
+    <value>Remove member</value>
+  </data>
+  <data name="Projects_RemoveMemberConfirm" xml:space="preserve">
+    <value>Remove {0} from this project?</value>
+  </data>
+  <data name="Projects_RoleOwner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="Projects_RoleAdmin" xml:space="preserve">
+    <value>Admin</value>
+  </data>
+  <data name="Projects_RoleMember" xml:space="preserve">
+    <value>Member</value>
+  </data>
+  <data name="Projects_StatusPending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Projects_StatusAccepted" xml:space="preserve">
+    <value>Accepted</value>
+  </data>
+  <data name="Projects_TransferOwnership" xml:space="preserve">
+    <value>Transfer ownership</value>
+  </data>
+  <data name="Projects_NewOwner" xml:space="preserve">
+    <value>New owner</value>
+  </data>
+  <data name="Projects_TransferOwnershipConfirm" xml:space="preserve">
+    <value>Transfer ownership to the selected member?</value>
+  </data>
+  <data name="Projects_Teams" xml:space="preserve">
+    <value>Assigned teams</value>
+  </data>
+  <data name="Projects_AssignTeam" xml:space="preserve">
+    <value>Team to assign</value>
+  </data>
+  <data name="Projects_Assign" xml:space="preserve">
+    <value>Assign</value>
+  </data>
+  <data name="Projects_UnassignTeam" xml:space="preserve">
+    <value>Unassign team</value>
+  </data>
+  <data name="Projects_NoTeams" xml:space="preserve">
+    <value>No teams assigned to this project.</value>
+  </data>
+  <data name="Projects_NotAuthorized" xml:space="preserve">
+    <value>You must sign in to manage projects.</value>
+  </data>
+  <data name="Projects_NameRequired" xml:space="preserve">
+    <value>Project name is required.</value>
+  </data>
+  <data name="Projects_InviteEmailRequired" xml:space="preserve">
+    <value>A valid email is required to invite a member.</value>
+  </data>
+  <data name="Projects_PatRequired" xml:space="preserve">
+    <value>Personal access token is required.</value>
+  </data>
+  <data name="Projects_ValidationError" xml:space="preserve">
+    <value>Please check your project data and Azure DevOps settings.</value>
+  </data>
+  <data name="Projects_PermissionDenied" xml:space="preserve">
+    <value>You don't have permission to perform this project action.</value>
+  </data>
+  <data name="Projects_FailedPrecondition" xml:space="preserve">
+    <value>This action cannot be completed in the current project state.</value>
+  </data>
+  <data name="Projects_NotFound" xml:space="preserve">
+    <value>The selected project no longer exists or is not accessible.</value>
+  </data>
+  <data name="Projects_ConnectionNotConfigured" xml:space="preserve">
+    <value>Connection is not configured.</value>
+  </data>
+  <data name="Projects_ConnectionEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Projects_ConnectionDisabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Projects_ConnectionValid" xml:space="preserve">
+    <value>Validated</value>
+  </data>
+  <data name="Projects_ConnectionInvalid" xml:space="preserve">
+    <value>Invalid</value>
+  </data>
+  <data name="Projects_ConnectionNotValidated" xml:space="preserve">
+    <value>Not validated</value>
+  </data>
+  <data name="Teams_AssignedProjects" xml:space="preserve">
+    <value>Assigned projects</value>
+  </data>
+  <data name="Teams_NoAssignedProjects" xml:space="preserve">
+    <value>This team is not assigned to any project yet.</value>
+  </data>
+  <data name="Teams_AssignmentManagedInProjects" xml:space="preserve">
+    <value>Project assignment is managed from project administration.</value>
+  </data>
+  <data name="Sessions_NoProjectsForCreate" xml:space="preserve">
+    <value>Create a project before creating sessions.</value>
+  </data>
+  <data name="Sessions_GoToProjects" xml:space="preserve">
+    <value>Go to projects</value>
+  </data>
+  <data name="Sessions_DefaultProjectName" xml:space="preserve">
+    <value>My Project</value>
+  </data>
 </root>

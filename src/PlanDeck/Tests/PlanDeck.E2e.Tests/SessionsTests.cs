@@ -12,15 +12,16 @@ public class SessionsTests : PageTest
     };
 
     [Test]
-    public async Task CreateSession_WithAdHocTask_RendersInList()
+    public async Task ProjectFirstSession_CreatesProject_SelectsIt_AndCreatesVisibleSession()
     {
         var sessionName = $"E2E Session {Guid.NewGuid():N}";
         var taskTitle = $"E2E Task {Guid.NewGuid():N}";
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var projectName = await CreateProjectAsync("E2E Project First");
 
         await sessions.GotoAsync();
-        await sessions.CreateSessionAsync(sessionName, taskTitle);
+        await sessions.CreateSessionAsync(sessionName, taskTitle, projectName);
 
         await Expect(sessions.SessionEntry(sessionName)).ToBeVisibleAsync(new() { Timeout = 15_000 });
         await Expect(sessions.TaskEntry(taskTitle)).ToBeVisibleAsync(new() { Timeout = 15_000 });
@@ -34,9 +35,10 @@ public class SessionsTests : PageTest
         var renamed = $"Renamed {Guid.NewGuid():N}";
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var projectName = await CreateProjectAsync("E2E Edit Project");
 
         await sessions.GotoAsync();
-        await sessions.CreateSessionAsync(sessionName, original);
+        await sessions.CreateSessionAsync(sessionName, original, projectName);
 
         await sessions.EditTaskAsync(original, renamed, "A **bold** detail.");
 
@@ -57,9 +59,10 @@ public class SessionsTests : PageTest
         var bulk = $"{login} | A **bold** login screen.\n{logout}\n{dashboard} | Overview widgets";
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var projectName = await CreateProjectAsync("E2E Bulk Project");
 
         await sessions.GotoAsync();
-        await sessions.CreateSessionWithBulkAsync(sessionName, bulk);
+        await sessions.CreateSessionWithBulkAsync(sessionName, bulk, projectName);
 
         await Expect(sessions.ConfigTask(login)).ToBeVisibleAsync(new() { Timeout = 15_000 });
         await Expect(sessions.ConfigTask(logout)).ToBeVisibleAsync(new() { Timeout = 15_000 });
@@ -76,9 +79,10 @@ public class SessionsTests : PageTest
         var seedTask = $"Seed {Guid.NewGuid():N}";
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var projectName = await CreateProjectAsync("E2E ADO Project");
 
         await sessions.GotoAsync();
-        await sessions.CreateSessionAsync(sessionName, seedTask);
+        await sessions.CreateSessionAsync(sessionName, seedTask, projectName);
         await sessions.SelectSessionAsync(sessionName);
 
         // The test-scheme fake serves a fixed work item with id 1001.
@@ -99,9 +103,10 @@ public class SessionsTests : PageTest
         var seedTask = $"Seed {Guid.NewGuid():N}";
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var projectName = await CreateProjectAsync("E2E WriteBack Project");
 
         await sessions.GotoAsync();
-        await sessions.CreateSessionAsync(sessionName, seedTask);
+        await sessions.CreateSessionAsync(sessionName, seedTask, projectName);
         await sessions.SelectSessionAsync(sessionName);
         await sessions.ImportAdoWorkItemAsync(1001);
         await sessions.ActivateAsync();
@@ -134,9 +139,10 @@ public class SessionsTests : PageTest
         var seedTask = $"Seed {Guid.NewGuid():N}";
 
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        var projectName = await CreateProjectAsync("E2E Conflict Project");
 
         await sessions.GotoAsync();
-        await sessions.CreateSessionAsync(sessionName, seedTask);
+        await sessions.CreateSessionAsync(sessionName, seedTask, projectName);
         await sessions.SelectSessionAsync(sessionName);
         await sessions.ImportAdoWorkItemAsync(1004);
         await sessions.ActivateAsync();
@@ -169,4 +175,7 @@ public class SessionsTests : PageTest
         // Core entry point stays reachable in the single-column mobile layout.
         await Expect(sessions.CreateSessionButton).ToBeVisibleAsync(new() { Timeout = 15_000 });
     }
+
+    private Task<string> CreateProjectAsync(string prefix) =>
+        new ProjectsPage(Page, AspireAppFixture.BaseUrl).CreateUniqueProjectAsync(prefix);
 }

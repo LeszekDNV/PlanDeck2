@@ -291,7 +291,7 @@ public sealed class ProjectConnectionGrpcServiceTests
             {
                 IsEnabled = true,
                 ValidationState = ProjectConnectionValidationStateDto.Valid,
-                LastValidatedAtUtc = DateTimeOffset.UtcNow
+                LastValidatedAtUtc = DateTime.UtcNow
             }
         };
 

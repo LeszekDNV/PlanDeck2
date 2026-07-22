@@ -39,6 +39,8 @@ E2E use a real development Key Vault provisioned by Aspire, while production fai
 | Local vault | Real development Azure Key Vault provisioned by Aspire | Same SecretClient/RBAC/versioning behavior as deployment |
 | Existing sessions | Destructive MVP reset | Avoid a permanent nullable/legacy authorization path |
 | Test depth | Unit + SQL + real gRPC-Web/SignalR + real-vault E2E | Security must be proven at every enforcement layer |
+| Phase 5 test identity | Idempotent AppUser seed gated by test-auth | Deterministic claims must satisfy SQL foreign keys before secured UI setup |
+| Zero-project Sessions UX | Explicit empty state linking to Projects | Project creation is intentional and never a hidden Sessions-page side effect |
 
 ## Scope
 
@@ -74,7 +76,7 @@ Tenant filters, composite FKs, endpoint policies, and application resolvers prov
 | 2. Project model and reset | Project roles, invitations, team assignments, required session ownership | Irreversible session-data reset |
 | 3. ADO connection and Key Vault | Owner-only connection lifecycle using real Aspire-provisioned vaults | Cross-service SQL/vault consistency and RBAC |
 | 4. Hardened session/ADO | Authoritative imports, project client resolution, raw write removal | Missing a forged/cross-project path |
-| 5. Project-first UI | Projects, roles, teams, connection health, project sessions | UI role drift; PAT retention in client state |
+| 5. Project-first UI | Projects, roles, teams, connection health, and deterministic project-owned session E2E | Test identity/data drift; PAT retention in client state |
 | 6. Verification/deployment | Full security matrix, real-vault E2E, controlled rollout/restore | Environment mix-up or incomplete cleanup |
 
 **Prerequisites:** Azure developer login and permission to provision/use a dedicated non-production
@@ -91,6 +93,8 @@ Key Vault; Podman for Aspire SQL; accepted backup/reset window.
   rollback therefore need phase-sized commits.
 - Existing session data is intentionally discarded. Backup restore is the only data rollback.
 - The first persisted ADO task permanently locks the project's ADO organization/project target.
+- Test-auth identities must remain gated to Development/Testing and synchronized with their seeded
+  AppUsers; otherwise project creation fails at the owner-membership foreign key.
 
 ## Success Criteria (Summary)
 

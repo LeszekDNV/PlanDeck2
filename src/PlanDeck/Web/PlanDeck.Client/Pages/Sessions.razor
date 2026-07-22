@@ -21,10 +21,18 @@
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
                 <MudText Typo="Typo.h4">@L["Sessions_Title"]</MudText>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate">
+                           StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
+                           Disabled="_loading || _projects.Count == 0">
                     @L["Sessions_Create"]
                 </MudButton>
             </MudStack>
+
+            @if (!string.IsNullOrWhiteSpace(_operationError))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" data-testid="session-operation-error">
+                    @_operationError
+                </MudAlert>
+            }
 
             @if (_loading)
             {
@@ -32,6 +40,19 @@
             }
             else
             {
+                @if (_projects.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mb-4" data-testid="sessions-no-projects">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudText>@L["Sessions_NoProjectsForCreate"]</MudText>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       OnClick="@(() => Navigation.NavigateTo("/projects"))">
+                                @L["Sessions_GoToProjects"]
+                            </MudButton>
+                        </MudStack>
+                    </MudAlert>
+                }
+
                 <MudGrid Spacing="4">
                     <MudItem xs="12" md="4" lg="3">
                         <MudPaper Class="pa-2" Elevation="1">
@@ -316,7 +337,8 @@
                                   Required="true" Variant="Variant.Outlined" Class="mb-3" />
 
                     <MudSelect T="Guid" @bind-Value="_newProjectId" Label="@L["Sessions_Project"]"
-                               Required="true" Variant="Variant.Outlined" Class="mb-3">
+                               Required="true" Variant="Variant.Outlined" Class="mb-3"
+                               data-testid="session-project-select">
                         @foreach (var project in _projects)
                         {
                             <MudSelectItem T="Guid" Value="@project.Id">@project.Name</MudSelectItem>
