@@ -7,7 +7,10 @@ using ProtoBuf.Grpc;
 
 namespace PlanDeck.Application.Services;
 
-public sealed class SessionMemberGrpcService(ISessionMemberRepository repository, ICurrentUserContext currentUser) : ISessionMemberService
+public sealed class SessionMemberGrpcService(
+    ISessionMemberRepository repository,
+    ISessionAccessResolver sessionAccessResolver,
+    ICurrentUserContext currentUser) : ISessionMemberService
 {
     public async Task<AssignSessionMemberReply> AssignMemberAsync(AssignSessionMemberRequest request, CallContext context = default)
     {
@@ -26,6 +29,8 @@ public sealed class SessionMemberGrpcService(ISessionMemberRepository repository
 
         try
         {
+            await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
+
             var member = await repository.AssignMemberAsync(
                 request.SessionId,
                 email,
@@ -53,6 +58,7 @@ public sealed class SessionMemberGrpcService(ISessionMemberRepository repository
             throw new RpcException(new Status(StatusCode.InvalidArgument, SessionMemberValidationMessages.SessionIdRequired));
         }
 
+        await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
         var removed = await repository.RemoveMemberAsync(request.SessionId, request.MemberId, context.CancellationToken);
         return new RemoveSessionMemberReply { Removed = removed };
     }
@@ -66,8 +72,23 @@ public sealed class SessionMemberGrpcService(ISessionMemberRepository repository
             throw new RpcException(new Status(StatusCode.InvalidArgument, SessionMemberValidationMessages.SessionIdRequired));
         }
 
+        await RequireSessionRoleAsync(request.SessionId, ProjectRole.Member, context.CancellationToken);
         var members = await repository.GetMembersAsync(request.SessionId, context.CancellationToken);
         return new ListSessionMembersReply { Members = members.Select(ToDto).ToList() };
+    }
+
+    private async Task RequireSessionRoleAsync(Guid sessionId, ProjectRole minimumRole, CancellationToken cancellationToken)
+    {
+        var access = await sessionAccessResolver.ResolveProjectAccessAsync(sessionId, cancellationToken);
+        if (access is null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, $"Session '{sessionId}' was not found."));
+        }
+
+        if (access.Value.Role < minimumRole)
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied, $"Session '{sessionId}' requires the '{minimumRole}' role."));
+        }
     }
 
     private static SessionMemberDto ToDto(SessionMember member) => new()

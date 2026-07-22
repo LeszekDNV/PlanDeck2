@@ -35,7 +35,7 @@ public sealed class SessionGrpcService(
             throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required."));
         }
 
-        await RequireProjectMemberAccessAsync(request.ProjectId, context.CancellationToken);
+        await RequireProjectRoleAsync(request.ProjectId, ProjectRole.Admin, context.CancellationToken);
 
         var scaleType = (VotingScaleType)(int)request.ScaleType;
         var scaleValues = ResolveScaleValues(scaleType, request.CustomScaleValues);
@@ -118,17 +118,19 @@ public sealed class SessionGrpcService(
     {
         GuestAccessGuard.RejectGuests(currentUser);
 
-        var sessions = await repository.GetSessionsAsync(context.CancellationToken);
-        var accessibleSessions = new List<PlanningSession>(sessions.Count);
-        foreach (var session in sessions)
+        if (request.ProjectId == Guid.Empty)
         {
-            if (await HasSessionAccessAsync(session.Id, context.CancellationToken))
-            {
-                accessibleSessions.Add(session);
-            }
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "ProjectId is required."));
         }
 
-        return new ListSessionsReply { Sessions = accessibleSessions.Select(ToDto).ToList() };
+        await RequireProjectRoleAsync(
+            request.ProjectId,
+            ProjectRole.Member,
+            context.CancellationToken,
+            concealPermissionDeniedAsNotFound: true);
+
+        var sessions = await repository.GetSessionsAsync(request.ProjectId, context.CancellationToken);
+        return new ListSessionsReply { Sessions = sessions.Select(ToDto).ToList() };
     }
 
     public async Task<GetSessionReply> GetSessionAsync(GetSessionRequest request, CallContext context = default)
@@ -142,7 +144,7 @@ public sealed class SessionGrpcService(
 
         try
         {
-            await RequireSessionAccessAsync(request.Id, context.CancellationToken);
+            await RequireSessionRoleAsync(request.Id, ProjectRole.Member, context.CancellationToken);
             var session = await LoadAsync(request.Id, context.CancellationToken);
             return new GetSessionReply { Session = ToDto(session) };
         }
@@ -162,7 +164,7 @@ public sealed class SessionGrpcService(
 
         try
         {
-            await RequireSessionAccessAsync(request.Id, context.CancellationToken);
+            await RequireSessionRoleAsync(request.Id, ProjectRole.Admin, context.CancellationToken);
             var session = await LoadDraftAsync(request.Id, context.CancellationToken);
             session.Name = name;
             session.ScaleType = scaleType;
@@ -187,7 +189,7 @@ public sealed class SessionGrpcService(
 
         try
         {
-            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
+            await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
 
             var mapped = MapNewTask(request.Task, session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1);
@@ -214,7 +216,7 @@ public sealed class SessionGrpcService(
 
         try
         {
-            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
+            await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
 
             var sortOrder = session.Tasks.Count == 0 ? 0 : session.Tasks.Max(t => t.SortOrder) + 1;
@@ -259,7 +261,7 @@ public sealed class SessionGrpcService(
 
         try
         {
-            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
+            await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId)
                 ?? throw new SessionTaskNotFoundException(request.TaskId);
@@ -287,7 +289,7 @@ public sealed class SessionGrpcService(
 
         try
         {
-            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
+            await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
             var session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             var task = session.Tasks.FirstOrDefault(t => t.Id == request.TaskId);
             if (task is not null)
@@ -312,7 +314,7 @@ public sealed class SessionGrpcService(
         PlanningSession session;
         try
         {
-            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
+            await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
             session = await LoadAsync(request.SessionId, context.CancellationToken);
         }
         catch (SessionNotFoundException ex)
@@ -394,7 +396,7 @@ public sealed class SessionGrpcService(
 
         try
         {
-            await RequireSessionAccessAsync(request.Id, context.CancellationToken);
+            await RequireSessionRoleAsync(request.Id, ProjectRole.Admin, context.CancellationToken);
             var session = await LoadAsync(request.Id, context.CancellationToken);
             if (session.Status != SessionStatus.Active)
             {
@@ -418,7 +420,7 @@ public sealed class SessionGrpcService(
     {
         GuestAccessGuard.RejectGuests(currentUser);
 
-        await RequireSessionAccessAsync(request.Id, context.CancellationToken);
+        await RequireSessionRoleAsync(request.Id, ProjectRole.Admin, context.CancellationToken);
         var deleted = await repository.DeleteSessionAsync(request.Id, context.CancellationToken);
         return new DeleteSessionReply { Deleted = deleted };
     }
@@ -432,7 +434,7 @@ public sealed class SessionGrpcService(
             PlanningSession empty;
             try
             {
-                await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
+                await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
                 empty = await LoadEditableAsync(request.SessionId, context.CancellationToken);
             }
             catch (SessionNotFoundException ex)
@@ -446,7 +448,7 @@ public sealed class SessionGrpcService(
         PlanningSession session;
         try
         {
-            await RequireSessionAccessAsync(request.SessionId, context.CancellationToken);
+            await RequireSessionRoleAsync(request.SessionId, ProjectRole.Admin, context.CancellationToken);
             session = await LoadEditableAsync(request.SessionId, context.CancellationToken);
         }
         catch (SessionNotFoundException ex)
@@ -524,22 +526,29 @@ public sealed class SessionGrpcService(
     private async Task<PlanningSession> LoadEditableAsync(Guid id, CancellationToken cancellationToken)
         => await LoadAsync(id, cancellationToken);
 
-    private async Task<bool> HasSessionAccessAsync(Guid sessionId, CancellationToken cancellationToken)
-        => await sessionAccessResolver.ResolveProjectAccessAsync(sessionId, cancellationToken) is not null;
-
-    private async Task RequireSessionAccessAsync(Guid sessionId, CancellationToken cancellationToken)
+    private async Task RequireSessionRoleAsync(Guid sessionId, ProjectRole minimumRole, CancellationToken cancellationToken)
     {
-        if (!await HasSessionAccessAsync(sessionId, cancellationToken))
+        var access = await sessionAccessResolver.ResolveProjectAccessAsync(sessionId, cancellationToken);
+        if (access is null)
         {
             throw new RpcException(new Status(StatusCode.NotFound, $"Session '{sessionId}' was not found."));
         }
+
+        if (access.Value.Role < minimumRole)
+        {
+            throw new RpcException(new Status(StatusCode.PermissionDenied, $"Session '{sessionId}' requires the '{minimumRole}' role."));
+        }
     }
 
-    private async Task RequireProjectMemberAccessAsync(Guid projectId, CancellationToken cancellationToken)
+    private async Task RequireProjectRoleAsync(
+        Guid projectId,
+        ProjectRole minimumRole,
+        CancellationToken cancellationToken,
+        bool concealPermissionDeniedAsNotFound = false)
     {
         try
         {
-            _ = await projectAccessResolver.RequireRoleAsync(projectId, ProjectRole.Member, cancellationToken);
+            _ = await projectAccessResolver.RequireRoleAsync(projectId, minimumRole, cancellationToken);
         }
         catch (ProjectNotFoundException ex)
         {
@@ -547,6 +556,11 @@ public sealed class SessionGrpcService(
         }
         catch (ProjectPermissionDeniedException ex)
         {
+            if (concealPermissionDeniedAsNotFound)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, $"Project '{projectId}' was not found."));
+            }
+
             throw new RpcException(new Status(StatusCode.PermissionDenied, ex.Message));
         }
     }

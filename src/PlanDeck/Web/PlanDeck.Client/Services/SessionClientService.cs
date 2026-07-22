@@ -6,10 +6,15 @@ namespace PlanDeck.Client.Services;
 
 public sealed class SessionClientService(GrpcChannel channel) : ISessionClientService
 {
-    public async Task<IReadOnlyList<SessionDto>> GetSessionsAsync()
+    public async Task<IReadOnlyList<SessionDto>> GetSessionsAsync(Guid projectId)
     {
+        if (projectId == Guid.Empty)
+        {
+            throw new ArgumentException("ProjectId is required.", nameof(projectId));
+        }
+
         var service = channel.CreateGrpcService<ISessionService>();
-        var reply = await service.ListSessionsAsync(new ListSessionsRequest());
+        var reply = await service.ListSessionsAsync(new ListSessionsRequest { ProjectId = projectId });
         return reply.Sessions;
     }
 

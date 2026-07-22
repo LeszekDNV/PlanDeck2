@@ -137,6 +137,21 @@ public sealed class SessionGrpcServiceTests
     }
 
     [Test]
+    public void CreateSession_WhenRoleIsMember_ThrowsPermissionDenied()
+    {
+        _projectAccessResolver.ProjectRoles[ProjectId] = ProjectRole.Member;
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.CreateSessionAsync(new CreateSessionRequest
+        {
+            Name = "Sprint 1",
+            ProjectId = ProjectId,
+            ScaleType = VotingScaleTypeDto.Fibonacci
+        }));
+
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
     public void CreateSession_WithBlankTaskTitle_ThrowsInvalidArgument()
     {
         var request = new CreateSessionRequest
@@ -257,6 +272,21 @@ public sealed class SessionGrpcServiceTests
         });
 
         Assert.That(_notifier.Calls, Is.Empty);
+    }
+
+    [Test]
+    public void AddTask_WhenRoleIsMember_ThrowsPermissionDenied()
+    {
+        var session = _repository.Seed(SessionStatus.Draft);
+        _sessionAccessResolver.SessionRoles[session.Id] = ProjectRole.Member;
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.AddTaskAsync(new AddTaskRequest
+        {
+            SessionId = session.Id,
+            Task = new NewAdHocTaskDto { Title = "Draft task" }
+        }));
+
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
     }
 
     [Test]
@@ -498,8 +528,30 @@ public sealed class SessionGrpcServiceTests
     {
         _currentUser.IsGuest = true;
 
-        var ex = Assert.ThrowsAsync<RpcException>(() => _service.ListSessionsAsync(new ListSessionsRequest()));
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.ListSessionsAsync(new ListSessionsRequest { ProjectId = ProjectId }));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
+    public void ListSessions_WithoutProjectId_ThrowsInvalidArgument()
+    {
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.ListSessionsAsync(new ListSessionsRequest()));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.InvalidArgument));
+    }
+
+    [Test]
+    public async Task ListSessions_ReturnsOnlyRequestedProject()
+    {
+        _projectAccessResolver.ProjectRoles[ProjectId] = ProjectRole.Member;
+
+        var sessionA = _repository.Seed(SessionStatus.Draft);
+        sessionA.ProjectId = ProjectId;
+        var sessionB = _repository.Seed(SessionStatus.Draft);
+        sessionB.ProjectId = Guid.NewGuid();
+
+        var reply = await _service.ListSessionsAsync(new ListSessionsRequest { ProjectId = ProjectId });
+
+        Assert.That(reply.Sessions.Select(s => s.Id), Is.EqualTo(new[] { sessionA.Id }));
     }
 
     [Test]
@@ -899,6 +951,7 @@ public sealed class SessionGrpcServiceTests
             var session = new PlanningSession
             {
                 Name = "Seeded",
+                ProjectId = Guid.NewGuid(),
                 Status = status,
                 ScaleType = VotingScaleType.Fibonacci,
                 ScaleValues = ["1", "2", "3"]
@@ -913,8 +966,9 @@ public sealed class SessionGrpcServiceTests
             return Task.FromResult(session);
         }
 
-        public Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(CancellationToken cancellationToken)
-            => Task.FromResult<IReadOnlyList<PlanningSession>>(_sessions);
+        public Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(Guid projectId, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<PlanningSession>>(
+                _sessions.Where(s => s.ProjectId == projectId).ToList());
 
         public Task<PlanningSession?> GetSessionAsync(Guid id, CancellationToken cancellationToken)
             => Task.FromResult(_sessions.FirstOrDefault(s => s.Id == id));
@@ -980,11 +1034,29 @@ public sealed class SessionGrpcServiceTests
 
     private sealed class FakeProjectAccessResolver : IProjectAccessResolver
     {
+        public Dictionary<Guid, ProjectRole> ProjectRoles { get; } = [];
+
         public Task<ProjectRole?> GetEffectiveRoleAsync(Guid projectId, CancellationToken cancellationToken)
-            => Task.FromResult<ProjectRole?>(ProjectRole.Member);
+            => Task.FromResult(ProjectRoles.TryGetValue(projectId, out var role) ? (ProjectRole?)role : ProjectRole.Owner);
 
         public Task<ProjectRole> RequireRoleAsync(Guid projectId, ProjectRole minimumRole, CancellationToken cancellationToken)
-            => Task.FromResult(ProjectRole.Member);
+        {
+            var role = ProjectRoles.TryGetValue(projectId, out var configuredRole)
+                ? (ProjectRole?)configuredRole
+                : ProjectRole.Owner;
+
+            if (role is null)
+            {
+                throw new ProjectNotFoundException(projectId);
+            }
+
+            if (role < minimumRole)
+            {
+                throw new ProjectPermissionDeniedException(projectId, minimumRole);
+            }
+
+            return Task.FromResult(role.Value);
+        }
     }
 
     private sealed class FakeProjectAzureDevOpsConnectionRepository : IProjectAzureDevOpsConnectionRepository
@@ -1012,10 +1084,20 @@ public sealed class SessionGrpcServiceTests
 
     private sealed class FakeSessionAccessResolver(FakeSessionRepository repository) : ISessionAccessResolver
     {
+        public Dictionary<Guid, ProjectRole> SessionRoles { get; } = [];
+
         public async Task<(Guid ProjectId, ProjectRole Role)?> ResolveProjectAccessAsync(Guid sessionId, CancellationToken cancellationToken)
         {
             var session = await repository.GetSessionAsync(sessionId, cancellationToken);
-            return session is null ? null : (session.ProjectId, ProjectRole.Member);
+            if (session is null)
+            {
+                return null;
+            }
+
+            var role = SessionRoles.TryGetValue(sessionId, out var configuredRole)
+                ? configuredRole
+                : ProjectRole.Owner;
+            return (session.ProjectId, role);
         }
     }
 

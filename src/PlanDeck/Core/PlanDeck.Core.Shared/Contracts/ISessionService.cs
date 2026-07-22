@@ -202,6 +202,8 @@ public sealed class CreateSessionReply
 [DataContract]
 public sealed class ListSessionsRequest
 {
+    [DataMember(Order = 1)]
+    public Guid ProjectId { get; set; }
 }
 
 [DataContract]

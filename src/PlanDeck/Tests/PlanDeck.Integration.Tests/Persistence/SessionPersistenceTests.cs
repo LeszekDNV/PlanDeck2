@@ -127,6 +127,36 @@ public sealed class SessionPersistenceTests
     }
 
     [Test]
+    public async Task Repository_GetSessionsAsync_IsScopedToRequestedProject()
+    {
+        var userId = Guid.NewGuid();
+        var projectA = Guid.NewGuid();
+        var projectB = Guid.NewGuid();
+        var nameA = $"a-{Guid.NewGuid():N}";
+        var nameB = $"b-{Guid.NewGuid():N}";
+
+        await using (var write = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true)))
+        {
+            write.Projects.AddRange(
+                new PlanDeckProject { Id = projectA, Name = $"project-{projectA:N}", CreatedByUserId = userId },
+                new PlanDeckProject { Id = projectB, Name = $"project-{projectB:N}", CreatedByUserId = userId });
+
+            write.Sessions.AddRange(
+                new PlanningSession { Name = nameA, ProjectId = projectA, CreatedByUserId = userId },
+                new PlanningSession { Name = nameB, ProjectId = projectB, CreatedByUserId = userId });
+
+            await write.SaveChangesAsync();
+        }
+
+        await using var read = CreateContext(new FakeCurrentUserContext(TenantA, userId, authenticated: true));
+        var repository = new SessionRepository(read, new FakeCurrentUserContext(TenantA, userId, authenticated: true));
+
+        var sessions = await repository.GetSessionsAsync(projectA, CancellationToken.None);
+
+        Assert.That(sessions.Select(s => s.Name), Is.EqualTo(new[] { nameA }));
+    }
+
+    [Test]
     public void CreateSession_WithNoTenantContext_IsRejectedFailClosed()
     {
         using var context = CreateContext(new FakeCurrentUserContext(Guid.Empty, Guid.Empty, authenticated: false));

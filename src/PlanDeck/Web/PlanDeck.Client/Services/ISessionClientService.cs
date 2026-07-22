@@ -4,7 +4,7 @@ namespace PlanDeck.Client.Services;
 
 public interface ISessionClientService
 {
-    Task<IReadOnlyList<SessionDto>> GetSessionsAsync();
+    Task<IReadOnlyList<SessionDto>> GetSessionsAsync(Guid projectId);
 
     Task<SessionDto> GetSessionAsync(Guid id);
 

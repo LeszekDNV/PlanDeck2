@@ -133,7 +133,7 @@ public sealed class VotingRoundServiceTests
         public Task<PlanningSession> CreateSessionAsync(PlanningSession session, CancellationToken cancellationToken)
             => throw new NotSupportedException();
 
-        public Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(CancellationToken cancellationToken)
+        public Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(Guid projectId, CancellationToken cancellationToken)
             => throw new NotSupportedException();
 
         public Task<PlanningSession> UpdateSessionAsync(PlanningSession session, CancellationToken cancellationToken)

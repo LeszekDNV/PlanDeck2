@@ -6,7 +6,7 @@ public interface ISessionRepository
 {
     Task<PlanningSession> CreateSessionAsync(PlanningSession session, CancellationToken cancellationToken);
 
-    Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(Guid projectId, CancellationToken cancellationToken);
 
     Task<PlanningSession?> GetSessionAsync(Guid id, CancellationToken cancellationToken);
 

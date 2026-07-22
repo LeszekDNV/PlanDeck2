@@ -57,6 +57,7 @@ public partial class Sessions
     private bool _isLocked => _selected?.Status == SessionStatusDto.Active;
 
     private readonly List<int> _stagedAdoIds = [];
+    private Guid _activeProjectId;
 
     private IReadOnlyCollection<int> StagedAdoIds =>
         _stagedTasks.Where(t => t.AdoWorkItemId.HasValue).Select(t => t.AdoWorkItemId!.Value).ToArray();
@@ -69,18 +70,23 @@ public partial class Sessions
         var state = await AuthState.GetAuthenticationStateAsync();
         if (state.User.Identity?.IsAuthenticated == true)
         {
-            await LoadSessionsAsync();
             await LoadProjectsAsync();
+            if (_projects.Count > 0)
+            {
+                _activeProjectId = _projects[0].Id;
+                _newProjectId = _activeProjectId;
+                await LoadSessionsAsync(_activeProjectId);
+            }
         }
 
         _loading = false;
     }
 
-    private async Task LoadSessionsAsync()
+    private async Task LoadSessionsAsync(Guid projectId)
     {
         try
         {
-            _sessions = (await SessionService.GetSessionsAsync()).ToList();
+            _sessions = (await SessionService.GetSessionsAsync(projectId)).ToList();
         }
         catch (RpcException ex)
         {
@@ -230,7 +236,10 @@ public partial class Sessions
                 adHocTasks,
                 adoIds);
 
-            _sessions.Insert(0, session);
+            if (_activeProjectId == Guid.Empty || session.ProjectId == _activeProjectId)
+            {
+                _sessions.Insert(0, session);
+            }
             _createOpen = false;
             await SelectAsync(session);
         }

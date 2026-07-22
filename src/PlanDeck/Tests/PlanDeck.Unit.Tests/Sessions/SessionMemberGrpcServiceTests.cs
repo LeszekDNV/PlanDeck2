@@ -10,13 +10,15 @@ namespace PlanDeck.Unit.Tests.Sessions;
 public sealed class SessionMemberGrpcServiceTests
 {
     private FakeSessionMemberRepository _repository = null!;
+    private FakeSessionAccessResolver _accessResolver = null!;
     private SessionMemberGrpcService _service = null!;
 
     [SetUp]
     public void SetUp()
     {
         _repository = new FakeSessionMemberRepository();
-        _service = new SessionMemberGrpcService(_repository, new FakeCurrentUserContext());
+        _accessResolver = new FakeSessionAccessResolver();
+        _service = new SessionMemberGrpcService(_repository, _accessResolver, new FakeCurrentUserContext());
     }
 
     [Test]
@@ -62,7 +64,9 @@ public sealed class SessionMemberGrpcServiceTests
     public void AssignMember_WhenSessionMissing_ThrowsNotFound()
     {
         _repository.SessionNotFound = true;
-        var request = new AssignSessionMemberRequest { SessionId = Guid.NewGuid(), Email = "a@example.com" };
+        var sessionId = Guid.NewGuid();
+        _accessResolver.SessionRoles[sessionId] = ProjectRole.Admin;
+        var request = new AssignSessionMemberRequest { SessionId = sessionId, Email = "a@example.com" };
 
         var ex = Assert.ThrowsAsync<RpcException>(() => _service.AssignMemberAsync(request));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
@@ -72,7 +76,9 @@ public sealed class SessionMemberGrpcServiceTests
     public void AssignMember_WhenDuplicate_ThrowsAlreadyExists()
     {
         _repository.Duplicate = true;
-        var request = new AssignSessionMemberRequest { SessionId = Guid.NewGuid(), Email = "a@example.com" };
+        var sessionId = Guid.NewGuid();
+        _accessResolver.SessionRoles[sessionId] = ProjectRole.Admin;
+        var request = new AssignSessionMemberRequest { SessionId = sessionId, Email = "a@example.com" };
 
         var ex = Assert.ThrowsAsync<RpcException>(() => _service.AssignMemberAsync(request));
         Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.AlreadyExists));
@@ -82,6 +88,7 @@ public sealed class SessionMemberGrpcServiceTests
     public async Task AssignMember_HappyPath_TrimsAndReturnsDto()
     {
         var sessionId = Guid.NewGuid();
+        _accessResolver.SessionRoles[sessionId] = ProjectRole.Admin;
         var request = new AssignSessionMemberRequest { SessionId = sessionId, Email = " a@example.com ", DisplayName = "  Ada  " };
 
         var reply = await _service.AssignMemberAsync(request);
@@ -98,6 +105,7 @@ public sealed class SessionMemberGrpcServiceTests
     public async Task ListMembers_MapsAllMembers()
     {
         var sessionId = Guid.NewGuid();
+        _accessResolver.SessionRoles[sessionId] = ProjectRole.Member;
         _repository.Members.Add(new SessionMember { SessionId = sessionId, Email = "a@example.com" });
         _repository.Members.Add(new SessionMember { SessionId = sessionId, Email = "b@example.com" });
 
@@ -109,15 +117,47 @@ public sealed class SessionMemberGrpcServiceTests
     [Test]
     public async Task RemoveMember_ReturnsRepositoryResult()
     {
+        var sessionId = Guid.NewGuid();
+        _accessResolver.SessionRoles[sessionId] = ProjectRole.Admin;
         _repository.RemoveResult = true;
 
         var reply = await _service.RemoveMemberAsync(new RemoveSessionMemberRequest
         {
-            SessionId = Guid.NewGuid(),
+            SessionId = sessionId,
             MemberId = Guid.NewGuid()
         });
 
         Assert.That(reply.Removed, Is.True);
+    }
+
+    [Test]
+    public void AssignMember_WhenRoleIsMember_ThrowsPermissionDenied()
+    {
+        var sessionId = Guid.NewGuid();
+        _accessResolver.SessionRoles[sessionId] = ProjectRole.Member;
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.AssignMemberAsync(
+            new AssignSessionMemberRequest { SessionId = sessionId, Email = "a@example.com" }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
+    public void RemoveMember_WhenRoleIsMember_ThrowsPermissionDenied()
+    {
+        var sessionId = Guid.NewGuid();
+        _accessResolver.SessionRoles[sessionId] = ProjectRole.Member;
+
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.RemoveMemberAsync(
+            new RemoveSessionMemberRequest { SessionId = sessionId, MemberId = Guid.NewGuid() }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.PermissionDenied));
+    }
+
+    [Test]
+    public void ListMembers_WithoutProjectAccess_ThrowsNotFound()
+    {
+        var ex = Assert.ThrowsAsync<RpcException>(() => _service.ListMembersAsync(
+            new ListSessionMembersRequest { SessionId = Guid.NewGuid() }));
+        Assert.That(ex!.StatusCode, Is.EqualTo(StatusCode.NotFound));
     }
 
     private sealed class FakeSessionMemberRepository : ISessionMemberRepository
@@ -165,5 +205,20 @@ public sealed class SessionMemberGrpcServiceTests
         public bool IsAuthenticated => true;
         public string? DisplayName => null;
         public string? Email => "member@example.com";
+    }
+
+    private sealed class FakeSessionAccessResolver : ISessionAccessResolver
+    {
+        public Dictionary<Guid, ProjectRole> SessionRoles { get; } = [];
+
+        public Task<(Guid ProjectId, ProjectRole Role)?> ResolveProjectAccessAsync(Guid sessionId, CancellationToken cancellationToken)
+        {
+            if (!SessionRoles.TryGetValue(sessionId, out var role))
+            {
+                return Task.FromResult< (Guid ProjectId, ProjectRole Role)?>(null);
+            }
+
+            return Task.FromResult<(Guid ProjectId, ProjectRole Role)?>((Guid.NewGuid(), role));
+        }
     }
 }

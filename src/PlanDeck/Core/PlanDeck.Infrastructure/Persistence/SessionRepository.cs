@@ -15,10 +15,11 @@ public sealed class SessionRepository(PlanDeckDbContext db, ICurrentUserContext 
         return session;
     }
 
-    public async Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(Guid projectId, CancellationToken cancellationToken)
     {
         return await db.Sessions
             .AsNoTracking()
+            .Where(s => s.ProjectId == projectId)
             .Include(s => s.Tasks)
             .OrderByDescending(s => s.CreatedAtUtc)
             .ToListAsync(cancellationToken);
