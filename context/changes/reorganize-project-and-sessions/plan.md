@@ -583,9 +583,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [x] 1.1 Session service and Session-member unit tests pass
-- [x] 1.2 Session persistence integration tests pass
-- [x] 1.3 Server project builds with the updated shared contract
+- [x] 1.1 Session service and Session-member unit tests pass — 63ccac6
+- [x] 1.2 Session persistence integration tests pass — 63ccac6
+- [x] 1.3 Server project builds with the updated shared contract — 63ccac6
 
 #### Manual
 
@@ -596,9 +596,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [ ] 2.1 Project and room unit tests pass
-- [ ] 2.2 Project and Session persistence integration tests pass
-- [ ] 2.3 Cascade migration Up and Down paths succeed
+- [x] 2.1 Project and room unit tests pass
+- [x] 2.2 Project and Session persistence integration tests pass
+- [x] 2.3 Cascade migration Up and Down paths succeed
 
 #### Manual
 

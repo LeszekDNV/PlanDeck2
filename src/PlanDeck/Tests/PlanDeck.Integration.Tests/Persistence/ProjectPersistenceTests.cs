@@ -185,6 +185,124 @@ public sealed class ProjectPersistenceTests
     }
 
     [Test]
+    public async Task DeleteProject_CascadesOwnedGraphAndPreservesSharedTeamAndUsers()
+    {
+        var tenantId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        var owner = User(ownerId, "owner@example.com");
+        var member = User(memberId, "member@example.com");
+        var projectId = Guid.NewGuid();
+        var teamId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+
+        await using (var write = CreateContext(CurrentUser(tenantId, ownerId, owner.Email)))
+        {
+            write.AppUsers.AddRange(owner, member);
+            write.Projects.Add(new PlanDeckProject
+            {
+                Id = projectId,
+                Name = $"project-{projectId:N}",
+                CreatedByUserId = ownerId
+            });
+            write.ProjectMembers.AddRange(
+                new ProjectMember
+                {
+                    ProjectId = projectId,
+                    AppUserId = ownerId,
+                    Email = owner.Email,
+                    Role = ProjectRole.Owner,
+                    Status = InvitationStatus.Accepted,
+                    InvitedByUserId = ownerId,
+                    AcceptedAtUtc = DateTimeOffset.UtcNow
+                },
+                new ProjectMember
+                {
+                    ProjectId = projectId,
+                    AppUserId = memberId,
+                    Email = member.Email,
+                    Role = ProjectRole.Member,
+                    Status = InvitationStatus.Accepted,
+                    InvitedByUserId = ownerId,
+                    AcceptedAtUtc = DateTimeOffset.UtcNow
+                });
+            write.Teams.Add(new Team
+            {
+                Id = teamId,
+                Name = $"team-{teamId:N}",
+                CreatedByUserId = ownerId
+            });
+            write.ProjectTeams.Add(new ProjectTeam
+            {
+                ProjectId = projectId,
+                TeamId = teamId,
+                AssignedByUserId = ownerId
+            });
+            write.ProjectAzureDevOpsConnections.Add(new ProjectAzureDevOpsConnection
+            {
+                ProjectId = projectId,
+                OrganizationUrl = "https://dev.azure.com/contoso",
+                AzureDevOpsProject = "PlanDeck",
+                EstimateField = "Microsoft.VSTS.Scheduling.StoryPoints",
+                DescriptionField = "System.Description",
+                ReproStepsField = "Microsoft.VSTS.TCM.ReproSteps",
+                AcceptanceCriteriaField = "Microsoft.VSTS.Common.AcceptanceCriteria",
+                SecretName = $"pat-{Guid.NewGuid():N}",
+                IsEnabled = true,
+                ValidationState = ConnectionValidationState.Valid,
+                LastValidatedAtUtc = DateTimeOffset.UtcNow
+            });
+
+            write.Sessions.Add(new PlanningSession
+            {
+                Id = sessionId,
+                Name = "Cascade session",
+                ProjectId = projectId,
+                CreatedByUserId = ownerId,
+                Tasks = { new SessionTask { Title = "Task A", Source = TaskSource.AdHoc, SortOrder = 0 } }
+            });
+            write.SessionMembers.Add(new SessionMember
+            {
+                SessionId = sessionId,
+                Email = member.Email,
+                DisplayName = "Member",
+                AssignedByUserId = ownerId
+            });
+
+            await write.SaveChangesAsync();
+        }
+
+        await using (var delete = CreateContext(CurrentUser(tenantId, ownerId, owner.Email)))
+        {
+            var repository = new ProjectRepository(delete, CurrentUser(tenantId, ownerId, owner.Email));
+            await repository.DeleteAsync(projectId, CancellationToken.None);
+        }
+
+        await using var read = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
+        var projectExists = await read.Projects.AnyAsync(project => project.Id == projectId);
+        var sessionsExist = await read.Sessions.AnyAsync(session => session.ProjectId == projectId);
+        var tasksExist = await read.SessionTasks.AnyAsync(task => task.SessionId == sessionId);
+        var membersExist = await read.SessionMembers.AnyAsync(memberRow => memberRow.SessionId == sessionId);
+        var projectMembersExist = await read.ProjectMembers.AnyAsync(memberRow => memberRow.ProjectId == projectId);
+        var projectTeamsExist = await read.ProjectTeams.AnyAsync(link => link.ProjectId == projectId);
+        var connectionExists = await read.ProjectAzureDevOpsConnections.AnyAsync(connection => connection.ProjectId == projectId);
+        var sharedTeamExists = await read.Teams.AnyAsync(team => team.Id == teamId);
+        var userCount = await read.AppUsers.CountAsync();
+        Assert.Multiple(() =>
+        {
+            Assert.That(projectExists, Is.False);
+            Assert.That(sessionsExist, Is.False);
+            Assert.That(tasksExist, Is.False);
+            Assert.That(membersExist, Is.False);
+            Assert.That(projectMembersExist, Is.False);
+            Assert.That(projectTeamsExist, Is.False);
+            Assert.That(connectionExists, Is.False);
+            Assert.That(sharedTeamExists, Is.True);
+            Assert.That(userCount, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
     public async Task ProjectTeam_CannotLinkResourcesAcrossTenants()
     {
         var tenantA = Guid.NewGuid();

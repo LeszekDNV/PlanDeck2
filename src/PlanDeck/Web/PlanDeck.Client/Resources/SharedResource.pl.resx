@@ -470,7 +470,7 @@
     <value>Usuń projekt</value>
   </data>
   <data name="Projects_DeleteProjectConfirm" xml:space="preserve">
-    <value>Usunąć ten projekt? Tej operacji nie można cofnąć.</value>
+    <value>Usunąć ten projekt oraz wszystkie jego sesje, zadania, uczestników, członkostwa, powiązania zespołów i konfigurację Azure DevOps? Tej operacji nie można cofnąć.</value>
   </data>
   <data name="Projects_Connection" xml:space="preserve">
     <value>Połączenie Azure DevOps</value>

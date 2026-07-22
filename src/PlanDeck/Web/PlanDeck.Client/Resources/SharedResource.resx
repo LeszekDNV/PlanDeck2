@@ -470,7 +470,7 @@
     <value>Delete project</value>
   </data>
   <data name="Projects_DeleteProjectConfirm" xml:space="preserve">
-    <value>Delete this project? This cannot be undone.</value>
+    <value>Delete this project and all its sessions, tasks, participants, memberships, team links, and Azure DevOps configuration? This cannot be undone.</value>
   </data>
   <data name="Projects_Connection" xml:space="preserve">
     <value>Azure DevOps connection</value>

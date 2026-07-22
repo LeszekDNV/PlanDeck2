@@ -55,7 +55,5 @@ public interface IProjectRepository
         Guid newOwnerMemberId,
         CancellationToken cancellationToken);
 
-    Task EnsureCanDeleteAsync(Guid projectId, CancellationToken cancellationToken);
-
     Task DeleteAsync(Guid projectId, CancellationToken cancellationToken);
 }

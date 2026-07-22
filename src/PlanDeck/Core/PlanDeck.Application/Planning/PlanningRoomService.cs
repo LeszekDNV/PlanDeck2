@@ -352,6 +352,21 @@ public sealed class PlanningRoomService : IPlanningRoomService
         }
     }
 
+    public bool InvalidateSession(RoomKey key)
+    {
+        var removed = _rooms.TryRemove(key, out _);
+        foreach (var (connectionId, owner) in _connections)
+        {
+            if (owner.Key == key
+                && _connections.TryRemove(new KeyValuePair<string, ConnectionOwner>(connectionId, owner)))
+            {
+                removed = true;
+            }
+        }
+
+        return removed;
+    }
+
     public int RemoveInactiveRooms(DateTimeOffset inactiveSince)
     {
         var removedCount = 0;

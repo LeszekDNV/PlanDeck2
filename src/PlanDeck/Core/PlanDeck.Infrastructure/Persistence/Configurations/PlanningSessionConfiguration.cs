@@ -43,6 +43,6 @@ public sealed class PlanningSessionConfiguration : IEntityTypeConfiguration<Plan
             .WithMany()
             .HasForeignKey(s => new { s.TenantId, s.ProjectId })
             .HasPrincipalKey(project => new { project.TenantId, project.Id })
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

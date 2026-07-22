@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
 using PlanDeck.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace PlanDeck.Integration.Tests.Persistence;
 
@@ -154,6 +157,67 @@ public sealed class SessionPersistenceTests
         var sessions = await repository.GetSessionsAsync(projectA, CancellationToken.None);
 
         Assert.That(sessions.Select(s => s.Name), Is.EqualTo(new[] { nameA }));
+    }
+
+    [Test]
+    public async Task SessionProjectForeignKey_UsesCascadeDeleteBehavior()
+    {
+        await using var connection = new SqlConnection(AspireAppFixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT TOP(1) [delete_referential_action_desc]
+            FROM sys.foreign_keys
+            WHERE [name] = 'FK_Sessions_Projects_TenantId_ProjectId';
+            """;
+
+        var action = (string?)await command.ExecuteScalarAsync();
+
+        Assert.That(action, Is.EqualTo("CASCADE"));
+    }
+
+    [Test]
+    public async Task SessionProjectCascadeMigration_UpAndDownPathsSucceed()
+    {
+        var databaseName = $"PlanDeckMigration_{Guid.NewGuid():N}";
+        var masterConnectionString = new SqlConnectionStringBuilder(AspireAppFixture.ConnectionString)
+        {
+            InitialCatalog = "master"
+        }.ConnectionString;
+        var migrationConnectionString = new SqlConnectionStringBuilder(AspireAppFixture.ConnectionString)
+        {
+            InitialCatalog = databaseName
+        }.ConnectionString;
+        try
+        {
+            await using var context = CreateContext(
+                new FakeCurrentUserContext(TenantA, Guid.NewGuid(), authenticated: true),
+                migrationConnectionString);
+            var migrator = context.Database.GetService<IMigrator>();
+            var migrations = context.Database.GetMigrations().ToArray();
+            Assert.That(migrations.Length, Is.GreaterThan(1));
+            var previous = migrations[^2];
+            var latest = migrations[^1];
+
+            await migrator.MigrateAsync(previous);
+            await migrator.MigrateAsync(latest);
+            await migrator.MigrateAsync(previous);
+            await migrator.MigrateAsync(latest);
+        }
+        finally
+        {
+            await using var master = new SqlConnection(masterConnectionString);
+            await master.OpenAsync();
+            await using var cleanup = master.CreateCommand();
+            cleanup.CommandText = $"""
+                IF DB_ID(N'{databaseName}') IS NOT NULL
+                BEGIN
+                    ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                    DROP DATABASE [{databaseName}];
+                END
+                """;
+            await cleanup.ExecuteNonQueryAsync();
+        }
     }
 
     [Test]
@@ -330,10 +394,12 @@ public sealed class SessionPersistenceTests
         return session.Id;
     }
 
-    private static PlanDeckDbContext CreateContext(ICurrentUserContext currentUser)
+    private static PlanDeckDbContext CreateContext(
+        ICurrentUserContext currentUser,
+        string? connectionString = null)
     {
         var options = new DbContextOptionsBuilder<PlanDeckDbContext>()
-            .UseSqlServer(AspireAppFixture.ConnectionString, sql => sql.EnableRetryOnFailure())
+            .UseSqlServer(connectionString ?? AspireAppFixture.ConnectionString, sql => sql.EnableRetryOnFailure())
             .Options;
 
         return new PlanDeckDbContext(options, currentUser);

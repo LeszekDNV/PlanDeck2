@@ -543,6 +543,26 @@ public sealed class PlanningRoomServiceTests
         Assert.That(state.CurrentTaskId, Is.Null);
     }
 
+    [Test]
+    public void InvalidateSession_RemovesRoomAndConnections_Idempotently()
+    {
+        _service.Join(_key, "alice", "Alice", "conn-a");
+
+        var first = _service.InvalidateSession(_key);
+        var second = _service.InvalidateSession(_key);
+        var disconnected = _service.Disconnect("conn-a");
+        var state = _service.GetState(_key);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(first, Is.True);
+            Assert.That(second, Is.False);
+            Assert.That(disconnected, Is.Null);
+            Assert.That(state.Tasks, Is.Empty);
+            Assert.That(state.Participants, Is.Empty);
+        });
+    }
+
     private sealed class ManualTimeProvider : TimeProvider
     {
         private DateTimeOffset _utcNow = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);

@@ -2,8 +2,10 @@ using System.Text.Json;
 using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Application.Planning;
 using PlanDeck.Application.Services;
 using PlanDeck.Core.Shared.Contracts;
+using PlanDeck.Core.Shared.Realtime;
 
 namespace PlanDeck.Unit.Tests.Projects;
 
@@ -16,6 +18,8 @@ public sealed class ProjectConnectionGrpcServiceTests
     private InMemoryProjectSecretStore _secrets = null!;
     private StubConnectionValidator _validator = null!;
     private RoleAccessResolver _access = null!;
+    private StubSessionRepository _sessions = null!;
+    private RecordingPlanningRoomService _planningRooms = null!;
     private ProjectGrpcService _service = null!;
 
     [SetUp]
@@ -26,10 +30,14 @@ public sealed class ProjectConnectionGrpcServiceTests
         _secrets = new InMemoryProjectSecretStore();
         _validator = new StubConnectionValidator();
         _access = new RoleAccessResolver(ProjectRole.Owner);
+        _sessions = new StubSessionRepository();
+        _planningRooms = new RecordingPlanningRoomService();
         _service = new ProjectGrpcService(
             _projects,
             _access,
             new StubCurrentUserContext(),
+            _sessions,
+            _planningRooms,
             _connections,
             _secrets,
             _validator,
@@ -248,26 +256,44 @@ public sealed class ProjectConnectionGrpcServiceTests
     }
 
     [Test]
-    public void DeleteProject_WithSessionsDoesNotDeleteSecretOrProject()
+    public void DeleteProject_WhenSecretCleanupFails_DoesNotDeleteProjectOrInvalidateRooms()
     {
+        var sessionId = Guid.NewGuid();
         _connections.Connection = Connection();
-        _projects.DeleteCheckException = new InvalidOperationException();
+        _sessions.Sessions =
+        [
+            new PlanningSession
+            {
+                Id = sessionId,
+                ProjectId = ProjectId,
+                Name = "Session 1"
+            }
+        ];
+        _secrets.SoftDeleteException = new ProjectSecretForbiddenException();
 
         var exception = Assert.ThrowsAsync<RpcException>(() =>
             _service.DeleteProjectAsync(new DeleteProjectRequest { ProjectId = ProjectId }));
 
         Assert.Multiple(() =>
         {
-            Assert.That(exception!.StatusCode, Is.EqualTo(StatusCode.FailedPrecondition));
+            Assert.That(exception!.StatusCode, Is.EqualTo(StatusCode.Unavailable));
             Assert.That(_secrets.DeletedNames, Is.Empty);
             Assert.That(_projects.DeleteCalls, Is.Zero);
+            Assert.That(_planningRooms.InvalidatedKeys, Is.Empty);
         });
     }
 
     [Test]
-    public async Task DeleteProject_SoftDeletesSecretBeforeSqlProject()
+    public async Task DeleteProject_SoftDeletesSecretBeforeSqlProjectAndThenInvalidatesOwnedRooms()
     {
+        var sessionA = Guid.NewGuid();
+        var sessionB = Guid.NewGuid();
         _connections.Connection = Connection();
+        _sessions.Sessions =
+        [
+            new PlanningSession { Id = sessionA, ProjectId = ProjectId, Name = "Session A" },
+            new PlanningSession { Id = sessionB, ProjectId = ProjectId, Name = "Session B" }
+        ];
 
         await _service.DeleteProjectAsync(
             new DeleteProjectRequest { ProjectId = ProjectId });
@@ -277,6 +303,8 @@ public sealed class ProjectConnectionGrpcServiceTests
             Assert.That(_secrets.DeletedNames,
                 Is.EqualTo(new[] { _connections.Connection.SecretName }));
             Assert.That(_projects.DeleteCalls, Is.EqualTo(1));
+            Assert.That(_planningRooms.InvalidatedKeys.Select(key => key.SessionId),
+                Is.EquivalentTo(new[] { sessionA, sessionB }));
         });
     }
 
@@ -423,6 +451,8 @@ public sealed class ProjectConnectionGrpcServiceTests
 
         public List<string> InvalidatedNames { get; } = [];
 
+        public Exception? SoftDeleteException { get; set; }
+
         public Task<string> CreateAsync(string value, CancellationToken cancellationToken)
         {
             CreateCalls++;
@@ -456,6 +486,11 @@ public sealed class ProjectConnectionGrpcServiceTests
             string secretName,
             CancellationToken cancellationToken)
         {
+            if (SoftDeleteException is not null)
+            {
+                throw SoftDeleteException;
+            }
+
             DeletedNames.Add(secretName);
             return Task.CompletedTask;
         }
@@ -518,7 +553,7 @@ public sealed class ProjectConnectionGrpcServiceTests
 
     private sealed class StubProjectRepository : IProjectRepository
     {
-        public Exception? DeleteCheckException { get; set; }
+        public Exception? DeleteException { get; set; }
 
         public int DeleteCalls { get; private set; }
 
@@ -586,23 +621,121 @@ public sealed class ProjectConnectionGrpcServiceTests
             CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
-        public Task EnsureCanDeleteAsync(
-            Guid projectId,
-            CancellationToken cancellationToken)
-        {
-            if (DeleteCheckException is not null)
-            {
-                throw DeleteCheckException;
-            }
-
-            return Task.CompletedTask;
-        }
-
         public Task DeleteAsync(Guid projectId, CancellationToken cancellationToken)
         {
+            if (DeleteException is not null)
+            {
+                throw DeleteException;
+            }
+
             DeleteCalls++;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class StubSessionRepository : ISessionRepository
+    {
+        public IReadOnlyList<PlanningSession> Sessions { get; set; } = [];
+
+        public Task<PlanningSession> CreateSessionAsync(
+            PlanningSession session,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(
+            Guid projectId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(Sessions.Where(session => session.ProjectId == projectId).ToList() as IReadOnlyList<PlanningSession>);
+
+        public Task<PlanningSession?> GetSessionAsync(Guid id, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<PlanningSession> UpdateSessionAsync(
+            PlanningSession session,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> DeleteSessionAsync(Guid id, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> SetAgreedEstimateAsync(
+            Guid sessionId,
+            Guid taskId,
+            string? estimate,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> SetAdoRevisionAsync(
+            Guid sessionId,
+            Guid taskId,
+            int revision,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(
+            string shareCode,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> ShareCodeExistsAsync(string shareCode, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class RecordingPlanningRoomService : IPlanningRoomService
+    {
+        public List<RoomKey> InvalidatedKeys { get; } = [];
+
+        public PlanningRoomState EnsureSeeded(
+            RoomKey key,
+            IReadOnlyList<PlanningRoomTaskSnapshot> tasks,
+            IReadOnlyList<string> scaleValues) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState SyncTasks(RoomKey key, IReadOnlyList<PlanningRoomTaskSnapshot> tasks) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState Join(
+            RoomKey key,
+            string participantId,
+            string displayName,
+            string connectionId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState Leave(RoomKey key, string participantId, string connectionId) =>
+            throw new NotSupportedException();
+
+        public (RoomKey Key, PlanningRoomState State)? Disconnect(string connectionId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState CastVote(RoomKey key, string participantId, string vote) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState RevealVotes(RoomKey key) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState ResetRound(RoomKey key, Guid taskId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState SetActiveTask(RoomKey key, Guid taskId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState ApplyAgreedEstimate(RoomKey key, Guid taskId, string? estimate) =>
+            throw new NotSupportedException();
+
+        public bool IsValidEstimate(RoomKey key, string? estimate) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState GetState(RoomKey key) =>
+            throw new NotSupportedException();
+
+        public bool InvalidateSession(RoomKey key)
+        {
+            InvalidatedKeys.Add(key);
+            return true;
+        }
+
+        public int RemoveInactiveRooms(DateTimeOffset inactiveSince) =>
+            throw new NotSupportedException();
     }
 
     private sealed class StubCurrentUserContext : ICurrentUserContext

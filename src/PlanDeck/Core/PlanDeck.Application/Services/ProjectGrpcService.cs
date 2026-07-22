@@ -1,7 +1,9 @@
 using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Application.Planning;
 using PlanDeck.Core.Shared.Contracts;
+using PlanDeck.Core.Shared.Realtime;
 using PlanDeck.Core.Shared.Validation;
 using ProtoBuf.Grpc;
 using System.Text.RegularExpressions;
@@ -12,6 +14,8 @@ public sealed class ProjectGrpcService(
     IProjectRepository repository,
     IProjectAccessResolver access,
     ICurrentUserContext currentUser,
+    ISessionRepository sessions,
+    IPlanningRoomService planningRoomService,
     IProjectAzureDevOpsConnectionRepository connections,
     IProjectSecretStore secretStore,
     IAzureDevOpsConnectionValidator connectionValidator,
@@ -193,16 +197,11 @@ public sealed class ProjectGrpcService(
         CallContext context = default)
     {
         await RequireAsync(request.ProjectId, ProjectRole.Owner, context.CancellationToken);
-        try
-        {
-            await repository.EnsureCanDeleteAsync(
+        var ownedSessionIds = (await sessions.GetSessionsAsync(
                 request.ProjectId,
-                context.CancellationToken);
-        }
-        catch (InvalidOperationException)
-        {
-            throw FailedPrecondition("A project with planning sessions cannot be deleted.");
-        }
+                context.CancellationToken))
+            .Select(session => session.Id)
+            .ToArray();
 
         var connection = await connections.GetAsync(
             request.ProjectId,
@@ -213,6 +212,11 @@ public sealed class ProjectGrpcService(
         }
 
         await repository.DeleteAsync(request.ProjectId, context.CancellationToken);
+        foreach (var sessionId in ownedSessionIds)
+        {
+            planningRoomService.InvalidateSession(new RoomKey(currentUser.TenantId, sessionId));
+        }
+
         return new EmptyProjectReply();
     }
 

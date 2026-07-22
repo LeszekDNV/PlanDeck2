@@ -1,8 +1,10 @@
 using Grpc.Core;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Application.Planning;
 using PlanDeck.Application.Services;
 using PlanDeck.Core.Shared.Contracts;
+using PlanDeck.Core.Shared.Realtime;
 
 namespace PlanDeck.Unit.Tests.Projects;
 
@@ -23,6 +25,8 @@ public sealed class ProjectGrpcServiceTests
             _repository,
             _access,
             new FakeCurrentUserContext(),
+            new FakeSessionRepository(),
+            new FakePlanningRoomService(),
             new FakeConnectionRepository(),
             new FakeSecretStore(),
             new FakeConnectionValidator(),
@@ -225,11 +229,6 @@ public sealed class ProjectGrpcServiceTests
             CancellationToken cancellationToken) =>
             Task.CompletedTask;
 
-        public Task EnsureCanDeleteAsync(
-            Guid projectId,
-            CancellationToken cancellationToken) =>
-            Task.CompletedTask;
-
         private static PlanDeckProject Project(string name = "Project") => new()
         {
             Id = ProjectId,
@@ -243,6 +242,105 @@ public sealed class ProjectGrpcServiceTests
             Email = email,
             Role = role
         };
+    }
+
+    private sealed class FakeSessionRepository : ISessionRepository
+    {
+        public Task<PlanningSession> CreateSessionAsync(
+            PlanningSession session,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(
+            Guid projectId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<PlanningSession>>([]);
+
+        public Task<PlanningSession?> GetSessionAsync(
+            Guid id,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<PlanningSession?>(null);
+
+        public Task<PlanningSession> UpdateSessionAsync(
+            PlanningSession session,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> DeleteSessionAsync(Guid id, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> SetAgreedEstimateAsync(
+            Guid sessionId,
+            Guid taskId,
+            string? estimate,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> SetAdoRevisionAsync(
+            Guid sessionId,
+            Guid taskId,
+            int revision,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<GuestSessionReference?> GetActiveSessionByShareCodeAsync(
+            string shareCode,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<bool> ShareCodeExistsAsync(string shareCode, CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+    }
+
+    private sealed class FakePlanningRoomService : IPlanningRoomService
+    {
+        public PlanningRoomState EnsureSeeded(
+            RoomKey key,
+            IReadOnlyList<PlanningRoomTaskSnapshot> tasks,
+            IReadOnlyList<string> scaleValues) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState SyncTasks(RoomKey key, IReadOnlyList<PlanningRoomTaskSnapshot> tasks) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState Join(
+            RoomKey key,
+            string participantId,
+            string displayName,
+            string connectionId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState Leave(RoomKey key, string participantId, string connectionId) =>
+            throw new NotSupportedException();
+
+        public (RoomKey Key, PlanningRoomState State)? Disconnect(string connectionId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState CastVote(RoomKey key, string participantId, string vote) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState RevealVotes(RoomKey key) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState ResetRound(RoomKey key, Guid taskId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState SetActiveTask(RoomKey key, Guid taskId) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState ApplyAgreedEstimate(RoomKey key, Guid taskId, string? estimate) =>
+            throw new NotSupportedException();
+
+        public bool IsValidEstimate(RoomKey key, string? estimate) =>
+            throw new NotSupportedException();
+
+        public PlanningRoomState GetState(RoomKey key) =>
+            throw new NotSupportedException();
+
+        public bool InvalidateSession(RoomKey key) => true;
+
+        public int RemoveInactiveRooms(DateTimeOffset inactiveSince) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakeConnectionRepository

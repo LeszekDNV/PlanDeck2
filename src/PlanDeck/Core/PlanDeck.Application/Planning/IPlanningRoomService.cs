@@ -32,5 +32,7 @@ public interface IPlanningRoomService
 
     PlanningRoomState GetState(RoomKey key);
 
+    bool InvalidateSession(RoomKey key);
+
     int RemoveInactiveRooms(DateTimeOffset inactiveSince);
 }
