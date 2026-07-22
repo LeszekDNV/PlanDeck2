@@ -1056,37 +1056,37 @@ manual security/deployment review are accepted.
 
 #### Manual
 
-- [ ] 4.5 Import and write-back use the session project's connection
-- [ ] 4.6 Session-only participants can vote but cannot use project ADO
-- [ ] 4.7 ADO errors and logs expose no secret or raw upstream detail
+- [x] 4.5 Import and write-back use the session project's connection
+- [x] 4.6 Session-only participants can vote but cannot use project ADO
+- [x] 4.7 ADO errors and logs expose no secret or raw upstream detail
 
 ### Phase 5: Project Administration and Project-First Session UX
 
 #### Automated
 
-- [x] 5.1 Solution builds
-- [x] 5.2 Client wrapper and related unit tests pass
-- [x] 5.3 English and Polish resource files contain every new key
-- [x] 5.4 E2E page objects create/select a project and a project-owned session
+- [x] 5.1 Solution builds — d8459fd
+- [x] 5.2 Client wrapper and related unit tests pass — d8459fd
+- [x] 5.3 English and Polish resource files contain every new key — d8459fd
+- [x] 5.4 E2E page objects create/select a project and a project-owned session — d8459fd
 
 #### Manual
 
-- [x] 5.5 Role-sensitive navigation and controls match server permissions
-- [x] 5.6 PAT is never redisplayed and is cleared from browser state
-- [x] 5.7 English and Polish project flows are complete and accessible
+- [x] 5.5 Role-sensitive navigation and controls match server permissions — d8459fd
+- [x] 5.6 PAT is never redisplayed and is cleared from browser state — d8459fd
+- [x] 5.7 English and Polish project flows are complete and accessible — d8459fd
 
 ### Phase 6: Security Verification, Real-Vault E2E, and Deployment
 
 #### Automated
 
-- [ ] 6.1 Full solution builds
-- [ ] 6.2 Full test suite passes
-- [ ] 6.3 gRPC-Web and SignalR security matrix passes without foreign external calls
-- [ ] 6.4 Real-vault owner-to-member import/write-back E2E passes and cleans up
-- [ ] 6.5 Infrastructure preview succeeds with intended Key Vault RBAC
+- [x] 6.1 Full solution builds
+- [x] 6.2 Full test suite passes
+- [x] 6.3 gRPC-Web and SignalR security matrix passes without foreign external calls
+- [x] 6.4 Real-vault owner-to-member import/write-back E2E passes and cleans up
+- [x] 6.5 Infrastructure preview succeeds with intended Key Vault RBAC
 
 #### Manual
 
-- [ ] 6.6 Security review confirms every PAT-backed denial boundary
-- [ ] 6.7 Azure vault separation, protection, and managed-identity RBAC are confirmed
-- [ ] 6.8 Backup, reset, smoke-test, and restore procedure is rehearsed
+- [x] 6.6 Security review confirms every PAT-backed denial boundary
+- [x] 6.7 Azure vault separation, protection, and managed-identity RBAC are confirmed
+- [x] 6.8 Backup, reset, smoke-test, and restore procedure is rehearsed

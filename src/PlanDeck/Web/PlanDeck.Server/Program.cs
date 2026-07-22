@@ -157,6 +157,8 @@ app.MapPost("/guest/join", async (
 
 // Configure the HTTP request pipeline.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
+app.MapGrpcService<HelloGrpcService>()
+    .RequireAuthorization(PlanDeckPolicies.MemberAccount);
 app.MapGrpcService<AzureDevOpsWorkItemGrpcService>()
     .RequireAuthorization(PlanDeckPolicies.MemberAccount);
 app.MapGrpcService<TeamGrpcService>()
