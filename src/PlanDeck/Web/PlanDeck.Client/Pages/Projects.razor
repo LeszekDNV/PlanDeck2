@@ -3,10 +3,8 @@
 @using PlanDeck.Client.Services
 @using PlanDeck.Core.Shared.Contracts
 @inject IProjectClientService ProjectService
-@inject ITeamClientService TeamService
 @inject IStringLocalizer<SharedResource> L
 @inject ISnackbar Snackbar
-@inject IDialogService Dialog
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthState
 
@@ -40,281 +38,62 @@
                 {
                     <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
                 }
+                else if (_projects.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info">@L["Projects_Empty"]</MudAlert>
+                }
                 else
                 {
-                    <MudGrid Spacing="4">
-                        <MudItem xs="12" md="4" lg="3">
-                            <MudPaper Class="pa-2" Elevation="1">
-                                <MudText Typo="Typo.subtitle1" Class="px-2 pt-1 pb-2">@L["Projects_Title"]</MudText>
-                                @if (_projects.Count == 0)
-                                {
-                                    <MudAlert Severity="Severity.Info" Dense="true">@L["Projects_Empty"]</MudAlert>
-                                }
-                                else
-                                {
-                                    <MudList T="Guid" Dense="true">
-                                        @foreach (var project in _projects)
+                    <MudGrid Spacing="3">
+                        @foreach (var project in _projects)
+                        {
+                            <MudItem xs="12" sm="6" lg="4">
+                                <MudCard Class="h-100">
+                                    <MudCardHeader>
+                                        <CardHeaderContent>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                                <MudText Typo="Typo.h6">@project.Name</MudText>
+                                                <MudChip T="string" Size="Size.Small">@RoleLabel(project.EffectiveRole)</MudChip>
+                                            </MudStack>
+                                        </CardHeaderContent>
+                                    </MudCardHeader>
+                                    <MudCardContent>
+                                        @if (!string.IsNullOrWhiteSpace(project.Description))
                                         {
-                                            <MudListItem T="Guid" Value="@project.Id"
-                                                         data-testid="project-entry"
-                                                         OnClick="@(() => SelectAsync(project.Id))"
-                                                         Class="@(_selected?.Project.Id == project.Id ? "mud-selected-item rounded" : "rounded")">
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                    <MudText Typo="Typo.body2">@project.Name</MudText>
-                                                    <MudChip T="string" Size="Size.Small">@RoleLabel(project.EffectiveRole)</MudChip>
-                                                </MudStack>
-                                            </MudListItem>
+                                            <MudText Typo="Typo.body2">@project.Description</MudText>
                                         }
-                                    </MudList>
-                                }
-                            </MudPaper>
-                        </MudItem>
-
-                        <MudItem xs="12" md="8" lg="9">
-                            @if (_selected is null)
-                            {
-                                <MudPaper Class="pa-8 d-flex flex-column align-center justify-center" Outlined="true" Style="min-height:240px">
-                                    <MudIcon Icon="@Icons.Material.Outlined.Workspaces" Size="Size.Large" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">@L["Projects_SelectPrompt"]</MudText>
-                                </MudPaper>
-                            }
-                            else
-                            {
-                                <MudStack Spacing="3">
-                                    <MudCard>
-                                        <MudCardHeader>
-                                            <CardHeaderContent>
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                    <MudText Typo="Typo.h6" data-testid="project-selected">@_selected.Project.Name</MudText>
-                                                    <MudChip T="string" Color="Color.Primary">@RoleLabel(_selected.Project.EffectiveRole)</MudChip>
-                                                </MudStack>
-                                            </CardHeaderContent>
-                                        </MudCardHeader>
-                                        <MudCardContent>
-                                            @if (!string.IsNullOrWhiteSpace(_selected.Project.Description))
-                                            {
-                                                <MudText Typo="Typo.body2">@_selected.Project.Description</MudText>
-                                            }
-                                            @if (IsOwner)
-                                            {
-                                                <MudButton Variant="Variant.Outlined" Color="Color.Error" Class="mt-3"
-                                                           StartIcon="@Icons.Material.Filled.Delete"
-                                                           OnClick="DeleteProjectAsync">
-                                                    @L["Projects_DeleteProject"]
-                                                </MudButton>
-                                            }
-                                        </MudCardContent>
-                                    </MudCard>
-
-                                    <MudCard>
-                                        <MudCardHeader>
-                                            <CardHeaderContent>
-                                                <MudText Typo="Typo.h6">@L["Projects_Connection"]</MudText>
-                                            </CardHeaderContent>
-                                        </MudCardHeader>
-                                        <MudCardContent>
-                                            <MudText Typo="Typo.body2">@ConnectionStateLabel()</MudText>
-
-                                            @if (IsOwner)
-                                            {
-                                                <MudStack Spacing="2" Class="mt-2">
-                                                    <MudTextField @bind-Value="_connectionOrganizationUrl" Label="@L["Projects_AdoOrganizationUrl"]" Variant="Variant.Outlined" />
-                                                    <MudTextField @bind-Value="_connectionProject" Label="@L["Projects_AdoProject"]" Variant="Variant.Outlined" />
-                                                    <MudTextField @bind-Value="_connectionEstimateField" Label="@L["Projects_AdoEstimateField"]" Variant="Variant.Outlined" />
-                                                    <MudTextField @bind-Value="_connectionDescriptionField" Label="@L["Projects_AdoDescriptionField"]" Variant="Variant.Outlined" />
-                                                    <MudTextField @bind-Value="_connectionReproStepsField" Label="@L["Projects_AdoReproStepsField"]" Variant="Variant.Outlined" />
-                                                    <MudTextField @bind-Value="_connectionAcceptanceCriteriaField" Label="@L["Projects_AdoAcceptanceCriteriaField"]" Variant="Variant.Outlined" />
-
-                                                    @if (_selected.Connection is null)
-                                                    {
-                                                        <MudTextField @bind-Value="_connectionPat" Label="@L["Projects_AdoPat"]" InputType="InputType.Password"
-                                                                      Variant="Variant.Outlined" data-testid="project-pat-input" />
-                                                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                                                   Disabled="_busy" OnClick="ConfigureConnectionAsync"
-                                                                   data-testid="project-configure-connection">
-                                                            @L["Projects_ConnectionConfigure"]
-                                                        </MudButton>
-                                                    }
-                                                    else
-                                                    {
-                                                        <MudStack Row="true" Spacing="2">
-                                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                                                       Disabled="_busy" OnClick="UpdateConnectionAsync">
-                                                                @L["Projects_ConnectionUpdate"]
-                                                            </MudButton>
-                                                            <MudButton Variant="Variant.Outlined" Color="Color.Warning"
-                                                                       Disabled="_busy" OnClick="ToggleConnectionAsync">
-                                                                @(_selected.Connection.IsEnabled ? L["Projects_ConnectionDisable"] : L["Projects_ConnectionEnable"])
-                                                            </MudButton>
-                                                        </MudStack>
-
-                                                        <MudTextField @bind-Value="_connectionPat" Label="@L["Projects_AdoPatRotate"]"
-                                                                      InputType="InputType.Password" Variant="Variant.Outlined"
-                                                                      data-testid="project-pat-rotate-input" />
-                                                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                                                                   Disabled="_busy" OnClick="RotateConnectionPatAsync">
-                                                            @L["Projects_ConnectionRotatePat"]
-                                                        </MudButton>
-
-                                                        <MudButton Variant="Variant.Outlined" Color="Color.Error"
-                                                                   Disabled="_busy" OnClick="RemoveConnectionAsync">
-                                                            @L["Projects_ConnectionRemove"]
-                                                        </MudButton>
-                                                    }
-                                                </MudStack>
-                                            }
-                                        </MudCardContent>
-                                    </MudCard>
-
-                                    <MudCard>
-                                        <MudCardHeader>
-                                            <CardHeaderContent>
-                                                <MudText Typo="Typo.h6">@L["Projects_Members"]</MudText>
-                                            </CardHeaderContent>
-                                        </MudCardHeader>
-                                        <MudCardContent>
-                                            @if (CanManageMembers)
-                                            {
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
-                                                    <MudTextField @bind-Value="_inviteEmail" Label="@L["Projects_InviteEmail"]" Variant="Variant.Outlined" />
-                                                    <MudSelect T="ProjectRoleDto" @bind-Value="_inviteRole" Label="@L["Projects_InviteRole"]" Variant="Variant.Outlined">
-                                                        <MudSelectItem Value="ProjectRoleDto.Member">@RoleLabel(ProjectRoleDto.Member)</MudSelectItem>
-                                                        <MudSelectItem Value="ProjectRoleDto.Admin">@RoleLabel(ProjectRoleDto.Admin)</MudSelectItem>
-                                                    </MudSelect>
-                                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_busy" OnClick="InviteMemberAsync">
-                                                        @L["Projects_Invite"]
-                                                    </MudButton>
-                                                </MudStack>
-                                            }
-
-                                            <MudList T="ProjectMemberDto" Dense="true">
-                                                @foreach (var member in _selected.Members)
-                                                {
-                                                    <MudListItem T="ProjectMemberDto">
-                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                            <MudText>@member.Email</MudText>
-                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                                <MudChip T="string" Size="Size.Small">@RoleLabel(member.Role)</MudChip>
-                                                                <MudChip T="string" Size="Size.Small">@StatusLabel(member.Status)</MudChip>
-                                                                @if (CanManageRole(member))
-                                                                {
-                                                                    <MudSelect T="ProjectRoleDto" Value="@member.Role" ValueChanged="@((ProjectRoleDto value) => ChangeMemberRoleAsync(member, value))"
-                                                                               Dense="true" Variant="Variant.Outlined">
-                                                                        <MudSelectItem Value="ProjectRoleDto.Member">@RoleLabel(ProjectRoleDto.Member)</MudSelectItem>
-                                                                        <MudSelectItem Value="ProjectRoleDto.Admin">@RoleLabel(ProjectRoleDto.Admin)</MudSelectItem>
-                                                                    </MudSelect>
-                                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
-                                                                                   aria-label="@L["Projects_RemoveMember"]"
-                                                                                   OnClick="@(() => RemoveMemberAsync(member))" />
-                                                                }
-                                                            </MudStack>
-                                                        </MudStack>
-                                                    </MudListItem>
-                                                }
-                                            </MudList>
-
-                                            @if (IsOwner)
-                                            {
-                                                <MudDivider Class="my-3" />
-                                                <MudText Typo="Typo.subtitle2">@L["Projects_TransferOwnership"]</MudText>
-                                                <MudSelect T="Guid" @bind-Value="_newOwnerMemberId" Label="@L["Projects_NewOwner"]" Variant="Variant.Outlined" Class="mb-2">
-                                                    @foreach (var candidate in OwnershipCandidates)
-                                                    {
-                                                        <MudSelectItem T="Guid" Value="@candidate.Id">@candidate.Email</MudSelectItem>
-                                                    }
-                                                </MudSelect>
-                                                <MudButton Variant="Variant.Outlined" Color="Color.Warning"
-                                                           Disabled="_busy || _newOwnerMemberId == Guid.Empty"
-                                                           OnClick="TransferOwnershipAsync">
-                                                    @L["Projects_TransferOwnership"]
-                                                </MudButton>
-                                            }
-                                        </MudCardContent>
-                                    </MudCard>
-
-                                    <MudCard>
-                                        <MudCardHeader>
-                                            <CardHeaderContent>
-                                                <MudText Typo="Typo.h6">@L["Projects_Teams"]</MudText>
-                                            </CardHeaderContent>
-                                        </MudCardHeader>
-                                        <MudCardContent>
-                                            @if (CanManageMembers)
-                                            {
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
-                                                    <MudSelect T="Guid" @bind-Value="_teamToAssign" Label="@L["Projects_AssignTeam"]" Variant="Variant.Outlined">
-                                                        @foreach (var team in AssignableTeams)
-                                                        {
-                                                            <MudSelectItem T="Guid" Value="@team.Id">@team.Name</MudSelectItem>
-                                                        }
-                                                    </MudSelect>
-                                                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                                               Disabled="_busy || _teamToAssign == Guid.Empty"
-                                                               OnClick="AssignTeamAsync">
-                                                        @L["Projects_Assign"]
-                                                    </MudButton>
-                                                </MudStack>
-                                            }
-
-                                            @if (_selectedTeams.Count == 0)
-                                            {
-                                                <MudAlert Severity="Severity.Info" Dense="true">@L["Projects_NoTeams"]</MudAlert>
-                                            }
-                                            else
-                                            {
-                                                <MudList T="Guid" Dense="true">
-                                                    @foreach (var team in _selectedTeams)
-                                                    {
-                                                        <MudListItem T="Guid">
-                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                                <MudText>@team.Name</MudText>
-                                                                @if (CanManageMembers)
-                                                                {
-                                                                    <MudIconButton Icon="@Icons.Material.Filled.LinkOff" Color="Color.Error"
-                                                                                   aria-label="@L["Projects_UnassignTeam"]"
-                                                                                   OnClick="@(() => UnassignTeamAsync(team.Id))" />
-                                                                }
-                                                            </MudStack>
-                                                        </MudListItem>
-                                                    }
-                                                </MudList>
-                                            }
-                                        </MudCardContent>
-                                    </MudCard>
-                                </MudStack>
-                            }
-                        </MudItem>
+                                    </MudCardContent>
+                                    <MudCardActions>
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                                   OnClick="@(() => OpenProject(project.Id))"
+                                                   data-testid="project-entry">
+                                            @L["Projects_OpenDetails"]
+                                        </MudButton>
+                                    </MudCardActions>
+                                </MudCard>
+                            </MudItem>
+                        }
                     </MudGrid>
-
-                    <MudDialog @bind-Visible="_createOpen">
-                        <TitleContent>
-                            <MudText Typo="Typo.h6">@L["Projects_Create"]</MudText>
-                        </TitleContent>
-                        <DialogContent>
-                            <MudTextField @bind-Value="_createName" Label="@L["Projects_Name"]" Required="true"
-                                          Variant="Variant.Outlined" Class="mb-2" data-testid="project-name-input" />
-                            <MudTextField @bind-Value="_createDescription" Label="@L["Projects_Description"]"
-                                          Variant="Variant.Outlined" Lines="2" Class="mb-2" />
-                            <MudDivider Class="my-2" />
-                            <MudText Typo="Typo.subtitle2">@L["Projects_OptionalConnection"]</MudText>
-                            <MudTextField @bind-Value="_createOrganizationUrl" Label="@L["Projects_AdoOrganizationUrl"]" Variant="Variant.Outlined" Class="mt-2" />
-                            <MudTextField @bind-Value="_createAdoProject" Label="@L["Projects_AdoProject"]" Variant="Variant.Outlined" />
-                            <MudTextField @bind-Value="_createEstimateField" Label="@L["Projects_AdoEstimateField"]" Variant="Variant.Outlined" />
-                            <MudTextField @bind-Value="_createDescriptionField" Label="@L["Projects_AdoDescriptionField"]" Variant="Variant.Outlined" />
-                            <MudTextField @bind-Value="_createReproStepsField" Label="@L["Projects_AdoReproStepsField"]" Variant="Variant.Outlined" />
-                            <MudTextField @bind-Value="_createAcceptanceCriteriaField" Label="@L["Projects_AdoAcceptanceCriteriaField"]" Variant="Variant.Outlined" />
-                            <MudTextField @bind-Value="_createPat" Label="@L["Projects_AdoPat"]" InputType="InputType.Password"
-                                          Variant="Variant.Outlined" data-testid="project-create-pat-input" />
-                        </DialogContent>
-                        <DialogActions>
-                            <MudButton OnClick="@(() => _createOpen = false)">@L["Teams_Cancel"]</MudButton>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_busy"
-                                       OnClick="CreateProjectAsync" data-testid="project-create-save">
-                                @L["Projects_Save"]
-                            </MudButton>
-                        </DialogActions>
-                    </MudDialog>
                 }
+
+                <MudDialog @bind-Visible="_createOpen">
+                    <TitleContent>
+                        <MudText Typo="Typo.h6">@L["Projects_Create"]</MudText>
+                    </TitleContent>
+                    <DialogContent>
+                        <MudTextField @bind-Value="_createName" Label="@L["Projects_Name"]" Required="true"
+                                      Variant="Variant.Outlined" Class="mb-2" data-testid="project-name-input" />
+                        <MudTextField @bind-Value="_createDescription" Label="@L["Projects_Description"]"
+                                      Variant="Variant.Outlined" Lines="2" />
+                    </DialogContent>
+                    <DialogActions>
+                        <MudButton OnClick="@(() => _createOpen = false)">@L["Teams_Cancel"]</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="_busy"
+                                   OnClick="CreateProjectAsync" data-testid="project-create-save">
+                            @L["Projects_Save"]
+                        </MudButton>
+                    </DialogActions>
+                </MudDialog>
             }
         </Authorized>
         <NotAuthorized>

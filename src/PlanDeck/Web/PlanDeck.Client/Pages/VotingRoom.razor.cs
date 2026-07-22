@@ -19,6 +19,7 @@ public partial class VotingRoom : IAsyncDisposable
     private string? _errorKey;
     private string? _myParticipantId;
     private string? _myVote;
+    private Guid _projectId;
     private Guid? _activeTaskId;
     private PlanningRoomState? _state;
 
@@ -44,6 +45,7 @@ public partial class VotingRoom : IAsyncDisposable
         try
         {
             var session = await SessionService.GetSessionAsync(SessionId);
+            _projectId = session.ProjectId;
             if (session.Status != SessionStatusDto.Active)
             {
                 _errorKey = "Voting_NotAvailable";
@@ -100,6 +102,17 @@ public partial class VotingRoom : IAsyncDisposable
         Navigation.NavigateTo(
             $"/auth/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",
             forceLoad: true);
+
+    private void BackToProjectSessions()
+    {
+        if (_projectId == Guid.Empty)
+        {
+            Navigation.NavigateTo("/projects");
+            return;
+        }
+
+        Navigation.NavigateTo($"/projects/{_projectId:D}/sessions");
+    }
 
     private async Task CastVoteAsync(string value)
     {

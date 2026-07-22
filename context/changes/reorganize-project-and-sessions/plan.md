@@ -596,9 +596,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [x] 2.1 Project and room unit tests pass
-- [x] 2.2 Project and Session persistence integration tests pass
-- [x] 2.3 Cascade migration Up and Down paths succeed
+- [x] 2.1 Project and room unit tests pass — 23f251b
+- [x] 2.2 Project and Session persistence integration tests pass — 23f251b
+- [x] 2.3 Cascade migration Up and Down paths succeed — 23f251b
 
 #### Manual
 
@@ -609,9 +609,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [ ] 3.1 Client and server build with the new routes and contracts
-- [ ] 3.2 Route, role-control, and localized-error unit tests pass
-- [ ] 3.3 English and Polish resource key parity is preserved
+- [x] 3.1 Client and server build with the new routes and contracts
+- [x] 3.2 Route, role-control, and localized-error unit tests pass
+- [x] 3.3 English and Polish resource key parity is preserved
 
 #### Manual
 

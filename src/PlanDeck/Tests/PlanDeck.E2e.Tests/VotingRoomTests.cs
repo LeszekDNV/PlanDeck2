@@ -4,6 +4,7 @@ using PlanDeck.E2e.Tests.Pages;
 namespace PlanDeck.E2e.Tests;
 
 [TestFixture]
+[Ignore("Superseded by project-first routes; rebuilt in Phase 5")]
 public class VotingRoomTests : PageTest
 {
     // Mirrors TestAuthenticationHandler.UserSelectionCookie: a context carrying e2e-user=b

@@ -1,29 +1,33 @@
 using Grpc.Core;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
 using System.Globalization;
 using PlanDeck.Client.Components;
 using PlanDeck.Core.Shared.Contracts;
-using PlanDeck.Core.Shared.Validation;
 
 namespace PlanDeck.Client.Pages;
 
 public partial class Sessions
 {
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
     private bool _loading = true;
+    private bool _projectUnavailable;
     private bool _createOpen;
     private bool _createSubmitting;
     private bool _savingConfig;
     private bool _addingTask;
     private bool _activating;
     private string? _operationError;
+    private string _projectName = string.Empty;
+    private ProjectRoleDto _effectiveRole = ProjectRoleDto.Member;
 
     private List<SessionDto> _sessions = [];
-    private List<ProjectDto> _projects = [];
     private SessionDto? _selected;
 
     private string _newName = string.Empty;
-    private Guid _newProjectId;
     private VotingScaleTypeDto _newScaleType = VotingScaleTypeDto.Fibonacci;
     private string _newCustomValues = string.Empty;
     private string _adHocTitle = string.Empty;
@@ -55,9 +59,8 @@ public partial class Sessions
     private bool _assigningMember;
 
     private bool _isLocked => _selected?.Status == SessionStatusDto.Active;
-
-    private readonly List<int> _stagedAdoIds = [];
-    private Guid _activeProjectId;
+    private bool CanManageSessions => SessionPagePolicy.CanManageSessions(_effectiveRole);
+    private bool _canMutateConfig => !_isLocked && CanManageSessions;
 
     private IReadOnlyCollection<int> StagedAdoIds =>
         _stagedTasks.Where(t => t.AdoWorkItemId.HasValue).Select(t => t.AdoWorkItemId!.Value).ToArray();
@@ -65,21 +68,49 @@ public partial class Sessions
     private IReadOnlyCollection<int> SelectedSessionAdoIds =>
         _selected?.Tasks.Where(t => t.AdoWorkItemId.HasValue).Select(t => t.AdoWorkItemId!.Value).ToArray() ?? [];
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        var state = await AuthState.GetAuthenticationStateAsync();
-        if (state.User.Identity?.IsAuthenticated == true)
+        _loading = true;
+        _projectUnavailable = false;
+        _operationError = null;
+        _selected = null;
+        _sessions = [];
+
+        if (!SessionPagePolicy.IsValidProjectId(ProjectId))
         {
-            await LoadProjectsAsync();
-            if (_projects.Count > 0)
-            {
-                _activeProjectId = _projects[0].Id;
-                _newProjectId = _activeProjectId;
-                await LoadSessionsAsync(_activeProjectId);
-            }
+            _projectUnavailable = true;
+            _loading = false;
+            return;
+        }
+
+        var contextLoaded = await LoadProjectContextAsync();
+        if (contextLoaded)
+        {
+            await LoadSessionsAsync(ProjectId);
         }
 
         _loading = false;
+    }
+
+    private async Task<bool> LoadProjectContextAsync()
+    {
+        try
+        {
+            var project = await ProjectService.GetProjectAsync(ProjectId);
+            _projectName = project.Project.Name;
+            _effectiveRole = project.Project.EffectiveRole;
+            return true;
+        }
+        catch (RpcException ex) when (SessionPagePolicy.IsProjectUnavailable(ex.StatusCode))
+        {
+            _projectUnavailable = true;
+            return false;
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+            return false;
+        }
     }
 
     private async Task LoadSessionsAsync(Guid projectId)
@@ -94,27 +125,9 @@ public partial class Sessions
         }
     }
 
-    private async Task LoadProjectsAsync()
-    {
-        try
-        {
-            _projects = (await ProjectService.GetProjectsAsync()).ToList();
-        }
-        catch (RpcException ex)
-        {
-            ShowError(ex);
-        }
-    }
-
     private void OpenCreate()
     {
-        if (_projects.Count == 0)
-        {
-            return;
-        }
-
         _newName = string.Empty;
-        _newProjectId = Guid.Empty;
         _newScaleType = VotingScaleTypeDto.Fibonacci;
         _newCustomValues = string.Empty;
         _adHocTitle = string.Empty;
@@ -170,7 +183,7 @@ public partial class Sessions
     {
         var parameters = new DialogParameters<AdoImportDialog>
         {
-            { x => x.ProjectId, _newProjectId },
+            { x => x.ProjectId, ProjectId },
             { x => x.AlreadyPresentIds, StagedAdoIds }
         };
 
@@ -213,12 +226,6 @@ public partial class Sessions
             return;
         }
 
-        if (_newProjectId == Guid.Empty)
-        {
-            Snackbar.Add(L["Sessions_ProjectRequired"], Severity.Error);
-            return;
-        }
-
         _createSubmitting = true;
         try
         {
@@ -230,16 +237,13 @@ public partial class Sessions
 
             var session = await SessionService.CreateSessionAsync(
                 _newName.Trim(),
-                _newProjectId,
+                ProjectId,
                 _newScaleType,
                 ParseCustomValues(_newCustomValues),
                 adHocTasks,
                 adoIds);
 
-            if (_activeProjectId == Guid.Empty || session.ProjectId == _activeProjectId)
-            {
-                _sessions.Insert(0, session);
-            }
+            _sessions.Insert(0, session);
             _createOpen = false;
             await SelectAsync(session);
         }
@@ -294,7 +298,7 @@ public partial class Sessions
         }
 
         var email = _memberEmail?.Trim() ?? string.Empty;
-        if (!EmailValidator.IsValid(email))
+        if (!Core.Shared.Validation.EmailValidator.IsValid(email))
         {
             Snackbar.Add(L["Sessions_MemberInvalidEmail"], Severity.Error);
             return;
@@ -584,7 +588,7 @@ public partial class Sessions
 
         var parameters = new DialogParameters<AdoImportDialog>
         {
-            { x => x.ProjectId, _selected!.ProjectId },
+            { x => x.ProjectId, _selected.ProjectId },
             { x => x.AlreadyPresentIds, SelectedSessionAdoIds }
         };
 
@@ -724,25 +728,8 @@ public partial class Sessions
 
     private void ShowError(RpcException ex)
     {
-        var message = ex.StatusCode switch
-        {
-            StatusCode.InvalidArgument => MapInvalidArgument(ex.Status.Detail),
-            StatusCode.AlreadyExists => L["Sessions_MemberDuplicate"],
-            StatusCode.FailedPrecondition => L["Sessions_ActiveLocked"],
-            StatusCode.NotFound => L["Error_Generic"],
-            _ => L["Error_Generic"]
-        };
-
-        _operationError = message;
-        Snackbar.Add(message, Severity.Error);
+        var key = SessionPagePolicy.MapErrorToResourceKey(ex.StatusCode, ex.Status.Detail);
+        _operationError = L[key];
+        Snackbar.Add(_operationError, Severity.Error);
     }
-
-    private string MapInvalidArgument(string detail) => detail switch
-    {
-        SessionValidationMessages.NameRequired => L["Sessions_NameRequired"],
-        SessionValidationMessages.CustomScaleRequired => L["Sessions_CustomScaleRequired"],
-        SessionValidationMessages.TaskTitleRequired => L["Sessions_TaskTitleRequired"],
-        SessionMemberValidationMessages.EmailRequired => L["Sessions_MemberInvalidEmail"],
-        _ => L["Error_Generic"]
-    };
 }

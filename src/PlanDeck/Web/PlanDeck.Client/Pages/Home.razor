@@ -1,6 +1,8 @@
 @page "/"
 @using PlanDeck.Client.Services
 @inject IHelloClientService HelloService
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
 
 <PageTitle>Home</PageTitle>
 
@@ -22,4 +24,3 @@
         <b>www.mudblazor.com</b>
     </MudLink>
 </MudAlert>
-

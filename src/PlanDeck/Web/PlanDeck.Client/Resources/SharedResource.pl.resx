@@ -640,4 +640,19 @@
   <data name="Sessions_DefaultProjectName" xml:space="preserve">
     <value>Mój projekt</value>
   </data>
+  <data name="Projects_OpenSessions" xml:space="preserve">
+    <value>Otwórz sesje</value>
+  </data>
+  <data name="Projects_OpenDetails" xml:space="preserve">
+    <value>Otwórz panel projektu</value>
+  </data>
+  <data name="Sessions_BackToProject" xml:space="preserve">
+    <value>Powrót do projektu</value>
+  </data>
+  <data name="Sessions_ReadOnlyRole" xml:space="preserve">
+    <value>Możesz przeglądać sesje i głosować, ale tylko administratorzy projektu mogą je modyfikować.</value>
+  </data>
+  <data name="Sessions_PermissionDenied" xml:space="preserve">
+    <value>Nie masz uprawnień do modyfikowania tej sesji.</value>
+  </data>
 </root>
