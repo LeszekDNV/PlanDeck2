@@ -1,10 +1,10 @@
 ---
 change_id: secure-ado-grpc-endpoints
 title: Secure Azure DevOps gRPC endpoints
-status: impl_reviewed
+status: archived
 created: 2026-07-21
 updated: 2026-07-22
-archived_at: null
+archived_at: 2026-07-22T01:04:31Z
 ---
 
 ## Notes
