@@ -609,9 +609,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [x] 3.1 Client and server build with the new routes and contracts
-- [x] 3.2 Route, role-control, and localized-error unit tests pass
-- [x] 3.3 English and Polish resource key parity is preserved
+- [x] 3.1 Client and server build with the new routes and contracts — af9cb0f
+- [x] 3.2 Route, role-control, and localized-error unit tests pass — af9cb0f
+- [x] 3.3 English and Polish resource key parity is preserved — af9cb0f
 
 #### Manual
 
@@ -624,9 +624,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [ ] 4.1 Test-auth and scenario integration tests pass
-- [ ] 4.2 E2E project discovers the three-role fixture without real Entra
-- [ ] 4.3 Pipeline supplies protected Test parameters without leaking secrets
+- [x] 4.1 Test-auth and scenario integration tests pass
+- [x] 4.2 E2E project discovers the three-role fixture without real Entra
+- [x] 4.3 Pipeline supplies protected Test parameters without leaking secrets
 
 #### Manual
 

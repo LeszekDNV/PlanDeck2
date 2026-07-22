@@ -7,10 +7,7 @@ namespace PlanDeck.E2e.Tests;
 [Ignore("Superseded by project-first routes; rebuilt in Phase 5")]
 public class VotingRoomTests : PageTest
 {
-    // Mirrors TestAuthenticationHandler.UserSelectionCookie: a context carrying e2e-user=b
-    // authenticates as the second deterministic identity, giving two distinct voters.
-    private const string UserSelectionCookie = "e2e-user";
-    private const string UserBEmail = "test.userb@plandeck.local";
+    private const string MemberEmail = "test.member@plandeck.local";
 
     public override BrowserNewContextOptions ContextOptions() => new()
     {
@@ -30,7 +27,7 @@ public class VotingRoomTests : PageTest
 
         await sessionsA.GotoAsync();
         await sessionsA.CreateSessionAsync(sessionName, taskTitle, projectName);
-        await membersA.AssignMemberAsync(UserBEmail);
+        await membersA.AssignMemberAsync(MemberEmail);
         await sessionsA.ActivateAsync();
 
         var sessionId = await sessionsA.JoinVotingAsync();
@@ -38,17 +35,11 @@ public class VotingRoomTests : PageTest
         var votingA = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
         await votingA.WaitForLoadedAsync();
 
-        // --- Context B: second identity (Test User B), an assigned member, joins the room. ---
-        await using var contextB = await Browser.NewContextAsync(ContextOptions());
-        await contextB.AddCookiesAsync(
-        [
-            new Cookie
-            {
-                Name = UserSelectionCookie,
-                Value = "b",
-                Url = AspireAppFixture.BaseUrl
-            }
-        ]);
+        // --- Context B: deterministic member identity joins the same voting room. ---
+        await using var contextB = await E2eIdentityContextFactory.CreateMemberContextAsync(
+            Browser,
+            AspireAppFixture.BaseUrl,
+            ContextOptions());
 
         var pageB = await contextB.NewPageAsync();
         var votingB = new VotingRoomPage(pageB, AspireAppFixture.BaseUrl);
@@ -104,7 +95,7 @@ public class VotingRoomTests : PageTest
 
         await sessionsA.GotoAsync();
         await sessionsA.CreateSessionAsync(sessionName, seedTask, projectName);
-        await membersA.AssignMemberAsync(UserBEmail);
+        await membersA.AssignMemberAsync(MemberEmail);
         await sessionsA.ActivateAsync();
 
         var sessionId = await sessionsA.JoinVotingAsync();
@@ -112,16 +103,10 @@ public class VotingRoomTests : PageTest
         await votingA.WaitForLoadedAsync();
 
         // --- Context B (assigned member) opens the same room. ---
-        await using var contextB = await Browser.NewContextAsync(ContextOptions());
-        await contextB.AddCookiesAsync(
-        [
-            new Cookie
-            {
-                Name = UserSelectionCookie,
-                Value = "b",
-                Url = AspireAppFixture.BaseUrl
-            }
-        ]);
+        await using var contextB = await E2eIdentityContextFactory.CreateMemberContextAsync(
+            Browser,
+            AspireAppFixture.BaseUrl,
+            ContextOptions());
 
         var pageB = await contextB.NewPageAsync();
         var votingB = new VotingRoomPage(pageB, AspireAppFixture.BaseUrl);
@@ -152,7 +137,7 @@ public class VotingRoomTests : PageTest
         var projectName = await CreateProjectAsync("E2E Reconnect Project");
         await sessionsA.GotoAsync();
         await sessionsA.CreateSessionAsync(sessionName, taskTitle, projectName);
-        await membersA.AssignMemberAsync(UserBEmail);
+        await membersA.AssignMemberAsync(MemberEmail);
         await sessionsA.ActivateAsync();
 
         var sessionId = await sessionsA.JoinVotingAsync();
@@ -172,7 +157,7 @@ public class VotingRoomTests : PageTest
         await Expect(votingA.VotedStatuses).ToHaveCountAsync(2, new() { Timeout = 15_000 });
 
         await pageB.CloseAsync();
-        await Expect(votingA.Participant("Test User B"))
+        await Expect(votingA.Participant("Test Member"))
             .ToHaveAttributeAsync("data-online", "false", new() { Timeout = 15_000 });
         await votingA.RevealAsync();
         await Expect(votingA.RevealedVotes).ToHaveCountAsync(2, new() { Timeout = 15_000 });
@@ -197,7 +182,7 @@ public class VotingRoomTests : PageTest
         var projectName = await CreateProjectAsync("E2E Persist Project");
         await sessions.GotoAsync();
         await sessions.CreateSessionAsync(sessionName, taskTitle, projectName);
-        await members.AssignMemberAsync(UserBEmail);
+        await members.AssignMemberAsync(MemberEmail);
         await sessions.ActivateAsync();
 
         var sessionId = await sessions.JoinVotingAsync();
@@ -243,7 +228,7 @@ public class VotingRoomTests : PageTest
             $"{taskA}{Environment.NewLine}{taskB}",
             projectName,
             "T-shirt sizes");
-        await members.AssignMemberAsync(UserBEmail);
+        await members.AssignMemberAsync(MemberEmail);
         await sessions.ActivateAsync();
 
         var sessionId = await sessions.JoinVotingAsync();
@@ -260,20 +245,10 @@ public class VotingRoomTests : PageTest
     }
 
     private async Task<IBrowserContext> CreateUserBContextAsync()
-    {
-        var context = await Browser.NewContextAsync(ContextOptions());
-        await context.AddCookiesAsync(
-        [
-            new Cookie
-            {
-                Name = UserSelectionCookie,
-                Value = "b",
-                Url = AspireAppFixture.BaseUrl
-            }
-        ]);
-
-        return context;
-    }
+        => await E2eIdentityContextFactory.CreateMemberContextAsync(
+            Browser,
+            AspireAppFixture.BaseUrl,
+            ContextOptions());
 
     private Task<string> CreateProjectAsync(string prefix) =>
         new ProjectsPage(Page, AspireAppFixture.BaseUrl).CreateUniqueProjectAsync(prefix);

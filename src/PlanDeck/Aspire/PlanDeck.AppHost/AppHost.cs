@@ -32,6 +32,7 @@ if (builder.ExecutionContext.IsPublishMode)
     var entraTenantId = builder.AddParameter("entra-tenant-id");
     var entraClientId = builder.AddParameter("entra-client-id");
     var entraClientSecret = builder.AddParameter("entra-client-secret", secret: true);
+    var e2eScenarioToken = builder.AddParameter("e2e-scenario-token", secret: true);
 
     // Pin the pilot database to a serverless General Purpose tier with auto-pause to keep
     // cost minimal; cold-start latency on the first query after a pause is acceptable for a
@@ -55,6 +56,7 @@ if (builder.ExecutionContext.IsPublishMode)
         .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
         .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
         .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret)
+        .WithEnvironment("Testing__E2eScenario__AuthorizationToken", e2eScenarioToken)
         .WithEnvironment("EmailSettings__Host", "smtp")
         .WithEnvironment("EmailSettings__Port", "587")
         .WaitFor(sqlDatabase)
@@ -102,6 +104,12 @@ if (string.Equals(
         StringComparison.OrdinalIgnoreCase))
 {
     planDeckServer.WithEnvironment("Authentication__UseTestScheme", "true");
+}
+
+var scenarioToken = Environment.GetEnvironmentVariable("PLANDECK_E2E_SCENARIO_TOKEN");
+if (!string.IsNullOrWhiteSpace(scenarioToken))
+{
+    planDeckServer.WithEnvironment("Testing__E2eScenario__AuthorizationToken", scenarioToken);
 }
 
 builder.Build().Run();

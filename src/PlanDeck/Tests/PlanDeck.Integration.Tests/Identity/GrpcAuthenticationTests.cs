@@ -79,6 +79,31 @@ public sealed class GrpcAuthenticationTests
         Assert.That(reply.Teams, Is.Empty);
     }
 
+    [TestCase("owner")]
+    [TestCase("admin")]
+    [TestCase("member")]
+    public async Task ProtectedGrpcService_AllowsExplicitDeterministicIdentity(string identitySelection)
+    {
+        using var channel = CreateChannel(userSelection: identitySelection);
+        var service = channel.CreateGrpcService<ITeamService>();
+
+        var reply = await service.ListTeamsAsync(new ListTeamsRequest());
+
+        Assert.That(reply.Teams, Is.Empty);
+    }
+
+    [Test]
+    public void ProtectedGrpcService_RejectsUnknownDeterministicIdentitySelection()
+    {
+        using var channel = CreateChannel(userSelection: "unknown-role");
+        var service = channel.CreateGrpcService<ITeamService>();
+
+        var exception = Assert.ThrowsAsync<RpcException>(
+            async () => await service.ListTeamsAsync(new ListTeamsRequest()));
+
+        Assert.That(exception!.StatusCode, Is.EqualTo(StatusCode.Unauthenticated));
+    }
+
     [Test]
     public async Task AnonymousAuthRpc_RemainsAvailable()
     {
@@ -106,6 +131,7 @@ public sealed class GrpcAuthenticationTests
 
     private GrpcChannel CreateChannel(
         string? identityShape = null,
+        string? userSelection = null,
         Guid? guestSessionId = null)
     {
         var httpClient = _factory.CreateDefaultClient(new GrpcWebHandler(
@@ -123,6 +149,13 @@ public sealed class GrpcAuthenticationTests
             httpClient.DefaultRequestHeaders.Add(
                 TestAuthenticationHandler.GuestSessionHeader,
                 guestSessionId.Value.ToString());
+        }
+
+        if (!string.IsNullOrWhiteSpace(userSelection))
+        {
+            httpClient.DefaultRequestHeaders.Add(
+                "Cookie",
+                $"{TestAuthenticationHandler.UserSelectionCookie}={userSelection}");
         }
 
         return GrpcChannel.ForAddress(

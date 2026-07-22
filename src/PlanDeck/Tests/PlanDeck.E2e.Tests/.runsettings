@@ -4,14 +4,15 @@
     <!--
       BaseUrl controls where the E2E tests point the browser.
       Empty value: local developer machine, Aspire is started automatically.
-      A URL value: remote Test or Staging environment, Aspire is NOT started and
+      A URL value: remote Test environment, Aspire is NOT started and
       the tests navigate straight to this already-deployed server. Set
-      RemoteEnvironment to Test or Staging; Production is rejected.
+      RemoteEnvironment to Test and provide E2eScenarioToken.
 
       Override per run without editing this file by passing a TestRunParameters
       argument to "dotnet test".
     -->
     <Parameter name="BaseUrl" value="" />
     <Parameter name="RemoteEnvironment" value="" />
+    <Parameter name="E2eScenarioToken" value="" />
   </TestRunParameters>
 </RunSettings>

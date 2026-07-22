@@ -7,12 +7,6 @@ namespace PlanDeck.E2e.Tests;
 [TestFixture]
 public class GuestVotingTests : PageTest
 {
-    // Mirrors TestAuthenticationHandler.GuestSessionCookie: a context carrying this cookie is
-    // authenticated as a deterministic, session-scoped guest (no membership). A cookie (not a
-    // header) is used so the identity also rides the SignalR WebSocket handshake — the only way to
-    // represent an account-less guest in the hub under the deterministic E2E test-auth scheme.
-    private const string GuestSessionCookie = "e2e-guest-sid";
-
     public override BrowserNewContextOptions ContextOptions() => new()
     {
         IgnoreHTTPSErrors = true
@@ -36,17 +30,12 @@ public class GuestVotingTests : PageTest
         var votingA = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
         await votingA.WaitForLoadedAsync();
 
-        // --- Guest context: account-less, scoped to this session via the guest cookie. ---
-        await using var guestContext = await Browser.NewContextAsync(ContextOptions());
-        await guestContext.AddCookiesAsync(
-        [
-            new Cookie
-            {
-                Name = GuestSessionCookie,
-                Value = sessionId.ToString(),
-                Url = AspireAppFixture.BaseUrl
-            }
-        ]);
+        // --- Guest context: account-less, scoped to this session via deterministic guest identity. ---
+        await using var guestContext = await E2eIdentityContextFactory.CreateGuestContextAsync(
+            Browser,
+            AspireAppFixture.BaseUrl,
+            sessionId,
+            ContextOptions());
 
         var guestPage = await guestContext.NewPageAsync();
         var votingGuest = new VotingRoomPage(guestPage, AspireAppFixture.BaseUrl);

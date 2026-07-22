@@ -154,6 +154,11 @@ app.MapPost("/guest/join", async (
     return Results.Ok(new GuestJoinResponse(session.SessionId));
 }).AllowAnonymous();
 
+if (E2eScenarioEndpoints.ShouldMap(app.Environment, app.Configuration))
+{
+    app.MapE2eScenarioEndpoints();
+}
+
 
 // Configure the HTTP request pipeline.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });

@@ -16,8 +16,8 @@ public sealed class TestAuthenticationHandler(
 
     /// <summary>
     /// Optional request cookie that lets an E2E browser context choose which deterministic
-    /// identity it authenticates as. Absent / any other value selects the default user (A);
-    /// the value "b" selects the second user, enabling two distinct voters across two contexts.
+    /// identity it authenticates as. Recognized values: owner, admin, member.
+    /// When absent, owner is used by default. Unknown values fail authentication.
     /// </summary>
     public const string UserSelectionCookie = "e2e-user";
 
@@ -80,13 +80,13 @@ public sealed class TestAuthenticationHandler(
             ]));
         }
 
-        var isSecondUser =
-            Request.Cookies.TryGetValue(UserSelectionCookie, out var selection)
-            && string.Equals(selection, "b", StringComparison.OrdinalIgnoreCase);
+        var selectedIdentityResult = ResolveSelectedIdentity();
+        if (!selectedIdentityResult.IsSuccess)
+        {
+            return Task.FromResult(AuthenticateResult.Fail(selectedIdentityResult.ErrorMessage!));
+        }
 
-        var member = isSecondUser
-            ? TestMemberIdentities.Second
-            : TestMemberIdentities.Default;
+        var member = selectedIdentityResult.Identity!;
 
         return Task.FromResult(BuildResult(
         [
@@ -99,7 +99,32 @@ public sealed class TestAuthenticationHandler(
         ]));
     }
 
-    private AuthenticateResult BuildResult(Claim[] claims)
+    private (bool IsSuccess, TestMemberIdentity? Identity, string? ErrorMessage) ResolveSelectedIdentity()
+    {
+        if (!Request.Cookies.TryGetValue(UserSelectionCookie, out var selection)
+            || string.IsNullOrWhiteSpace(selection))
+        {
+            return (true, TestMemberIdentities.Owner, null);
+        }
+
+        var selected = TestMemberIdentities.All.SingleOrDefault(
+            identity => string.Equals(
+                identity.SelectionKey,
+                selection,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (selected is null)
+        {
+            return (
+                false,
+                null,
+                $"Unknown deterministic test identity '{selection}'.");
+        }
+
+        return (true, selected, null);
+    }
+
+    private static AuthenticateResult BuildResult(Claim[] claims)
     {
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);

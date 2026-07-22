@@ -167,6 +167,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IAppUserRepository, AppUserRepository>();
             services.AddScoped<IAppUserProvisioner, AppUserProvisioner>();
             services.AddScoped<TestAppUserSeeder>();
+            services.AddScoped<E2eScenarioService>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
             services.AddHostedService<PlanningRoomCleanupService>();
             services.AddScoped<IPlanningRoomNotifier, SignalRPlanningRoomNotifier>();
