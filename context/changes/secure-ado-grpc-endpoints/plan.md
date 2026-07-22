@@ -1049,16 +1049,16 @@ manual security/deployment review are accepted.
 
 #### Automated
 
-- [ ] 4.1 Solution builds
-- [ ] 4.2 Unit tests pass
-- [ ] 4.3 Forged metadata and cross-project ADO tests never invoke a foreign connection
-- [ ] 4.4 Contract test proves the raw write RPC and DTOs are absent
+- [x] 4.1 Solution builds — f48dd44
+- [x] 4.2 Unit tests pass — f48dd44
+- [x] 4.3 Forged metadata and cross-project ADO tests never invoke a foreign connection — f48dd44
+- [x] 4.4 Contract test proves the raw write RPC and DTOs are absent — f48dd44
 
 #### Manual
 
-- [x] 4.5 Import and write-back use the session project's connection
-- [x] 4.6 Session-only participants can vote but cannot use project ADO
-- [x] 4.7 ADO errors and logs expose no secret or raw upstream detail
+- [x] 4.5 Import and write-back use the session project's connection — f48dd44
+- [x] 4.6 Session-only participants can vote but cannot use project ADO — f48dd44
+- [x] 4.7 ADO errors and logs expose no secret or raw upstream detail — f48dd44
 
 ### Phase 5: Project Administration and Project-First Session UX
 
@@ -1079,14 +1079,14 @@ manual security/deployment review are accepted.
 
 #### Automated
 
-- [x] 6.1 Full solution builds
-- [x] 6.2 Full test suite passes
-- [x] 6.3 gRPC-Web and SignalR security matrix passes without foreign external calls
-- [x] 6.4 Real-vault owner-to-member import/write-back E2E passes and cleans up
-- [x] 6.5 Infrastructure preview succeeds with intended Key Vault RBAC
+- [x] 6.1 Full solution builds — f48dd44
+- [x] 6.2 Full test suite passes — f48dd44
+- [x] 6.3 gRPC-Web and SignalR security matrix passes without foreign external calls — f48dd44
+- [x] 6.4 Real-vault owner-to-member import/write-back E2E passes and cleans up — f48dd44
+- [x] 6.5 Infrastructure preview succeeds with intended Key Vault RBAC — f48dd44
 
 #### Manual
 
-- [x] 6.6 Security review confirms every PAT-backed denial boundary
-- [x] 6.7 Azure vault separation, protection, and managed-identity RBAC are confirmed
-- [x] 6.8 Backup, reset, smoke-test, and restore procedure is rehearsed
+- [x] 6.6 Security review confirms every PAT-backed denial boundary — f48dd44
+- [x] 6.7 Azure vault separation, protection, and managed-identity RBAC are confirmed — f48dd44
+- [x] 6.8 Backup, reset, smoke-test, and restore procedure is rehearsed — f48dd44
