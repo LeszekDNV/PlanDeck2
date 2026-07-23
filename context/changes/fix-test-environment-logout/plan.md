@@ -320,11 +320,11 @@ would then return to Test Owner, which matches the pre-change behavior.
 
 #### Automated
 
-- [x] 2.1 Targeted logout E2E passes locally
-- [x] 2.2 Existing authentication-sensitive E2E smoke tests pass
-- [x] 2.3 Whole solution builds
+- [x] 2.1 Targeted logout E2E passes locally — 8d52738
+- [x] 2.2 Existing authentication-sensitive E2E smoke tests pass — 8d52738
+- [x] 2.3 Whole solution builds — 8d52738
 
 #### Manual
 
-- [x] 2.4 Deployed Testing logout persists through refresh
-- [x] 2.5 Deployed Testing login restores Test Owner
+- [x] 2.4 Deployed Testing logout persists through refresh — 03a77cb
+- [x] 2.5 Deployed Testing login restores Test Owner — 03a77cb
