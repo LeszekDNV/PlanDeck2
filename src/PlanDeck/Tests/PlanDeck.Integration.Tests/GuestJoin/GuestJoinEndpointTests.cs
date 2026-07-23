@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
 using PlanDeck.Infrastructure.Persistence;
+using PlanDeck.Identity.IntegrationTests;
 using PlanDeck.Integration.Tests;
 using PlanDeck.Server;
 using PlanDeck.Server.Identity;
@@ -32,7 +33,7 @@ public sealed class GuestJoinEndpointTests
         _factory = new WebApplicationFactory<ServerEntryPoint>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.UseSetting("Authentication:UseTestScheme", "true");
+            builder.UseSetting("Authentication:UseTestScheme", "false");
             builder.UseSetting(
                 "ConnectionStrings:DefaultConnection",
                 "Server=(localdb)\\MSSQLLocalDB;Database=PlanDeckGuestJoinTest;Trusted_Connection=True;");
@@ -78,6 +79,36 @@ public sealed class GuestJoinEndpointTests
         Assert.That(payload, Is.Not.Null);
         Assert.That(payload!.SessionId, Is.EqualTo(sessionId));
         Assert.That(GetSetCookies(response), Has.Some.Contains(GuestAuthentication.CookieName));
+    }
+
+    [Test]
+    public async Task GuestLogout_ClearsGuestCookie_AndLeavesAnonymousState()
+    {
+        SeedSession(SessionStatus.Active, "LOGOUTCODE1");
+        using var browser = new AuthenticationTestClient(_factory);
+
+        var joinResponse = await browser.PostAsJsonAsync(
+            "/guest/join", new { code = "LOGOUTCODE1", displayName = "Alice" });
+        Assert.That(joinResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        var guestUser = await browser.GetCurrentUserAsync();
+        Assert.Multiple(() =>
+        {
+            Assert.That(guestUser.IsAuthenticated, Is.True);
+            Assert.That(guestUser.IsGuest, Is.True);
+            Assert.That(guestUser.ParticipantId, Is.Not.Null);
+        });
+
+        var logoutResponse = await browser.GetAsync("/auth/logout");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(logoutResponse.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+            Assert.That(logoutResponse.Headers.Location?.OriginalString, Is.EqualTo("/"));
+            Assert.That(GetSetCookies(logoutResponse), Has.Some.Contains(GuestAuthentication.CookieName));
+            Assert.That(browser.HasCookie(GuestAuthentication.CookieName), Is.False);
+        });
+        Assert.That((await browser.GetCurrentUserAsync()).IsAuthenticated, Is.False);
     }
 
     [Test]

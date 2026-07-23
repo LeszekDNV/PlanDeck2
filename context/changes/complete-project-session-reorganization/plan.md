@@ -616,11 +616,11 @@ follow-up change or the original change is archived.
 
 #### Automated
 
-- [x] 4.1 Unit test suite passes
-- [x] 4.2 Integration test suite passes
-- [x] 4.3 Full local Aspire E2E suite passes
-- [x] 4.4 Full protected remote gate and network probes pass
-- [x] 4.5 Entire solution builds
+- [x] 4.1 Unit test suite passes — 32c5f75
+- [x] 4.2 Integration test suite passes — 32c5f75
+- [x] 4.3 Full local Aspire E2E suite passes — 32c5f75
+- [x] 4.4 Full protected remote gate and network probes pass — 32c5f75
+- [x] 4.5 Entire solution builds — 32c5f75
 
 #### Manual
 

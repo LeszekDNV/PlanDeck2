@@ -100,21 +100,48 @@ var isOidcConfigured = !useTestScheme
     && !string.IsNullOrWhiteSpace(microsoftAuth["TenantId"])
     && !string.IsNullOrWhiteSpace(microsoftAuth["ClientId"]);
 
-app.MapGet("/auth/login", (string? returnUrl) =>
+app.MapGet("/auth/login", async (string? returnUrl, HttpContext httpContext) =>
 {
-    var target = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
-    return useTestScheme
-        ? Results.LocalRedirect(target)
-        : Results.Challenge(new AuthenticationProperties { RedirectUri = target });
+    var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
+    if (useTestScheme)
+    {
+        var cookieOptions = CreateTestCookieOptions(httpContext.Request);
+        httpContext.Response.Cookies.Delete(
+            TestAuthenticationHandler.UserSelectionCookie,
+            cookieOptions);
+        httpContext.Response.Cookies.Delete(
+            TestAuthenticationHandler.GuestSessionCookie,
+            cookieOptions);
+        await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
+        return Results.LocalRedirect(target);
+    }
+
+    return Results.Challenge(new AuthenticationProperties { RedirectUri = target });
 });
 
-app.MapGet("/auth/logout", () =>
+app.MapGet("/auth/logout", async (HttpContext httpContext) =>
 {
     if (useTestScheme)
     {
+        var cookieOptions = CreateTestCookieOptions(httpContext.Request);
+        httpContext.Response.Cookies.Append(
+            TestAuthenticationHandler.UserSelectionCookie,
+            TestAuthenticationHandler.AnonymousSelection,
+            cookieOptions);
+        httpContext.Response.Cookies.Delete(
+            TestAuthenticationHandler.GuestSessionCookie,
+            cookieOptions);
+        await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
         return Results.LocalRedirect("/");
     }
 
+    if (PlanDeckIdentity.IsValidGuest(httpContext.User))
+    {
+        await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
+        return Results.LocalRedirect("/");
+    }
+
+    await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
     var schemes = isOidcConfigured
         ? new[] { CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme }
         : new[] { CookieAuthenticationDefaults.AuthenticationScheme };
@@ -189,6 +216,39 @@ app.MapFallbackToFile("index.html");
 //app.MapGrpcService<GreeterService>();
 
 app.Run();
+
+static CookieOptions CreateTestCookieOptions(HttpRequest request) =>
+    new()
+    {
+        HttpOnly = true,
+        IsEssential = true,
+        Path = "/",
+        SameSite = SameSiteMode.Lax,
+        Secure = request.IsHttps
+    };
+
+static string ResolveLocalReturnUrl(HttpRequest request, string? returnUrl)
+{
+    if (string.IsNullOrWhiteSpace(returnUrl))
+    {
+        return "/";
+    }
+
+    if (returnUrl[0] == '/'
+        && (returnUrl.Length == 1 || (returnUrl[1] != '/' && returnUrl[1] != '\\')))
+    {
+        return returnUrl;
+    }
+
+    if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var absoluteReturnUrl)
+        && string.Equals(absoluteReturnUrl.Scheme, request.Scheme, StringComparison.OrdinalIgnoreCase)
+        && absoluteReturnUrl.Authority.Equals(request.Host.Value, StringComparison.OrdinalIgnoreCase))
+    {
+        return $"{absoluteReturnUrl.PathAndQuery}{absoluteReturnUrl.Fragment}";
+    }
+
+    return "/";
+}
 
 
 namespace PlanDeck.Server

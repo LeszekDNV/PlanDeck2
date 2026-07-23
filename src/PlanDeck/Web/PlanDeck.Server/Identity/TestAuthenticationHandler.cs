@@ -16,10 +16,11 @@ public sealed class TestAuthenticationHandler(
 
     /// <summary>
     /// Optional request cookie that lets an E2E browser context choose which deterministic
-    /// identity it authenticates as. Recognized values: owner, admin, member.
+    /// identity it authenticates as. Recognized values: owner, admin, member, anonymous.
     /// When absent, owner is used by default. Unknown values fail authentication.
     /// </summary>
     public const string UserSelectionCookie = "e2e-user";
+    public const string AnonymousSelection = "anonymous";
 
     /// <summary>
     /// Optional request header carrying a session id. When present, the handler authenticates a
@@ -52,6 +53,12 @@ public sealed class TestAuthenticationHandler(
         if (string.Equals(requestedShape, "malformed", StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(AuthenticateResult.Fail("The test identity is malformed."));
+        }
+
+        if (Request.Cookies.TryGetValue(UserSelectionCookie, out var userSelection)
+            && string.Equals(userSelection, AnonymousSelection, StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
         }
 
         var guestSid =
