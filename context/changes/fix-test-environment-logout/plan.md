@@ -308,21 +308,21 @@ would then return to Test Owner, which matches the pre-change behavior.
 
 #### Automated
 
-- [x] 1.1 Authentication lifecycle tests pass
-- [x] 1.2 Guest join/logout tests pass
-- [x] 1.3 Existing deterministic identity tests pass
+- [x] 1.1 Authentication lifecycle tests pass — 47316ef
+- [x] 1.2 Guest join/logout tests pass — 47316ef
+- [x] 1.3 Existing deterministic identity tests pass — 47316ef
 
 #### Manual
 
-- [x] 1.4 Local Testing logout persists through refresh and login restores Test Owner
+- [x] 1.4 Local Testing logout persists through refresh and login restores Test Owner — 47316ef
 
 ### Phase 2: Add Browser Regression Coverage
 
 #### Automated
 
-- [ ] 2.1 Targeted logout E2E passes locally
-- [ ] 2.2 Existing authentication-sensitive E2E smoke tests pass
-- [ ] 2.3 Whole solution builds
+- [x] 2.1 Targeted logout E2E passes locally
+- [x] 2.2 Existing authentication-sensitive E2E smoke tests pass
+- [x] 2.3 Whole solution builds
 
 #### Manual
 
