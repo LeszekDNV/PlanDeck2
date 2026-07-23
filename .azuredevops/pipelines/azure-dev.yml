@@ -17,6 +17,10 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
   DOTNET_NOLOGO: '1'
   AZURE_LOCATION: 'polandcentral'
+  E2E_TESTING_BASE_URL: ''
+  E2E_PRODUCTION_BASE_URL: ''
+  TESTING_ENVIRONMENT_ID: ''
+  PRIVATE_TEST_AGENT_POOL: ''
 
 pool:
   vmImage: windows-latest
@@ -50,6 +54,11 @@ stages:
             workingDirectory: src\PlanDeck
 
           - pwsh: |
+              dotnet test Tests\PlanDeck.Integration.Tests\PlanDeck.Integration.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~ProductionAuthenticationConfigurationTests|FullyQualifiedName~E2eScenarioEndpointTests"
+            displayName: Run Production auth and scenario integration checks
+            workingDirectory: src\PlanDeck
+
+          - pwsh: |
               $forbidden = Get-ChildItem -Path . -Recurse -Include *.csproj,*.cs,*.proto |
                 Select-String -Pattern '<Protobuf>|ServiceContract|OperationContract|greet\.proto' |
                 Select-Object -First 1
@@ -59,28 +68,161 @@ stages:
             displayName: Enforce code-first gRPC guardrail
             workingDirectory: src\PlanDeck
 
-          - ${{ if eq(parameters.runE2E, true) }}:
-              - pwsh: |
-                  if ([string]::IsNullOrWhiteSpace('${{ parameters.e2eBaseUrl }}')) {
-                    Write-Error 'e2eBaseUrl is required when runE2E is true.'
-                  }
-                  if ([string]::IsNullOrWhiteSpace($env:E2E_SCENARIO_TOKEN)) {
-                    Write-Error 'E2E_SCENARIO_TOKEN secret is required when runE2E is true.'
-                  }
-                  pwsh Tests\PlanDeck.E2e.Tests\bin\Release\net10.0\playwright.ps1 install chromium
-                  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-                  dotnet test Tests\PlanDeck.E2e.Tests\PlanDeck.E2e.Tests.csproj --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results -- TestRunParameters.Parameter(name="BaseUrl", value="${{ parameters.e2eBaseUrl }}") TestRunParameters.Parameter(name="RemoteEnvironment", value="Test") TestRunParameters.Parameter(name="E2eScenarioToken", value="$env:E2E_SCENARIO_TOKEN")
-                displayName: Run E2E against deployed BaseUrl
-                workingDirectory: src\PlanDeck
-                env:
-                  E2E_SCENARIO_TOKEN: $(E2E_SCENARIO_TOKEN)
-
           - task: PublishTestResults@2
             displayName: Publish test results
             condition: always()
             inputs:
               testResultsFormat: VSTest
               testResultsFiles: '$(Agent.TempDirectory)\test-results\*.trx'
+
+      - ${{ if eq(parameters.runE2E, true) }}:
+          - job: probe_private_and_e2e
+            displayName: Probe private Testing and run remote E2E
+            dependsOn: build_test
+            pool:
+              name: $(PRIVATE_TEST_AGENT_POOL)
+            steps:
+              - checkout: self
+
+              - task: UseDotNet@2
+                displayName: Install .NET SDK
+                inputs:
+                  packageType: sdk
+                  version: 10.0.301
+
+              - pwsh: |
+                  $testingBaseUrl = '${{ parameters.e2eBaseUrl }}'
+                  if ([string]::IsNullOrWhiteSpace($testingBaseUrl)) {
+                    $testingBaseUrl = $env:E2E_TESTING_BASE_URL
+                  }
+
+                  if ([string]::IsNullOrWhiteSpace($env:PRIVATE_TEST_AGENT_POOL)) {
+                    Write-Error 'PRIVATE_TEST_AGENT_POOL must be configured for private probing.'
+                  }
+                  if ([string]::IsNullOrWhiteSpace($env:TESTING_ENVIRONMENT_ID)) {
+                    Write-Error 'TESTING_ENVIRONMENT_ID must be configured before remote validation.'
+                  }
+                  if ([string]::IsNullOrWhiteSpace($testingBaseUrl)) {
+                    Write-Error 'Testing URL is required (parameter e2eBaseUrl or E2E_TESTING_BASE_URL variable).'
+                  }
+                  if ([string]::IsNullOrWhiteSpace($env:E2E_SCENARIO_TOKEN)) {
+                    Write-Error 'E2E_SCENARIO_TOKEN secret is required for remote E2E.'
+                  }
+
+                  $testingBaseUrl = $testingBaseUrl.TrimEnd('/')
+                  $healthUrl = "$testingBaseUrl/"
+                  Write-Host "Probing private Testing endpoint for environment '$($env:TESTING_ENVIRONMENT_ID)': $healthUrl"
+
+                  $response = Invoke-WebRequest -Uri $healthUrl -Method Get -MaximumRedirection 0 -TimeoutSec 20 -SkipHttpErrorCheck
+                  $statusCode = [int]$response.StatusCode
+                  if ($statusCode -lt 200 -or $statusCode -ge 400) {
+                    Write-Error "Private probe failed with HTTP status $statusCode."
+                  }
+
+                  $revision = $response.Headers['x-ms-containerapp-revision-name']
+                  if ([string]::IsNullOrWhiteSpace($revision)) {
+                    Write-Error 'Private probe did not receive x-ms-containerapp-revision-name from Testing ingress.'
+                  }
+
+                  Write-Host "Testing revision observed on private ingress: $revision"
+                  Write-Host "##vso[task.setvariable variable=TestingRevision;isOutput=true]$revision"
+                name: privateProbe
+                displayName: Private Testing reachability probe
+
+              - pwsh: pwsh Tests\PlanDeck.E2e.Tests\bin\Release\net10.0\playwright.ps1 install chromium
+                displayName: Install Playwright Chromium
+                workingDirectory: src\PlanDeck
+
+              - pwsh: |
+                  $testingBaseUrl = '${{ parameters.e2eBaseUrl }}'
+                  if ([string]::IsNullOrWhiteSpace($testingBaseUrl)) {
+                    $testingBaseUrl = $env:E2E_TESTING_BASE_URL
+                  }
+                  $testingBaseUrl = $testingBaseUrl.TrimEnd('/')
+
+                  dotnet test Tests\PlanDeck.E2e.Tests\PlanDeck.E2e.Tests.csproj --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results -- TestRunParameters.Parameter(name="BaseUrl", value="$testingBaseUrl") TestRunParameters.Parameter(name="RemoteEnvironment", value="Test") TestRunParameters.Parameter(name="E2eScenarioToken", value="$env:E2E_SCENARIO_TOKEN")
+                displayName: Run E2E against private Testing endpoint
+                workingDirectory: src\PlanDeck
+                env:
+                  E2E_SCENARIO_TOKEN: $(E2E_SCENARIO_TOKEN)
+
+              - task: PublishTestResults@2
+                displayName: Publish remote E2E results
+                condition: always()
+                inputs:
+                  testResultsFormat: VSTest
+                  testResultsFiles: '$(Agent.TempDirectory)\test-results\*.trx'
+
+          - job: probe_public_and_production
+            displayName: Verify public denial and Production isolation
+            dependsOn: probe_private_and_e2e
+            variables:
+              TestingRevisionFromPrivate: $[ dependencies.probe_private_and_e2e.outputs['privateProbe.TestingRevision'] ]
+            pool:
+              vmImage: windows-latest
+            steps:
+              - pwsh: |
+                  $testingBaseUrl = '${{ parameters.e2eBaseUrl }}'
+                  if ([string]::IsNullOrWhiteSpace($testingBaseUrl)) {
+                    $testingBaseUrl = $env:E2E_TESTING_BASE_URL
+                  }
+                  if ([string]::IsNullOrWhiteSpace($testingBaseUrl)) {
+                    Write-Error 'Testing URL is required (parameter e2eBaseUrl or E2E_TESTING_BASE_URL variable).'
+                  }
+                  if ([string]::IsNullOrWhiteSpace($env:E2E_PRODUCTION_BASE_URL)) {
+                    Write-Error 'E2E_PRODUCTION_BASE_URL must be configured for Production probe.'
+                  }
+                  if ([string]::IsNullOrWhiteSpace($env:TESTING_ENVIRONMENT_ID)) {
+                    Write-Error 'TESTING_ENVIRONMENT_ID must be configured before remote validation.'
+                  }
+                  if ([string]::IsNullOrWhiteSpace($env:TestingRevisionFromPrivate)) {
+                    Write-Error 'Testing revision output from the private probe is missing.'
+                  }
+
+                  $testingBaseUrl = $testingBaseUrl.TrimEnd('/')
+                  $publicProbeUrl = "$testingBaseUrl/"
+                  Write-Host "Public probe targets Testing environment '$($env:TESTING_ENVIRONMENT_ID)' revision '$($env:TestingRevisionFromPrivate)'."
+                  Write-Host "Expected result: no successful HTTP connection."
+
+                  try {
+                    $response = Invoke-WebRequest -Uri $publicProbeUrl -Method Get -MaximumRedirection 0 -TimeoutSec 20
+                    Write-Error "Public probe unexpectedly received HTTP status $([int]$response.StatusCode)."
+                  }
+                  catch {
+                    if ($_.Exception.Response) {
+                      $statusCode = [int]$_.Exception.Response.StatusCode
+                      Write-Error "Public probe unexpectedly reached the endpoint with HTTP status $statusCode."
+                    }
+
+                    Write-Host "Public probe was denied as expected: $($_.Exception.Message)"
+                  }
+
+                  $productionBaseUrl = $env:E2E_PRODUCTION_BASE_URL.TrimEnd('/')
+                  $productionScenarioUrl = "$productionBaseUrl/testing/e2e-scenarios/"
+                  Write-Host "Probing Production scenario endpoint: $productionScenarioUrl"
+
+                  try {
+                    $productionResponse = Invoke-WebRequest `
+                      -Uri $productionScenarioUrl `
+                      -Method Post `
+                      -ContentType 'application/json' `
+                      -Body '{"runId":"00000000-0000-0000-0000-000000000000"}' `
+                      -TimeoutSec 20 `
+                      -SkipHttpErrorCheck
+                  }
+                  catch {
+                    Write-Error "Production probe failed due to connectivity/runtime error: $($_.Exception.Message)"
+                  }
+
+                  if ([int]$productionResponse.StatusCode -ne 404) {
+                    Write-Error "Expected Production scenario endpoint to return 404, got $([int]$productionResponse.StatusCode)."
+                  }
+                displayName: Public denial and Production /testing/e2e-scenarios probe
+                env:
+                  E2E_TESTING_BASE_URL: $(E2E_TESTING_BASE_URL)
+                  E2E_PRODUCTION_BASE_URL: $(E2E_PRODUCTION_BASE_URL)
+                  TESTING_ENVIRONMENT_ID: $(TESTING_ENVIRONMENT_ID)
+                  TestingRevisionFromPrivate: $(TestingRevisionFromPrivate)
 
   - stage: Deploy
     displayName: Deploy to Azure Container Apps
@@ -120,4 +262,6 @@ stages:
                       }
                       azd env set AZURE_LOCATION $(AZURE_LOCATION)
                       azd env set AZURE_RESOURCE_GROUP $(AZURE_RESOURCE_GROUP)
+                      azd env set Publishing__Target Production
+                      azd env set Authentication__UseTestScheme false
                       azd up --no-prompt

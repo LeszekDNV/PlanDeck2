@@ -14,10 +14,10 @@ public class ProjectsPage
     }
 
     private ILocator CreateProjectButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Create project", Exact = true });
+        _page.GetByTestId("project-create-open");
 
     private ILocator CreateDialog =>
-        _page.GetByRole(AriaRole.Dialog).Filter(new() { HasText = "Create project" });
+        _page.GetByRole(AriaRole.Dialog);
 
     private ILocator OperationError => _page.GetByTestId("project-operation-error");
 
@@ -54,9 +54,8 @@ public class ProjectsPage
     public async Task CreateProjectAsync(string name, string? description = null)
     {
         await CreateProjectButton.ClickAsync();
-        await CreateDialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
-
         var nameField = _page.GetByTestId("project-name-input");
+        await nameField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
         await nameField.FillAsync(name);
         if (!string.IsNullOrWhiteSpace(description))
         {
@@ -93,5 +92,4 @@ public class ProjectsPage
     public ILocator ProjectEntry(string name) =>
         _page.GetByTestId("project-entry").Filter(new() { HasText = name });
 }
-
 

@@ -11,27 +11,101 @@
 
 <MudLayout>
     <MudAppBar Elevation="1">
+        <MudHidden Breakpoint="Breakpoint.MdAndUp">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                           Color="Color.Inherit"
+                           Size="Size.Large"
+                           aria-label="@Localizer["Nav_Menu"]"
+                           OnClick="DrawerToggle" />
+        </MudHidden>
         <MudText Typo="Typo.h6">PlanDeck</MudText>
+        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+            <AuthorizeView>
+                <Authorized>
+                    @if (!context.User.HasClaim("is_guest", "true"))
+                    {
+                        <MudButton Href="/projects" Color="Color.Inherit">@Localizer["Nav_Projects"]</MudButton>
+                        <MudButton Href="/teams" Color="Color.Inherit">@Localizer["Nav_Teams"]</MudButton>
+                    }
+                </Authorized>
+            </AuthorizeView>
+        </MudHidden>
         <MudSpacer />
-        <MudMenu Icon="@Icons.Material.Filled.Translate" Color="Color.Inherit" AriaLabel="@Localizer["Language"]">
-            <MudMenuItem OnClick="@(() => SetCultureAsync("en"))">English</MudMenuItem>
-            <MudMenuItem OnClick="@(() => SetCultureAsync("pl"))">Polski</MudMenuItem>
-        </MudMenu>
-        <AuthorizeView>
-            <Authorized>
-                @if (!context.User.HasClaim("is_guest", "true"))
-                {
-                    <MudButton Href="/projects" Color="Color.Inherit">@Localizer["Nav_Projects"]</MudButton>
-                    <MudButton Href="/teams" Color="Color.Inherit">@Localizer["Nav_Teams"]</MudButton>
-                }
-                <MudText Class="mr-4">@context.User.Identity?.Name</MudText>
-                <MudButton Color="Color.Inherit" OnClick="Logout">@Localizer["Auth_Logout"]</MudButton>
-            </Authorized>
-            <NotAuthorized>
-                <MudButton Color="Color.Inherit" OnClick="Login">@Localizer["Auth_Login"]</MudButton>
-            </NotAuthorized>
-        </AuthorizeView>
+        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+            <MudMenu Icon="@Icons.Material.Filled.Translate" Color="Color.Inherit" AriaLabel="@Localizer["Language"]">
+                <MudMenuItem OnClick="@(() => SetCultureAsync("en"))">English</MudMenuItem>
+                <MudMenuItem OnClick="@(() => SetCultureAsync("pl"))">Polski</MudMenuItem>
+            </MudMenu>
+            <AuthorizeView>
+                <Authorized>
+                    <MudText Class="mr-4">@context.User.Identity?.Name</MudText>
+                    <MudButton Color="Color.Inherit" OnClick="Logout">@Localizer["Auth_Logout"]</MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <MudButton Color="Color.Inherit" OnClick="Login">@Localizer["Auth_Login"]</MudButton>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudHidden>
     </MudAppBar>
+    <MudDrawer Open="_drawerOpen"
+               ClipMode="DrawerClipMode.Never"
+               Variant="DrawerVariant.Temporary"
+               Breakpoint="Breakpoint.Md"
+               Elevation="2">
+        <MudStack Class="pa-3" Spacing="2">
+            <AuthorizeView>
+                <Authorized>
+                    @if (!context.User.HasClaim("is_guest", "true"))
+                    {
+                        <MudButton Variant="Variant.Text" Color="Color.Default"
+                                   FullWidth="true"
+                                   OnClick="@(() => NavigateToAndClose("/projects"))">
+                            @Localizer["Nav_Projects"]
+                        </MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Default"
+                                   FullWidth="true"
+                                   OnClick="@(() => NavigateToAndClose("/teams"))">
+                            @Localizer["Nav_Teams"]
+                        </MudButton>
+                    }
+                    <MudDivider />
+                    <MudText Typo="Typo.body2">@context.User.Identity?.Name</MudText>
+                    <MudButton Variant="Variant.Text" Color="Color.Default"
+                               FullWidth="true"
+                               OnClick="@(() => SetCultureAndCloseAsync("en"))">
+                        English
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Default"
+                               FullWidth="true"
+                               OnClick="@(() => SetCultureAndCloseAsync("pl"))">
+                        Polski
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Error"
+                               FullWidth="true"
+                               OnClick="LogoutAndClose">
+                        @Localizer["Auth_Logout"]
+                    </MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <MudButton Variant="Variant.Text" Color="Color.Default"
+                               FullWidth="true"
+                               OnClick="@(() => SetCultureAndCloseAsync("en"))">
+                        English
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Default"
+                               FullWidth="true"
+                               OnClick="@(() => SetCultureAndCloseAsync("pl"))">
+                        Polski
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               FullWidth="true"
+                               OnClick="LoginAndClose">
+                        @Localizer["Auth_Login"]
+                    </MudButton>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudStack>
+    </MudDrawer>
     <MudMainContent>
         @Body
     </MudMainContent>

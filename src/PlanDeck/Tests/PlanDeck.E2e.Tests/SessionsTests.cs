@@ -71,13 +71,28 @@ public class SessionsTests : PageTest
     [Test]
     public async Task Sessions_RendersOnMobileViewport()
     {
-        var projectId = await CreateProjectAndGetIdAsync("E2E Mobile Project");
+        var longProjectName = $"E2E Mobile Project With Very Long Name {Guid.NewGuid():N}";
+        var longSessionName = $"E2E Mobile Session With Very Long Name {Guid.NewGuid():N}";
+        var longTaskName = $"E2E Mobile Task With Very Long Name {Guid.NewGuid():N}";
+
+        var projects = new ProjectsPage(Page, AspireAppFixture.BaseUrl);
+        await projects.GotoAsync();
+        await projects.CreateProjectAsync(longProjectName);
+        await projects.OpenProjectAsync(longProjectName);
+        var projectId = ParseLastUrlGuid(Page.Url);
+
         var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
 
-        await Page.SetViewportSizeAsync(390, 844);
+        await Page.SetViewportSizeAsync(375, 812);
         await sessions.GotoAsync(projectId);
+        await sessions.CreateSessionAsync(longSessionName, longTaskName);
+        await Expect(sessions.SessionEntry(longSessionName)).ToBeVisibleAsync(new() { Timeout = 15_000 });
 
         await Expect(sessions.CreateSessionButton).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await sessions.OpenMobileMenuAsync();
+        await Expect(sessions.MobileProjectsButton).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await Expect(sessions.MobileTeamsButton).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await sessions.AssertNoHorizontalOverflowAsync();
     }
 
     private async Task<Guid> CreateProjectAndGetIdAsync(string prefix)
@@ -96,4 +111,3 @@ public class SessionsTests : PageTest
         return Guid.Parse(segment);
     }
 }
-

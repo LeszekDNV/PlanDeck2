@@ -61,6 +61,9 @@
   <data name="Nav_Teams" xml:space="preserve">
     <value>Zespoły</value>
   </data>
+  <data name="Nav_Menu" xml:space="preserve">
+    <value>Menu</value>
+  </data>
   <data name="Auth_Login" xml:space="preserve">
     <value>Zaloguj</value>
   </data>

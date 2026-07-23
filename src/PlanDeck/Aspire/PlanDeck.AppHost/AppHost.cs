@@ -1,16 +1,50 @@
 using Azure.Provisioning.AppContainers;
 using Azure.Provisioning.KeyVault;
 using Azure.Provisioning.Sql;
+using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var useE2eTestAuth = string.Equals(
+const string PublishTargetConfigurationKey = "Publishing:Target";
+const string PublishTargetTesting = "Testing";
+const string PublishTargetProduction = "Production";
+
+var publishTarget = ResolvePublishTarget(
+    builder.Configuration,
+    builder.ExecutionContext.IsPublishMode,
+    Environment.GetEnvironmentVariable("PLANDECK_PUBLISH_TARGET"));
+var azureEnvironmentName = builder.Configuration["AZURE_ENV_NAME"];
+
+var useLocalE2eTestAuth = string.Equals(
     Environment.GetEnvironmentVariable("PLANDECK_E2E_TESTAUTH"),
     "true",
     StringComparison.OrdinalIgnoreCase);
 
-var planDeckServer = builder.AddProject<Projects.PlanDeck_Server>("plandeck-server")
-    .WithExternalHttpEndpoints();
+var isNamedTestingEnvironment = !string.IsNullOrWhiteSpace(azureEnvironmentName)
+    && (string.Equals(azureEnvironmentName, "test", StringComparison.OrdinalIgnoreCase)
+        || azureEnvironmentName.Contains("testing", StringComparison.OrdinalIgnoreCase));
+
+var usePublishTestAuth = builder.ExecutionContext.IsPublishMode
+    && (useLocalE2eTestAuth
+        || string.Equals(
+            publishTarget,
+            PublishTargetTesting,
+            StringComparison.OrdinalIgnoreCase)
+        || isNamedTestingEnvironment);
+
+var useE2eTestAuth = useLocalE2eTestAuth || usePublishTestAuth;
+
+var planDeckServer = builder.AddProject<Projects.PlanDeck_Server>("plandeck-server");
+if (!builder.ExecutionContext.IsPublishMode || !usePublishTestAuth)
+{
+    planDeckServer = planDeckServer.WithExternalHttpEndpoints();
+}
+else
+{
+    planDeckServer = planDeckServer
+        .WithEndpoint("http", endpoint => endpoint.IsExternal = false)
+        .WithEndpoint("https", endpoint => endpoint.IsExternal = false);
+}
 
 if (!useE2eTestAuth)
 {
@@ -60,9 +94,11 @@ if (builder.ExecutionContext.IsPublishMode)
         .WithEnvironment("EmailSettings__Host", "smtp")
         .WithEnvironment("EmailSettings__Port", "587");
 
-    if (useE2eTestAuth)
+    if (usePublishTestAuth)
     {
-        var e2eScenarioToken = builder.AddParameter("e2e-scenario-token", secret: true);
+        var e2eScenarioToken = builder.Configuration["E2E_SCENARIO_TOKEN"]
+            ?? builder.Configuration["Testing:E2eScenario:AuthorizationToken"]
+            ?? string.Empty;
 
         planDeckServer
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing")
@@ -71,9 +107,15 @@ if (builder.ExecutionContext.IsPublishMode)
     }
     else
     {
-        var entraTenantId = builder.AddParameter("entra-tenant-id");
-        var entraClientId = builder.AddParameter("entra-client-id");
-        var entraClientSecret = builder.AddParameter("entra-client-secret", secret: true);
+        var entraTenantId = builder.Configuration["AZURE_ENTRA_TENANT_ID"]
+            ?? builder.Configuration["Authentication:Microsoft:TenantId"]
+            ?? string.Empty;
+        var entraClientId = builder.Configuration["AZURE_ENTRA_CLIENT_ID"]
+            ?? builder.Configuration["Authentication:Microsoft:ClientId"]
+            ?? string.Empty;
+        var entraClientSecret = builder.Configuration["AZURE_ENTRA_CLIENT_SECRET"]
+            ?? builder.Configuration["Authentication:Microsoft:ClientSecret"]
+            ?? string.Empty;
 
         planDeckServer
             .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
@@ -85,6 +127,8 @@ if (builder.ExecutionContext.IsPublishMode)
         .WaitFor(sqlDatabase)
         .PublishAsAzureContainerApp((infrastructure, app) =>
         {
+            app.Configuration.Ingress.External = !usePublishTestAuth;
+
             // SignalR room state is in-process (singleton IPlanningRoomService, no backplane),
             // so the pilot must run as a single pinned replica with session affinity: rooms
             // survive across requests and ACA never scales the app to zero. Raising MaxReplicas
@@ -136,3 +180,36 @@ if (!string.IsNullOrWhiteSpace(scenarioToken))
 }
 
 builder.Build().Run();
+
+static string ResolvePublishTarget(
+    IConfiguration configuration,
+    bool isPublishMode,
+    string? publishTargetOverride)
+{
+    var configured = string.IsNullOrWhiteSpace(publishTargetOverride)
+        ? configuration[PublishTargetConfigurationKey]
+        : publishTargetOverride;
+    if (string.IsNullOrWhiteSpace(configured))
+    {
+        return PublishTargetProduction;
+    }
+
+    if (string.Equals(configured, PublishTargetTesting, StringComparison.OrdinalIgnoreCase))
+    {
+        return PublishTargetTesting;
+    }
+
+    if (string.Equals(configured, PublishTargetProduction, StringComparison.OrdinalIgnoreCase))
+    {
+        return PublishTargetProduction;
+    }
+
+    if (isPublishMode)
+    {
+        throw new InvalidOperationException(
+            $"Unsupported {PublishTargetConfigurationKey} value '{configured}'. "
+            + $"Expected '{PublishTargetProduction}' or '{PublishTargetTesting}'.");
+    }
+
+    return PublishTargetProduction;
+}

@@ -32,9 +32,11 @@
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
                     <MudStack Spacing="0">
                         <MudText Typo="Typo.h4">@L["Sessions_Title"]</MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@_projectName</MudText>
+                        <MudTooltip Text="@_projectName">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="pd-header-name">@_projectName</MudText>
+                        </MudTooltip>
                     </MudStack>
-                    <MudStack Row="true" Spacing="2">
+                    <MudStack Row="true" Spacing="2" Class="pd-header-actions">
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                    Href="@($"/projects/{ProjectId:D}")">
                             @L["Sessions_BackToProject"]
@@ -79,11 +81,14 @@
                                                      data-testid="session-entry"
                                                      Class="@(_selected?.Id == session.Id ? "mud-selected-item rounded" : "rounded")">
                                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                <MudText Typo="Typo.body2"
-                                                         Style="@(_selected?.Id == session.Id ? "font-weight:600" : null)">@session.Name</MudText>
-                                                <MudChip T="string" Size="Size.Small"
-                                                         Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
-                                                    @StatusLabel(session.Status)
+                                               <MudTooltip Text="@session.Name">
+                                                   <MudText Typo="Typo.body2"
+                                                            Class="pd-session-title pd-session-row-content"
+                                                            Style="@(_selected?.Id == session.Id ? "font-weight:600" : null)">@session.Name</MudText>
+                                               </MudTooltip>
+                                               <MudChip T="string" Size="Size.Small"
+                                                        Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
+                                                   @StatusLabel(session.Status)
                                                 </MudChip>
                                             </MudStack>
                                         </MudListItem>
@@ -109,7 +114,9 @@
                                     <MudCardHeader>
                                         <CardHeaderContent>
                                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                <MudText Typo="Typo.h6">@L["Sessions_Config"] — @_selected.Name</MudText>
+                                                <MudTooltip Text="@_selected.Name">
+                                                    <MudText Typo="Typo.h6" Class="pd-header-name">@L["Sessions_Config"] — @_selected.Name</MudText>
+                                                </MudTooltip>
                                                 <MudChip T="string" Size="Size.Small"
                                                          Color="@(_selected.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
                                                     @StatusLabel(_selected.Status)

@@ -23,6 +23,15 @@ public class SessionsPage
     public ILocator AssignMemberButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Assign", Exact = true });
 
+    public ILocator MobileMenuButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Menu", Exact = true });
+
+    public ILocator MobileProjectsButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Projects", Exact = true });
+
+    public ILocator MobileTeamsButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Teams", Exact = true });
+
     private ILocator NameField =>
         _page.GetByLabel("Name", new() { Exact = true });
 
@@ -158,6 +167,22 @@ public class SessionsPage
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
+    public async Task OpenMobileMenuAsync()
+    {
+        await MobileMenuButton.ClickAsync();
+        await MobileProjectsButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task AssertNoHorizontalOverflowAsync()
+    {
+        var hasOverflow = await _page.EvaluateAsync<bool>(
+            "() => document.documentElement.scrollWidth > document.documentElement.clientWidth");
+        if (hasOverflow)
+        {
+            throw new InvalidOperationException("Detected horizontal overflow on the page.");
+        }
+    }
+
     public async Task AddTaskToSelectedAsync(string title, string? description = null)
     {
         await TaskTitleField.FillAsync(title);
@@ -227,5 +252,4 @@ public class SessionsPage
     public ILocator TaskEntry(string title) =>
         _page.GetByTestId("config-task").Filter(new() { HasText = title });
 }
-
 

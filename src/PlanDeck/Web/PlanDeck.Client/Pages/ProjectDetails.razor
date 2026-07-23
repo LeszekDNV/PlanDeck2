@@ -27,10 +27,12 @@
     {
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
             <MudStack Spacing="0">
-                <MudText Typo="Typo.h4" data-testid="project-selected">@_selected.Project.Name</MudText>
+                <MudTooltip Text="@_selected.Project.Name">
+                    <MudText Typo="Typo.h4" Class="pd-header-name" data-testid="project-selected">@_selected.Project.Name</MudText>
+                </MudTooltip>
                 <MudText Typo="Typo.caption" Color="Color.Secondary">@RoleLabel(_selected.Project.EffectiveRole)</MudText>
             </MudStack>
-            <MudStack Row="true" Spacing="2">
+            <MudStack Row="true" Spacing="2" Class="pd-header-actions">
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/projects">
                     @L["Sessions_GoToProjects"]
                 </MudButton>
@@ -227,7 +229,9 @@
                             {
                                 <MudListItem T="Guid">
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                        <MudText>@team.Name</MudText>
+                                        <MudTooltip Text="@team.Name">
+                                            <MudText Class="pd-session-title pd-session-row-content">@team.Name</MudText>
+                                        </MudTooltip>
                                         @if (CanManageMembers)
                                         {
                                             <MudIconButton Icon="@Icons.Material.Filled.LinkOff" Color="Color.Error"

@@ -5,7 +5,7 @@ namespace PlanDeck.Client.Layout;
 
 public partial class MainLayout
 {
-    private bool _drawerOpen = true;
+    private bool _drawerOpen;
     private bool _isDarkMode = true;
     private MudTheme? _theme;
 
@@ -20,6 +20,30 @@ public partial class MainLayout
     {
         await JS.InvokeVoidAsync("localStorage.setItem", "BlazorCulture", culture);
         Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+
+    private void NavigateToAndClose(string path)
+    {
+        _drawerOpen = false;
+        Navigation.NavigateTo(path);
+    }
+
+    private async Task SetCultureAndCloseAsync(string culture)
+    {
+        _drawerOpen = false;
+        await SetCultureAsync(culture);
+    }
+
+    private void LogoutAndClose()
+    {
+        _drawerOpen = false;
+        Logout();
+    }
+
+    private void LoginAndClose()
+    {
+        _drawerOpen = false;
+        Login();
     }
 
     protected override void OnInitialized()
