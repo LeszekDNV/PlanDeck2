@@ -4,24 +4,32 @@ using Azure.Provisioning.Sql;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+var useE2eTestAuth = string.Equals(
+    Environment.GetEnvironmentVariable("PLANDECK_E2E_TESTAUTH"),
+    "true",
+    StringComparison.OrdinalIgnoreCase);
+
 var planDeckServer = builder.AddProject<Projects.PlanDeck_Server>("plandeck-server")
     .WithExternalHttpEndpoints();
 
-var keyVault = builder.AddAzureKeyVault("key-vault")
-    .ClearDefaultRoleAssignments()
-    .ConfigureInfrastructure(infrastructure =>
-    {
-        var vault = infrastructure.GetProvisionableResources()
-            .OfType<KeyVaultService>()
-            .Single();
-        vault.Properties.EnableSoftDelete = true;
-        vault.Properties.EnablePurgeProtection = true;
-    });
+if (!useE2eTestAuth)
+{
+    var keyVault = builder.AddAzureKeyVault("key-vault")
+        .ClearDefaultRoleAssignments()
+        .ConfigureInfrastructure(infrastructure =>
+        {
+            var vault = infrastructure.GetProvisionableResources()
+                .OfType<KeyVaultService>()
+                .Single();
+            vault.Properties.EnableSoftDelete = true;
+            vault.Properties.EnablePurgeProtection = true;
+        });
 
-planDeckServer
-    .WithRoleAssignments(keyVault, KeyVaultBuiltInRole.KeyVaultSecretsOfficer)
-    .WithReference(keyVault)
-    .WaitFor(keyVault);
+    planDeckServer
+        .WithRoleAssignments(keyVault, KeyVaultBuiltInRole.KeyVaultSecretsOfficer)
+        .WithReference(keyVault)
+        .WaitFor(keyVault);
+}
 
 if (builder.ExecutionContext.IsPublishMode)
 {

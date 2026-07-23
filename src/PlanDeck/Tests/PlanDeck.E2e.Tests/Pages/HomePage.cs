@@ -21,7 +21,7 @@ public class HomePage
 
     public async Task GotoAsync()
     {
-        await _page.GotoAsync(_baseUrl, new() { WaitUntil = WaitUntilState.NetworkIdle });
+        await _page.GotoAsync(_baseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
 
         // Wait for the Blazor WebAssembly app to finish booting and render the button.
         await CallServerButton.WaitForAsync(new()
@@ -33,3 +33,5 @@ public class HomePage
 
     public Task ClickCallServerAsync() => CallServerButton.ClickAsync();
 }
+
+

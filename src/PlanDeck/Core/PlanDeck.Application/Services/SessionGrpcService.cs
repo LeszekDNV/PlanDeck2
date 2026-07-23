@@ -137,9 +137,22 @@ public sealed class SessionGrpcService(
     {
         // Guests may read only the single session their share-link cookie is scoped to; any other
         // id in the tenant is off-limits even though the tenant filter would otherwise resolve it.
-        if (currentUser.IsGuest && request.Id != currentUser.SessionScope)
+        if (currentUser.IsGuest)
         {
-            throw new RpcException(new Status(StatusCode.PermissionDenied, "Guests can only access their own session."));
+            if (request.Id != currentUser.SessionScope)
+            {
+                throw new RpcException(new Status(StatusCode.PermissionDenied, "Guests can only access their own session."));
+            }
+
+            try
+            {
+                var scopedSession = await LoadAsync(request.Id, context.CancellationToken);
+                return new GetSessionReply { Session = ToDto(scopedSession) };
+            }
+            catch (SessionNotFoundException ex)
+            {
+                throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+            }
         }
 
         try
@@ -147,6 +160,17 @@ public sealed class SessionGrpcService(
             await RequireSessionRoleAsync(request.Id, ProjectRole.Member, context.CancellationToken);
             var session = await LoadAsync(request.Id, context.CancellationToken);
             return new GetSessionReply { Session = ToDto(session) };
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
+        {
+            var session = await repository.GetSessionAsync(request.Id, context.CancellationToken);
+            if (session is { Status: SessionStatus.Active }
+                && await IsCurrentUserAssignedToSessionAsync(request.Id, context.CancellationToken))
+            {
+                return new GetSessionReply { Session = ToDto(session) };
+            }
+
+            throw;
         }
         catch (SessionNotFoundException ex)
         {
@@ -489,6 +513,18 @@ public sealed class SessionGrpcService(
         return new AddAdoTasksReply { Session = ToDto(session) };
     }
 
+    private async Task<bool> IsCurrentUserAssignedToSessionAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        var email = currentUser.Email?.Trim();
+        if (string.IsNullOrEmpty(email) || !EmailValidator.IsValid(email))
+        {
+            return false;
+        }
+
+        var members = await memberRepository.GetMembersAsync(sessionId, cancellationToken);
+        return members.Any(member => string.Equals(member.Email, email, StringComparison.OrdinalIgnoreCase));
+    }
+
     private async Task<PlanningSession> LoadAsync(Guid id, CancellationToken cancellationToken)
     {
         return await repository.GetSessionAsync(id, cancellationToken)
@@ -711,3 +747,5 @@ public sealed class SessionGrpcService(
         AgreedEstimate = task.AgreedEstimate
     };
 }
+
+

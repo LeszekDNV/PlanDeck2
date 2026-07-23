@@ -12,8 +12,13 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var useTestSchemeBootstrap = builder.Configuration.GetValue<bool>("Authentication:UseTestScheme");
+
 builder.AddServiceDefaults();
-builder.AddAzureKeyVaultClient("key-vault");
+if (!useTestSchemeBootstrap)
+{
+    builder.AddAzureKeyVaultClient("key-vault");
+}
 
 // Add services to the container.
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");

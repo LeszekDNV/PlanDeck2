@@ -13,29 +13,32 @@ public class VotingRoomPage
         _baseUrl = baseUrl;
     }
 
-    public ILocator Participants => _page.Locator("[data-testid=participant]");
+    public ILocator Participants =>
+        _page.GetByTestId("notvoted-status")
+            .Or(_page.GetByTestId("voted-status"))
+            .Or(_page.GetByTestId("revealed-vote"));
 
     public ILocator Participant(string displayName) =>
         Participants.Filter(new() { HasText = displayName });
 
-    public ILocator VotedStatuses => _page.Locator("[data-testid=voted-status]");
+    public ILocator VotedStatuses => _page.GetByTestId("voted-status");
 
-    public ILocator RevealedVotes => _page.Locator("[data-testid=revealed-vote]");
+    public ILocator RevealedVotes => _page.GetByTestId("revealed-vote");
 
-    public ILocator AgreedEstimate => _page.Locator("[data-testid=agreed-estimate]");
+    public ILocator AgreedEstimate => _page.GetByTestId("agreed-estimate");
 
-    public ILocator TaskListItems => _page.Locator("[data-testid=voting-task]");
+    public ILocator TaskListItems => _page.GetByTestId("voting-task");
 
-    public ILocator VoteButton(string value) => _page.Locator($"[data-testid='vote-{value}']");
+    public ILocator VoteButton(string value) => _page.GetByTestId($"vote-{value}");
 
-    public ILocator RevealButton => _page.Locator("[data-testid=reveal]");
+    public ILocator RevealButton => _page.GetByTestId("reveal");
 
-    public ILocator ResetButton => _page.Locator("[data-testid=reset]");
+    public ILocator ResetButton => _page.GetByTestId("reset");
 
     public ILocator TaskListItem(string title) =>
         TaskListItems.Filter(new() { HasText = title });
 
-    public ILocator TaskDescription => _page.Locator("[data-testid=task-description]");
+    public ILocator TaskDescription => _page.GetByTestId("task-description");
 
     public ILocator DescriptionToggle =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Description" });
@@ -44,18 +47,20 @@ public class VotingRoomPage
     {
         await _page.GotoAsync(
             $"{_baseUrl.TrimEnd('/')}/voting/{sessionId}",
-            new() { WaitUntil = WaitUntilState.NetworkIdle });
+            new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
 
         await WaitForLoadedAsync();
     }
 
-    public async Task WaitForLoadedAsync() =>
-        // The WASM app boots, then the room state arrives and the roster renders the self entry.
-        await Participants.First.WaitForAsync(new()
-        {
-            State = WaitForSelectorState.Visible,
-            Timeout = 60_000
-        });
+    public async Task WaitForLoadedAsync()
+    {
+        await _page.GetByRole(AriaRole.Button, new() { Name = "Back to sessions", Exact = true })
+            .WaitForAsync(new()
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = 60_000
+            });
+    }
 
     public async Task SelectTaskAsync(string taskTitle) =>
         await TaskListItems.Filter(new() { HasText = taskTitle })
@@ -66,8 +71,10 @@ public class VotingRoomPage
         await VoteButton(value).ClickAsync();
 
     public async Task RevealAsync() =>
-        await _page.Locator("[data-testid=reveal]").ClickAsync();
+        await RevealButton.ClickAsync();
 
     public async Task PickEstimateAsync(string value) =>
-        await _page.Locator($"[data-testid='pick-{value}']").ClickAsync();
+        await _page.GetByTestId($"pick-{value}").ClickAsync();
 }
+
+

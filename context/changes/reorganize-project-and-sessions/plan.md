@@ -624,9 +624,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [x] 4.1 Test-auth and scenario integration tests pass
-- [x] 4.2 E2E project discovers the three-role fixture without real Entra
-- [x] 4.3 Pipeline supplies protected Test parameters without leaking secrets
+- [x] 4.1 Test-auth and scenario integration tests pass — ebd4255
+- [x] 4.2 E2E project discovers the three-role fixture without real Entra — ebd4255
+- [x] 4.3 Pipeline supplies protected Test parameters without leaking secrets — ebd4255
 
 #### Manual
 
@@ -638,14 +638,19 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [ ] 5.1 Unit test suite passes
-- [ ] 5.2 Integration test suite passes
-- [ ] 5.3 Full local Aspire E2E suite passes
-- [ ] 5.4 Full protected remote Test E2E suite passes
-- [ ] 5.5 Entire solution builds
+- [x] 5.1 Unit test suite passes
+- [x] 5.2 Integration test suite passes
+- [x] 5.3 Full local Aspire E2E suite passes
+- [x] 5.4 Full protected remote Test E2E suite passes
+- [x] 5.5 Entire solution builds
 
 #### Manual
 
-- [ ] 5.6 Real Owner, Admin, and Member workflows work in English and Polish
-- [ ] 5.7 Navigation, cascade deletion, direct links, mobile layout, and guest voting match approved behavior
-- [ ] 5.8 Pipeline failures remain diagnosable by layer
+- [x] 5.6 Real Owner, Admin, and Member workflows work in English and Polish
+- [x] 5.7 Navigation, cascade deletion, direct links, mobile layout, and guest voting match approved behavior
+- [x] 5.8 Pipeline failures remain diagnosable by layer
+
+
+
+
+

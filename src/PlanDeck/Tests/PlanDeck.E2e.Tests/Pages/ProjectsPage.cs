@@ -14,10 +14,10 @@ public class ProjectsPage
     }
 
     private ILocator CreateProjectButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Create project" });
+        _page.GetByRole(AriaRole.Button, new() { Name = "Create project", Exact = true });
 
     private ILocator CreateDialog =>
-        _page.Locator(".mud-dialog").Filter(new() { HasText = "Create project" });
+        _page.GetByRole(AriaRole.Dialog).Filter(new() { HasText = "Create project" });
 
     private ILocator OperationError => _page.GetByTestId("project-operation-error");
 
@@ -25,7 +25,7 @@ public class ProjectsPage
 
     public async Task GotoAsync()
     {
-        await _page.GotoAsync($"{_baseUrl.TrimEnd('/')}/projects", new() { WaitUntil = WaitUntilState.NetworkIdle });
+        await _page.GotoAsync($"{_baseUrl.TrimEnd('/')}/projects", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
         await CreateProjectButton.WaitForAsync(new()
         {
             State = WaitForSelectorState.Visible,
@@ -41,6 +41,16 @@ public class ProjectsPage
         return name;
     }
 
+    public async Task<Guid> CreateProjectReturningIdAsync(string prefix)
+    {
+        var name = await CreateUniqueProjectAsync(prefix);
+        await OpenProjectAsync(name);
+
+        var projectUri = new Uri(_page.Url, UriKind.Absolute);
+        var idSegment = projectUri.Segments.Last().Trim('/');
+        return Guid.Parse(idSegment);
+    }
+
     public async Task CreateProjectAsync(string name, string? description = null)
     {
         await CreateProjectButton.ClickAsync();
@@ -54,27 +64,36 @@ public class ProjectsPage
         }
 
         await _page.GetByTestId("project-create-save").ClickAsync();
-        await ProjectEntry(name)
+        await SelectedProject
             .Or(OperationError)
             .First
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+
         if (await OperationError.IsVisibleAsync())
         {
             throw new InvalidOperationException(
                 $"Project creation failed: {await OperationError.InnerTextAsync()}");
         }
 
-        await SelectedProject.Filter(new() { HasText = name }).WaitForAsync(new()
+        await SelectedProject.Filter(new() { HasText = name })
+            .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task OpenProjectAsync(string projectName)
+    {
+        var selected = SelectedProject.Filter(new() { HasText = projectName });
+        if (await selected.IsVisibleAsync())
         {
-            State = WaitForSelectorState.Visible,
-            Timeout = 15_000
-        });
-        if (await CreateDialog.IsVisibleAsync())
-        {
-            await CreateDialog.GetByRole(AriaRole.Button, new() { Name = "Cancel", Exact = true }).ClickAsync();
+            return;
         }
+
+        await ProjectEntry(projectName).ClickAsync();
+        await selected.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
     public ILocator ProjectEntry(string name) =>
-        _page.Locator("[data-testid=project-entry]").Filter(new() { HasText = name });
+        _page.GetByTestId("project-entry").Filter(new() { HasText = name });
 }
+
+
+

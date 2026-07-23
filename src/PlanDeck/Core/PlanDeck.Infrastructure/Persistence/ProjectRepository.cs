@@ -51,6 +51,11 @@ public sealed class ProjectRepository(
     public async Task<IReadOnlyList<PlanDeckProject>> ListAccessibleAsync(
         CancellationToken cancellationToken)
     {
+        if (!currentUser.IsAuthenticated || currentUser.IsGuest)
+        {
+            return [];
+        }
+
         var userId = currentUser.UserId;
         return await db.Projects
             .AsNoTracking()
@@ -253,3 +258,5 @@ public sealed class ProjectRepository(
             ? await db.Database.BeginTransactionAsync(cancellationToken)
             : null;
 }
+
+

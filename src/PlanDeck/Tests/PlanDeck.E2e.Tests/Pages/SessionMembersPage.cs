@@ -27,18 +27,18 @@ public class SessionMembersPage
 
     public async Task RemoveMemberAsync(string email)
     {
-        await MemberRow(email)
-            .GetByRole(AriaRole.Button, new() { Name = "Remove member" })
+        await _page.GetByRole(AriaRole.Button, new() { Name = "Remove member", Exact = true })
+            .Last
             .ClickAsync();
 
-        // Confirm the removal in the MudMessageBox dialog.
-        await _page.Locator(".mud-dialog")
-            .GetByRole(AriaRole.Button, new() { Name = "Remove member" })
-            .ClickAsync();
+        var dialog = _page.GetByRole(AriaRole.Dialog).Filter(new() { HasText = "Remove member" });
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await dialog.GetByRole(AriaRole.Button, new() { Name = "Remove member", Exact = true }).ClickAsync();
     }
 
-    public ILocator MemberEntry(string email) => _page.GetByText(email);
-
-    private ILocator MemberRow(string email) =>
-        _page.Locator(".mud-list-item").Filter(new() { HasText = email });
+    public ILocator MemberEntry(string email) => _page.GetByText(email, new() { Exact = false });
 }
+
+
+
+

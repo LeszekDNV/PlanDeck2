@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -12,6 +12,7 @@ using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Identity;
 using PlanDeck.Server.Realtime;
 using PlanDeck.Server.Testing;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace PlanDeck.Server.Extensions;
 
@@ -72,6 +73,8 @@ public static class ServiceCollectionExtensions
                     .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
 
                 AddPlanDeckAuthorization(services);
+                services.RemoveAll<IProjectSecretStore>();
+                services.AddSingleton<IProjectSecretStore, InMemoryProjectSecretStore>();
                 services.AddScoped<IAzureDevOpsWorkItemClient, FakeAzureDevOpsWorkItemClient>();
                 services.AddScoped<IAdoConnectionContextResolver, FakeAdoConnectionContextResolver>();
 
@@ -259,3 +262,6 @@ public static class ServiceCollectionExtensions
         return app;
     }
 }
+
+
+

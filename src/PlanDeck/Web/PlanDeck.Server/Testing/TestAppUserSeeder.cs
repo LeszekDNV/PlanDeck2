@@ -44,8 +44,32 @@ public sealed class TestAppUserSeeder(DbContextOptions<PlanDeckDbContext> option
                 || user.EntraObjectId != identity.EntraObjectId
                 || !string.Equals(user.NormalizedEmail, normalizedEmail, StringComparison.Ordinal))
             {
-                throw new InvalidOperationException(
-                    "The deterministic test identity conflicts with an existing AppUser.");
+                if (user.Id != identity.AppUserId)
+                {
+                    // Recover from stale local test data: re-create deterministic identity id and
+                    // clear memberships tied to the legacy id that would violate FK/unique constraints.
+                    await db.ProjectMembers
+                        .Where(member => member.TenantId == TestMemberIdentities.TenantId
+                            && member.AppUserId == user.Id)
+                        .ExecuteDeleteAsync(cancellationToken);
+                    await db.TeamMembers
+                        .Where(member => member.TenantId == TestMemberIdentities.TenantId
+                            && member.AppUserId == user.Id)
+                        .ExecuteDeleteAsync(cancellationToken);
+
+                    db.AppUsers.Remove(user);
+                    db.AppUsers.Add(new AppUser
+                    {
+                        Id = identity.AppUserId,
+                        TenantId = TestMemberIdentities.TenantId,
+                        EntraObjectId = identity.EntraObjectId,
+                        DisplayName = identity.DisplayName,
+                        Email = identity.Email,
+                        IsActive = true
+                    });
+
+                    continue;
+                }
             }
 
             user.DisplayName = identity.DisplayName;
@@ -69,3 +93,4 @@ public sealed class TestAppUserSeeder(DbContextOptions<PlanDeckDbContext> option
         public string? Email => null;
     }
 }
+

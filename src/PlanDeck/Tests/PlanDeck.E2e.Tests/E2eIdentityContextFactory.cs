@@ -34,12 +34,7 @@ public static class E2eIdentityContextFactory
         var context = await browser.NewContextAsync(options);
         await context.AddCookiesAsync(
         [
-            new Cookie
-            {
-                Name = GuestSessionCookie,
-                Value = sessionId.ToString(),
-                Url = baseUrl
-            }
+            CreateCookie(baseUrl, GuestSessionCookie, sessionId.ToString())
         ]);
         return context;
     }
@@ -53,13 +48,22 @@ public static class E2eIdentityContextFactory
         var context = await browser.NewContextAsync(options);
         await context.AddCookiesAsync(
         [
-            new Cookie
-            {
-                Name = UserSelectionCookie,
-                Value = selectionKey,
-                Url = baseUrl
-            }
+            CreateCookie(baseUrl, UserSelectionCookie, selectionKey)
         ]);
         return context;
     }
+
+    private static Cookie CreateCookie(string baseUrl, string name, string value)
+    {
+        var secure = string.Equals(new Uri(baseUrl, UriKind.Absolute).Scheme, "https", StringComparison.OrdinalIgnoreCase);
+        return new Cookie
+        {
+            Name = name,
+            Value = value,
+            Url = baseUrl,
+            SameSite = SameSiteAttribute.None,
+            Secure = secure
+        };
+    }
 }
+

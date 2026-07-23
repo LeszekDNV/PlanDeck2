@@ -30,7 +30,7 @@ public class TeamsPage
 
     public async Task GotoAsync()
     {
-        await _page.GotoAsync($"{_baseUrl.TrimEnd('/')}/teams", new() { WaitUntil = WaitUntilState.NetworkIdle });
+        await _page.GotoAsync($"{_baseUrl.TrimEnd('/')}/teams", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
 
         // Wait for the WASM app to boot and the authenticated Teams view to render.
         await CreateTeamButton.WaitForAsync(new()
@@ -76,3 +76,5 @@ public class TeamsPage
     private ILocator MemberRow(string email) =>
         _page.Locator(".mud-list-item").Filter(new() { HasText = email });
 }
+
+

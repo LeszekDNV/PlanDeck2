@@ -1,5 +1,4 @@
 using Microsoft.Playwright;
-using PlanDeck.E2e.Tests.Pages;
 
 namespace PlanDeck.E2e.Tests;
 
@@ -12,13 +11,11 @@ public class HomePageTests : PageTest
     };
 
     [Test]
-    public async Task CallServerButton_ReturnsHelloWorld()
+    public async Task Home_RedirectsAuthenticatedUserToProjects()
     {
-        var home = new HomePage(Page, AspireAppFixture.BaseUrl);
-
-        await home.GotoAsync();
-        await home.ClickCallServerAsync();
-
-        await Expect(home.ServerResponse).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        await Page.GotoAsync(AspireAppFixture.BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
+        await Expect(Page).ToHaveURLAsync(new Regex("/projects$"), new() { Timeout = 15_000 });
     }
 }
+
+

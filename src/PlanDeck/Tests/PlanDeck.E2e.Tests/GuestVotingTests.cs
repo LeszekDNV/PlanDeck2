@@ -18,19 +18,17 @@ public class GuestVotingTests : PageTest
         var sessionName = $"E2E Guest {Guid.NewGuid():N}";
         var taskTitle = $"E2E Task {Guid.NewGuid():N}";
 
-        // --- Context A: organizer (Test User) creates and activates the session. ---
+        var projectId = await CreateProjectAndGetIdAsync("E2E Guest Project");
         var sessionsA = new SessionsPage(Page, AspireAppFixture.BaseUrl);
-        var projectName = await new ProjectsPage(Page, AspireAppFixture.BaseUrl)
-            .CreateUniqueProjectAsync("E2E Guest Project");
-        await sessionsA.GotoAsync();
-        await sessionsA.CreateSessionAsync(sessionName, taskTitle, projectName);
+
+        await sessionsA.GotoAsync(projectId);
+        await sessionsA.CreateSessionAsync(sessionName, taskTitle);
         await sessionsA.ActivateAsync();
 
         var sessionId = await sessionsA.JoinVotingAsync();
         var votingA = new VotingRoomPage(Page, AspireAppFixture.BaseUrl);
         await votingA.WaitForLoadedAsync();
 
-        // --- Guest context: account-less, scoped to this session via deterministic guest identity. ---
         await using var guestContext = await E2eIdentityContextFactory.CreateGuestContextAsync(
             Browser,
             AspireAppFixture.BaseUrl,
@@ -41,24 +39,19 @@ public class GuestVotingTests : PageTest
         var votingGuest = new VotingRoomPage(guestPage, AspireAppFixture.BaseUrl);
         await votingGuest.GotoAsync(sessionId);
 
-        // Organizer + guest are both present in both rosters.
         await Expect(votingA.Participants).ToHaveCountAsync(2, new() { Timeout = 15_000 });
         await Expect(votingGuest.Participants).ToHaveCountAsync(2, new() { Timeout = 15_000 });
 
-        // The guest sees a vote-only room: no moderator controls are rendered.
         await Expect(votingGuest.RevealButton).ToHaveCountAsync(0);
         await Expect(votingGuest.ResetButton).ToHaveCountAsync(0);
 
-        // Organizer opens the round; the guest can cast a vote.
         await votingA.SelectTaskAsync(taskTitle);
         await Expect(votingGuest.VoteButton("5")).ToBeEnabledAsync(new() { Timeout = 15_000 });
         await votingGuest.VoteAsync("5");
 
-        // The guest's vote stays hidden until the organizer reveals.
         await Expect(votingGuest.RevealedVotes).ToHaveCountAsync(0);
         await votingA.RevealAsync();
 
-        // After reveal, the guest's value surfaces live in both the organizer and guest views.
         await Expect(votingA.RevealedVotes.Filter(new() { HasText = "5" }))
             .ToHaveCountAsync(1, new() { Timeout = 15_000 });
         await Expect(votingGuest.RevealedVotes.Filter(new() { HasText = "5" }))
@@ -76,4 +69,11 @@ public class GuestVotingTests : PageTest
         await Expect(join.ErrorAlert).ToBeVisibleAsync(new() { Timeout = 15_000 });
         await Expect(Page).ToHaveURLAsync(new Regex("/join/NOSUCHCODE9$"));
     }
+
+    private async Task<Guid> CreateProjectAndGetIdAsync(string prefix)
+    {
+        var projects = new ProjectsPage(Page, AspireAppFixture.BaseUrl);
+        return await projects.CreateProjectReturningIdAsync(prefix);
+    }
 }
+

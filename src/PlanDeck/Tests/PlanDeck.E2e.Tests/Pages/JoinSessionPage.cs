@@ -25,7 +25,7 @@ public class JoinSessionPage
     {
         await _page.GotoAsync(
             $"{_baseUrl.TrimEnd('/')}/join/{code}",
-            new() { WaitUntil = WaitUntilState.NetworkIdle });
+            new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
 
         // Wait for the WASM app to boot and the join form to render.
         await SubmitButton.WaitForAsync(new()
@@ -41,3 +41,5 @@ public class JoinSessionPage
         await SubmitButton.ClickAsync();
     }
 }
+
+

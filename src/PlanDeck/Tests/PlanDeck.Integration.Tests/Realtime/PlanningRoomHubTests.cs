@@ -34,7 +34,7 @@ public sealed class PlanningRoomHubTests
     private const string TestTenantId = "11111111-1111-1111-1111-111111111111";
     private const string TestObjectId = "22222222-2222-2222-2222-222222222222";
     private const string TestAppUserId = "aaaaaaaa-2222-2222-2222-222222222222";
-    private const string TestEmail = "test.user@plandeck.local";
+    private const string TestEmail = "test.owner@plandeck.local";
     private const string NoResultScheme = "NoResult";
 
     private WebApplicationFactory<ServerEntryPoint> _factory = null!;
@@ -810,6 +810,8 @@ public sealed class PlanningRoomHubTests
         [
             new Claim("tid", TestTenantId),
             new Claim("oid", TestObjectId),
+            new Claim(PlanDeckIdentity.AppUserIdClaim, TestAppUserId),
+            new Claim(PlanDeckIdentity.ActiveUserClaim, bool.TrueString),
             new Claim("email", TestEmail)
         ], "Test");
 
