@@ -103,8 +103,10 @@ namespace PlanDeck.Infrastructure.Migrations
                 nullable: false);
 
             migrationBuilder.Sql("""
-                UPDATE [TeamMembers]
-                SET [NormalizedEmail] = UPPER(LTRIM(RTRIM([Email])));
+                EXEC(N'
+                    UPDATE [TeamMembers]
+                    SET [NormalizedEmail] = UPPER(LTRIM(RTRIM([Email])));
+                ');
                 """);
 
             migrationBuilder.AddUniqueConstraint(

@@ -37,9 +37,11 @@ namespace PlanDeck.Infrastructure.Migrations
 
             migrationBuilder.Sql(
                 """
-                UPDATE [AppUsers]
-                SET [EntraObjectId] = [Id],
-                    [NormalizedEmail] = UPPER(LTRIM(RTRIM([Email])));
+                EXEC(N'
+                    UPDATE [AppUsers]
+                    SET [EntraObjectId] = [Id],
+                        [NormalizedEmail] = UPPER(LTRIM(RTRIM([Email])));
+                ');
                 """);
 
             migrationBuilder.AlterColumn<Guid>(
