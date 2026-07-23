@@ -11,8 +11,9 @@ public class SessionRoleSmokeTests : PageTest
         IgnoreHTTPSErrors = true
     };
 
-    [Test]
-    public async Task OwnerAndAdminCanMutate_MemberIsReadOnly()
+    [TestCase("en")]
+    [TestCase("pl")]
+    public async Task OwnerAndAdminCanMutate_MemberIsReadOnly(string culture)
     {
         var runId = Guid.NewGuid();
         var scenarioClient = E2eScenarioClient.Create(AspireAppFixture.BaseUrl, AspireAppFixture.E2eScenarioToken);
@@ -24,7 +25,8 @@ public class SessionRoleSmokeTests : PageTest
             await using (var ownerContext = await E2eIdentityContextFactory.CreateOwnerContextAsync(
                              Browser,
                              AspireAppFixture.BaseUrl,
-                             ContextOptions()))
+                             ContextOptions(),
+                             culture))
             {
                 var ownerPage = await ownerContext.NewPageAsync();
                 var ownerSessions = new SessionsPage(ownerPage, AspireAppFixture.BaseUrl);
@@ -38,7 +40,8 @@ public class SessionRoleSmokeTests : PageTest
             await using (var adminContext = await E2eIdentityContextFactory.CreateAdminContextAsync(
                              Browser,
                              AspireAppFixture.BaseUrl,
-                             ContextOptions()))
+                             ContextOptions(),
+                             culture))
             {
                 var adminPage = await adminContext.NewPageAsync();
                 var adminSessions = new SessionsPage(adminPage, AspireAppFixture.BaseUrl);
@@ -51,7 +54,8 @@ public class SessionRoleSmokeTests : PageTest
             await using (var memberContext = await E2eIdentityContextFactory.CreateMemberContextAsync(
                              Browser,
                              AspireAppFixture.BaseUrl,
-                             ContextOptions()))
+                             ContextOptions(),
+                             culture))
             {
                 var memberPage = await memberContext.NewPageAsync();
                 var memberSessions = new SessionsPage(memberPage, AspireAppFixture.BaseUrl);

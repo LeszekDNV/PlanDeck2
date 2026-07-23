@@ -129,7 +129,17 @@ stages:
                 name: privateProbe
                 displayName: Private Testing reachability probe
 
-              - pwsh: pwsh Tests\PlanDeck.E2e.Tests\bin\Release\net10.0\playwright.ps1 install chromium
+              - pwsh: |
+                  Write-Host "##[group]boundary:playwright-setup"
+                  try {
+                    pwsh Tests\PlanDeck.E2e.Tests\bin\Release\net10.0\playwright.ps1 install chromium
+                    if ($LASTEXITCODE -ne 0) {
+                      Write-Error "Playwright setup failed with exit code $LASTEXITCODE."
+                    }
+                  }
+                  finally {
+                    Write-Host "##[endgroup]"
+                  }
                 displayName: Install Playwright Chromium
                 workingDirectory: src\PlanDeck
 
@@ -139,8 +149,81 @@ stages:
                     $testingBaseUrl = $env:E2E_TESTING_BASE_URL
                   }
                   $testingBaseUrl = $testingBaseUrl.TrimEnd('/')
+                  $scenarioToken = $env:E2E_SCENARIO_TOKEN
+                  $cleanupRunId = [Guid]::NewGuid().ToString()
 
-                  dotnet test Tests\PlanDeck.E2e.Tests\PlanDeck.E2e.Tests.csproj --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results -- TestRunParameters.Parameter(name="BaseUrl", value="$testingBaseUrl") TestRunParameters.Parameter(name="RemoteEnvironment", value="Test") TestRunParameters.Parameter(name="E2eScenarioToken", value="$env:E2E_SCENARIO_TOKEN")
+                  function Write-Boundary([string]$name) {
+                    Write-Host "##[group]boundary:$name"
+                  }
+
+                  function Close-Boundary() {
+                    Write-Host "##[endgroup]"
+                  }
+
+                  Write-Boundary "preflight"
+                  try {
+                    if ([string]::IsNullOrWhiteSpace($testingBaseUrl)) {
+                      throw "BaseUrl is required for remote E2E."
+                    }
+                    if ($testingBaseUrl -notmatch '^https://') {
+                      throw "BaseUrl must use HTTPS."
+                    }
+                    if ([string]::IsNullOrWhiteSpace($scenarioToken)) {
+                      throw "E2E_SCENARIO_TOKEN is required."
+                    }
+                    Write-Host "RemoteEnvironment=Test"
+                    Write-Host "Testing URL host: $([Uri]$testingBaseUrl).Host"
+                  }
+                  finally {
+                    Close-Boundary
+                  }
+
+                  Write-Boundary "scenario-auth"
+                  try {
+                    $headers = @{ "X-PlanDeck-Test-Token" = $scenarioToken }
+                    $seedBody = @{ runId = $cleanupRunId; sessionStatus = 0; taskCount = 1 } | ConvertTo-Json
+                    $seedResponse = Invoke-RestMethod -Uri "$testingBaseUrl/testing/e2e-scenarios/" -Method Post -Headers $headers -ContentType "application/json" -Body $seedBody -TimeoutSec 30
+                    if (-not $seedResponse.runId) {
+                      throw "Scenario seed preflight did not return runId."
+                    }
+                    $cleanupProbe = Invoke-RestMethod -Uri "$testingBaseUrl/testing/e2e-scenarios/$cleanupRunId" -Method Delete -Headers $headers -TimeoutSec 30
+                    if ($null -eq $cleanupProbe.deletedProjectCount) {
+                      throw "Scenario cleanup preflight did not return deletion diagnostics."
+                    }
+                  }
+                  finally {
+                    Close-Boundary
+                  }
+
+                  Write-Boundary "e2e"
+                  try {
+                    dotnet test Tests\PlanDeck.E2e.Tests\PlanDeck.E2e.Tests.csproj --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results -- TestRunParameters.Parameter(name="BaseUrl", value="$testingBaseUrl") TestRunParameters.Parameter(name="RemoteEnvironment", value="Test") TestRunParameters.Parameter(name="E2eScenarioToken", value="$scenarioToken")
+                    if ($LASTEXITCODE -ne 0) {
+                      throw "dotnet test failed with exit code $LASTEXITCODE."
+                    }
+                  }
+                  finally {
+                    Close-Boundary
+                  }
+
+                  Write-Boundary "cleanup"
+                  try {
+                    $headers = @{ "X-PlanDeck-Test-Token" = $scenarioToken }
+                    $cleanupUrl = "$testingBaseUrl/testing/e2e-scenarios/$cleanupRunId"
+                    $cleanup = Invoke-RestMethod -Uri $cleanupUrl -Method Delete -Headers $headers -TimeoutSec 30 -ErrorAction SilentlyContinue
+                    if ($cleanup -and $cleanup.deletedProjectCount -ge 0) {
+                      Write-Host "Cleanup verification completed."
+                    }
+                    else {
+                      Write-Host "Cleanup verification endpoint already clear."
+                    }
+                  }
+                  catch {
+                    Write-Warning "Cleanup verification failed: $($_.Exception.Message)"
+                  }
+                  finally {
+                    Close-Boundary
+                  }
                 displayName: Run E2E against private Testing endpoint
                 workingDirectory: src\PlanDeck
                 env:

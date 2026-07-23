@@ -47,6 +47,8 @@ public class ProjectsTests : PageTest
 
             await sessions.ActivateAsync();
             var votingSessionId = await sessions.JoinVotingAsync();
+            await sessions.GotoAsync(scenario.ProjectId);
+            await sessions.CreateSessionAsync($"inactive-session-{runId:N}", $"inactive-task-{runId:N}");
 
             await details.GotoAsync(scenario.ProjectId);
             await details.OpenDeleteProjectDialogAsync();

@@ -15,13 +15,13 @@ public class SessionsPage
     }
 
     public ILocator CreateSessionButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Create session", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Create session|Utwórz sesję)$") });
 
     public ILocator SaveConfigurationButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Save configuration", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Save configuration|Zapisz konfigurację)$") });
 
     public ILocator AssignMemberButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Assign", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Assign|Przypisz)$") });
 
     public ILocator MobileMenuButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Menu", Exact = true });
@@ -33,36 +33,36 @@ public class SessionsPage
         _page.GetByRole(AriaRole.Button, new() { Name = "Teams", Exact = true });
 
     private ILocator NameField =>
-        _page.GetByLabel("Name", new() { Exact = true });
+        _page.GetByLabel(new Regex("^(Name|Nazwa)$"));
 
     private ILocator TaskTitleField =>
-        _page.GetByLabel("Task title", new() { Exact = true });
+        _page.GetByLabel(new Regex("^(Task title|Tytuł zadania)$"));
 
     private ILocator DescriptionField =>
-        _page.GetByLabel("Description", new() { Exact = true });
+        _page.GetByLabel(new Regex("^(Description|Opis)$"));
 
     private ILocator AddTaskButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Add task", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Add task|Dodaj zadanie)$") });
 
     private ILocator SaveButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Save|Zapisz)$") });
 
     private ILocator OperationError => _page.GetByTestId("session-operation-error");
 
     private ILocator BulkToggle =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Paste multiple tasks", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Paste multiple tasks|Wklej wiele zadań)$") });
 
     private ILocator BulkTextField =>
-        _page.GetByLabel("Paste multiple tasks", new() { Exact = true });
+        _page.GetByLabel(new Regex("^(Paste multiple tasks|Wklej wiele zadań)$"));
 
     private ILocator BulkAddButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Add pasted tasks", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Add pasted tasks|Dodaj wklejone zadania)$") });
 
     private ILocator ActivateButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Activate", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Activate|Aktywuj)$") });
 
     private ILocator JoinVotingButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Join voting", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Join voting|Dołącz do głosowania)$") });
 
     private ILocator AdoImportButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Import from Azure DevOps", Exact = true });
@@ -74,7 +74,7 @@ public class SessionsPage
     {
         await _page.GotoAsync($"{_baseUrl.TrimEnd('/')}/projects/{projectId:D}/sessions", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
 
-        await _page.GetByRole(AriaRole.Heading, new() { Name = "Planning sessions", Exact = true })
+        await _page.GetByRole(AriaRole.Heading, new() { NameRegex = new Regex("^(Planning sessions|Sesje planowania)$") })
             .WaitForAsync(new()
             {
                 State = WaitForSelectorState.Visible,
@@ -163,7 +163,7 @@ public class SessionsPage
     {
         await SessionEntry(name).ClickAsync();
 
-        await _page.GetByRole(AriaRole.Heading, new() { NameRegex = new Regex("^Configuration") })
+        await _page.GetByRole(AriaRole.Heading, new() { NameRegex = new Regex("^(Configuration|Konfiguracja)") })
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
@@ -198,10 +198,10 @@ public class SessionsPage
     public async Task EditTaskAsync(string currentTitle, string newTitle, string newDescription)
     {
         await ConfigTask(currentTitle)
-            .GetByRole(AriaRole.Button, new() { Name = "Edit task", Exact = true })
+            .GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Edit task|Edytuj zadanie)$") })
             .ClickAsync();
 
-        var dialog = _page.GetByRole(AriaRole.Dialog).Filter(new() { HasText = "Edit task" });
+        var dialog = _page.GetByRole(AriaRole.Dialog).Filter(new() { HasTextRegex = new Regex("Edit task|Edytuj zadanie") });
         await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
 
         var titleField = dialog.GetByLabel("Task title", new() { Exact = true });
@@ -212,7 +212,7 @@ public class SessionsPage
         await descriptionField.FillAsync(newDescription);
         await descriptionField.BlurAsync();
 
-        await dialog.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true }).ClickAsync();
+        await dialog.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Save|Zapisz)$") }).ClickAsync();
         await ConfigTask(newTitle).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
@@ -252,4 +252,3 @@ public class SessionsPage
     public ILocator TaskEntry(string title) =>
         _page.GetByTestId("config-task").Filter(new() { HasText = title });
 }
-

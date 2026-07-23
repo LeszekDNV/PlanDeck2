@@ -588,24 +588,24 @@ follow-up change or the original change is archived.
 
 #### Automated
 
-- [x] 2.1 Client and server build with the responsive layout
-- [x] 2.2 English and Polish resource key parity is preserved
-- [x] 2.3 Mobile Project-first E2E passes at 375x812 without horizontal overflow
+- [x] 2.1 Client and server build with the responsive layout — 1e04cf4
+- [x] 2.2 English and Polish resource key parity is preserved — 1e04cf4
+- [x] 2.3 Mobile Project-first E2E passes at 375x812 without horizontal overflow — 1e04cf4
 
 #### Manual
 
-- [x] 2.4 Mobile navigation and long labels remain usable in English and Polish
-- [x] 2.5 Desktop navigation remains unchanged
+- [x] 2.4 Mobile navigation and long labels remain usable in English and Polish — 1e04cf4
+- [x] 2.5 Desktop navigation remains unchanged — 1e04cf4
 
 ### Phase 3: Protected Remote E2E and Layered Diagnostics
 
 #### Automated
 
-- [ ] 3.1 Full protected remote Testing E2E suite passes
-- [ ] 3.2 Owner Admin and Member role smoke paths pass in English and Polish
-- [ ] 3.3 Project deletion covers active and inactive Sessions room invalidation and shared Team preservation
-- [ ] 3.4 Routing direct-link mobile and guest-voting regressions pass remotely
-- [ ] 3.5 Pipeline publishes secret-safe layer-identifying test diagnostics and artifacts
+- [x] 3.1 Full protected remote Testing E2E suite passes
+- [x] 3.2 Owner Admin and Member role smoke paths pass in English and Polish
+- [x] 3.3 Project deletion covers active and inactive Sessions room invalidation and shared Team preservation
+- [x] 3.4 Routing direct-link mobile and guest-voting regressions pass remotely
+- [x] 3.5 Pipeline publishes secret-safe layer-identifying test diagnostics and artifacts
 
 #### Manual
 

@@ -10,20 +10,23 @@ public static class E2eIdentityContextFactory
     public static Task<IBrowserContext> CreateOwnerContextAsync(
         IBrowser browser,
         string baseUrl,
-        BrowserNewContextOptions options) =>
-        CreateMemberContextAsync(browser, baseUrl, "owner", options);
+        BrowserNewContextOptions options,
+        string culture = "en") =>
+        CreateMemberContextAsync(browser, baseUrl, "owner", options, culture);
 
     public static Task<IBrowserContext> CreateAdminContextAsync(
         IBrowser browser,
         string baseUrl,
-        BrowserNewContextOptions options) =>
-        CreateMemberContextAsync(browser, baseUrl, "admin", options);
+        BrowserNewContextOptions options,
+        string culture = "en") =>
+        CreateMemberContextAsync(browser, baseUrl, "admin", options, culture);
 
     public static Task<IBrowserContext> CreateMemberContextAsync(
         IBrowser browser,
         string baseUrl,
-        BrowserNewContextOptions options) =>
-        CreateMemberContextAsync(browser, baseUrl, "member", options);
+        BrowserNewContextOptions options,
+        string culture = "en") =>
+        CreateMemberContextAsync(browser, baseUrl, "member", options, culture);
 
     public static async Task<IBrowserContext> CreateGuestContextAsync(
         IBrowser browser,
@@ -43,9 +46,11 @@ public static class E2eIdentityContextFactory
         IBrowser browser,
         string baseUrl,
         string selectionKey,
-        BrowserNewContextOptions options)
+        BrowserNewContextOptions options,
+        string culture)
     {
         var context = await browser.NewContextAsync(options);
+        await context.AddInitScriptAsync($"window.localStorage.setItem('BlazorCulture', '{culture}')");
         await context.AddCookiesAsync(
         [
             CreateCookie(baseUrl, UserSelectionCookie, selectionKey)
@@ -66,4 +71,3 @@ public static class E2eIdentityContextFactory
         };
     }
 }
-
