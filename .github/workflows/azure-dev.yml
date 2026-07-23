@@ -12,6 +12,8 @@
 # Required repo variables (Settings -> Secrets and variables -> Actions -> Variables):
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_ENV_NAME (= test),
 #   AZURE_LOCATION (= polandcentral), SQL_SERVER_FQDN
+# Required repo secret:
+#   E2E_SCENARIO_TOKEN
 #
 # No long-lived secrets are stored: auth to Azure is OIDC federated.
 
@@ -36,6 +38,8 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      AZURE_E2E_SCENARIO_TOKEN: ${{ secrets.E2E_SCENARIO_TOKEN }}
+      PLANDECK_E2E_TESTAUTH: "true"
       # Deploy into the existing resource group (RG-scoped deployment) so the
       # pipeline SP only needs Owner on rg-test, not subscription-level rights.
       AZURE_RESOURCE_GROUP: rg-${{ vars.AZURE_ENV_NAME }}

@@ -37,10 +37,6 @@ if (builder.ExecutionContext.IsPublishMode)
 
     var sqlServer = builder.AddAzureSqlServer("sql-server");
     var sqlDatabase = sqlServer.AddDatabase("PlanDeckDb");
-    var entraTenantId = builder.AddParameter("entra-tenant-id");
-    var entraClientId = builder.AddParameter("entra-client-id");
-    var entraClientSecret = builder.AddParameter("entra-client-secret", secret: true);
-    var e2eScenarioToken = builder.AddParameter("e2e-scenario-token", secret: true);
 
     // Pin the pilot database to a serverless General Purpose tier with auto-pause to keep
     // cost minimal; cold-start latency on the first query after a pause is acceptable for a
@@ -61,12 +57,31 @@ if (builder.ExecutionContext.IsPublishMode)
 
     planDeckServer
         .WithReference(sqlDatabase, "DefaultConnection")
-        .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
-        .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
-        .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret)
-        .WithEnvironment("Testing__E2eScenario__AuthorizationToken", e2eScenarioToken)
         .WithEnvironment("EmailSettings__Host", "smtp")
-        .WithEnvironment("EmailSettings__Port", "587")
+        .WithEnvironment("EmailSettings__Port", "587");
+
+    if (useE2eTestAuth)
+    {
+        var e2eScenarioToken = builder.AddParameter("e2e-scenario-token", secret: true);
+
+        planDeckServer
+            .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing")
+            .WithEnvironment("Authentication__UseTestScheme", "true")
+            .WithEnvironment("Testing__E2eScenario__AuthorizationToken", e2eScenarioToken);
+    }
+    else
+    {
+        var entraTenantId = builder.AddParameter("entra-tenant-id");
+        var entraClientId = builder.AddParameter("entra-client-id");
+        var entraClientSecret = builder.AddParameter("entra-client-secret", secret: true);
+
+        planDeckServer
+            .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
+            .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
+            .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret);
+    }
+
+    planDeckServer
         .WaitFor(sqlDatabase)
         .PublishAsAzureContainerApp((infrastructure, app) =>
         {
