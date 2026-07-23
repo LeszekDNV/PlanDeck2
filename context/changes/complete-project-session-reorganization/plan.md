@@ -601,11 +601,11 @@ follow-up change or the original change is archived.
 
 #### Automated
 
-- [x] 3.1 Full protected remote Testing E2E suite passes
-- [x] 3.2 Owner Admin and Member role smoke paths pass in English and Polish
-- [x] 3.3 Project deletion covers active and inactive Sessions room invalidation and shared Team preservation
-- [x] 3.4 Routing direct-link mobile and guest-voting regressions pass remotely
-- [x] 3.5 Pipeline publishes secret-safe layer-identifying test diagnostics and artifacts
+- [x] 3.1 Full protected remote Testing E2E suite passes — f946010
+- [x] 3.2 Owner Admin and Member role smoke paths pass in English and Polish — f946010
+- [x] 3.3 Project deletion covers active and inactive Sessions room invalidation and shared Team preservation — f946010
+- [x] 3.4 Routing direct-link mobile and guest-voting regressions pass remotely — f946010
+- [x] 3.5 Pipeline publishes secret-safe layer-identifying test diagnostics and artifacts — f946010
 
 #### Manual
 
@@ -616,11 +616,11 @@ follow-up change or the original change is archived.
 
 #### Automated
 
-- [ ] 4.1 Unit test suite passes
-- [ ] 4.2 Integration test suite passes
-- [ ] 4.3 Full local Aspire E2E suite passes
-- [ ] 4.4 Full protected remote gate and network probes pass
-- [ ] 4.5 Entire solution builds
+- [x] 4.1 Unit test suite passes
+- [x] 4.2 Integration test suite passes
+- [x] 4.3 Full local Aspire E2E suite passes
+- [x] 4.4 Full protected remote gate and network probes pass
+- [x] 4.5 Entire solution builds
 
 #### Manual
 
