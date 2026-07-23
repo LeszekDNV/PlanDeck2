@@ -15,38 +15,30 @@ var publishTarget = ResolvePublishTarget(
     Environment.GetEnvironmentVariable("PLANDECK_PUBLISH_TARGET"));
 var azureEnvironmentName = builder.Configuration["AZURE_ENV_NAME"];
 
-var useLocalE2eTestAuth = string.Equals(
-    Environment.GetEnvironmentVariable("PLANDECK_E2E_TESTAUTH"),
-    "true",
-    StringComparison.OrdinalIgnoreCase);
+var useLocalE2eTestAuth = !builder.ExecutionContext.IsPublishMode
+    && string.Equals(
+        Environment.GetEnvironmentVariable("PLANDECK_E2E_TESTAUTH"),
+        "true",
+        StringComparison.OrdinalIgnoreCase);
 
 var isNamedTestingEnvironment = !string.IsNullOrWhiteSpace(azureEnvironmentName)
     && (string.Equals(azureEnvironmentName, "test", StringComparison.OrdinalIgnoreCase)
         || azureEnvironmentName.Contains("testing", StringComparison.OrdinalIgnoreCase));
 
-var usePublishTestAuth = builder.ExecutionContext.IsPublishMode
-    && (useLocalE2eTestAuth
-        || string.Equals(
+var usePublishedTestAuth = builder.ExecutionContext.IsPublishMode
+    && (string.Equals(
             publishTarget,
             PublishTargetTesting,
             StringComparison.OrdinalIgnoreCase)
         || isNamedTestingEnvironment);
 
-var useE2eTestAuth = useLocalE2eTestAuth || usePublishTestAuth;
+var useTestAuth = useLocalE2eTestAuth || usePublishedTestAuth;
 
-var planDeckServer = builder.AddProject<Projects.PlanDeck_Server>("plandeck-server");
-if (!builder.ExecutionContext.IsPublishMode || !usePublishTestAuth)
-{
-    planDeckServer = planDeckServer.WithExternalHttpEndpoints();
-}
-else
-{
-    planDeckServer = planDeckServer
-        .WithEndpoint("http", endpoint => endpoint.IsExternal = false)
-        .WithEndpoint("https", endpoint => endpoint.IsExternal = false);
-}
+var planDeckServer = builder
+    .AddProject<Projects.PlanDeck_Server>("plandeck-server")
+    .WithExternalHttpEndpoints();
 
-if (!useE2eTestAuth)
+if (!useTestAuth)
 {
     var keyVault = builder.AddAzureKeyVault("key-vault")
         .ClearDefaultRoleAssignments()
@@ -94,16 +86,11 @@ if (builder.ExecutionContext.IsPublishMode)
         .WithEnvironment("EmailSettings__Host", "smtp")
         .WithEnvironment("EmailSettings__Port", "587");
 
-    if (usePublishTestAuth)
+    if (usePublishedTestAuth)
     {
-        var e2eScenarioToken = builder.Configuration["E2E_SCENARIO_TOKEN"]
-            ?? builder.Configuration["Testing:E2eScenario:AuthorizationToken"]
-            ?? string.Empty;
-
         planDeckServer
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing")
-            .WithEnvironment("Authentication__UseTestScheme", "true")
-            .WithEnvironment("Testing__E2eScenario__AuthorizationToken", e2eScenarioToken);
+            .WithEnvironment("Authentication__UseTestScheme", "true");
     }
     else
     {
@@ -127,7 +114,7 @@ if (builder.ExecutionContext.IsPublishMode)
         .WaitFor(sqlDatabase)
         .PublishAsAzureContainerApp((infrastructure, app) =>
         {
-            app.Configuration.Ingress.External = !usePublishTestAuth;
+            app.Configuration.Ingress.External = true;
 
             // SignalR room state is in-process (singleton IPlanningRoomService, no backplane),
             // so the pilot must run as a single pinned replica with session affinity: rooms
@@ -165,7 +152,8 @@ else
 
 // The E2E fixture sets this environment variable to drive the UI with a deterministic
 // test-auth scheme instead of interactive Entra sign-in. No effect on normal `dotnet run`.
-if (string.Equals(
+if (!builder.ExecutionContext.IsPublishMode
+    && string.Equals(
         Environment.GetEnvironmentVariable("PLANDECK_E2E_TESTAUTH"),
         "true",
         StringComparison.OrdinalIgnoreCase))
@@ -173,7 +161,9 @@ if (string.Equals(
     planDeckServer.WithEnvironment("Authentication__UseTestScheme", "true");
 }
 
-var scenarioToken = Environment.GetEnvironmentVariable("PLANDECK_E2E_SCENARIO_TOKEN");
+var scenarioToken = builder.ExecutionContext.IsPublishMode
+    ? null
+    : Environment.GetEnvironmentVariable("PLANDECK_E2E_SCENARIO_TOKEN");
 if (!string.IsNullOrWhiteSpace(scenarioToken))
 {
     planDeckServer.WithEnvironment("Testing__E2eScenario__AuthorizationToken", scenarioToken);

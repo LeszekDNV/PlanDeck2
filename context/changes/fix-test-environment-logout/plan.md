@@ -326,5 +326,5 @@ would then return to Test Owner, which matches the pre-change behavior.
 
 #### Manual
 
-- [ ] 2.4 Deployed Testing logout persists through refresh
-- [ ] 2.5 Deployed Testing login restores Test Owner
+- [x] 2.4 Deployed Testing logout persists through refresh
+- [x] 2.5 Deployed Testing login restores Test Owner

@@ -1,18 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
-  <TestRunParameters>
-    <!--
-      BaseUrl controls where the E2E tests point the browser.
-      Empty value: local developer machine, Aspire is started automatically.
-      A URL value: remote Test environment, Aspire is NOT started and
-      the tests navigate straight to this already-deployed server. Set
-      RemoteEnvironment to Test and provide E2eScenarioToken.
-
-      Override per run without editing this file by passing a TestRunParameters
-      argument to "dotnet test".
-    -->
-    <Parameter name="BaseUrl" value="" />
-    <Parameter name="RemoteEnvironment" value="" />
-    <Parameter name="E2eScenarioToken" value="" />
-  </TestRunParameters>
+  <!-- E2E tests are local-only. AspireAppFixture always starts the AppHost. -->
 </RunSettings>

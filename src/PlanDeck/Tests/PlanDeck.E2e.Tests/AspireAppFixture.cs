@@ -9,9 +9,6 @@ namespace PlanDeck.E2e.Tests;
 [SetUpFixture]
 public class AspireAppFixture
 {
-    private const string BaseUrlParameter = "BaseUrl";
-    private const string RemoteEnvironmentParameter = "RemoteEnvironment";
-    private const string E2eScenarioTokenParameter = "E2eScenarioToken";
     private const string LocalScenarioToken = "local-e2e-scenario-token";
 
     private DistributedApplication? _app;
@@ -22,26 +19,6 @@ public class AspireAppFixture
     [OneTimeSetUp]
     public async Task StartAsync()
     {
-        var externalBaseUrl = TestContext.Parameters.Get(BaseUrlParameter);
-        if (!string.IsNullOrWhiteSpace(externalBaseUrl))
-        {
-            var remoteEnvironment = TestContext.Parameters.Get(RemoteEnvironmentParameter);
-            if (!string.Equals(remoteEnvironment, "Test", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("Remote E2E requires RemoteEnvironment=Test.");
-            }
-
-            var scenarioToken = TestContext.Parameters.Get(E2eScenarioTokenParameter);
-            if (string.IsNullOrWhiteSpace(scenarioToken))
-            {
-                throw new InvalidOperationException("Remote E2E requires the E2eScenarioToken test parameter.");
-            }
-
-            BaseUrl = externalBaseUrl.TrimEnd('/');
-            E2eScenarioToken = scenarioToken;
-            return;
-        }
-
         Environment.SetEnvironmentVariable("PLANDECK_E2E_TESTAUTH", "true");
         Environment.SetEnvironmentVariable("PLANDECK_E2E_SCENARIO_TOKEN", LocalScenarioToken);
 
