@@ -52,6 +52,12 @@ public class TeamsPage
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
+    public async Task SelectTeamAsync(string name)
+    {
+        await _page.GetByRole(AriaRole.Button, new() { Name = name, Exact = true }).ClickAsync();
+        await EmailField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
     public async Task AddMemberAsync(string email)
     {
         await EmailField.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
@@ -66,7 +72,7 @@ public class TeamsPage
             .ClickAsync();
 
         // Confirm the removal in the MudMessageBox dialog.
-        await _page.Locator(".mud-dialog")
+        await _page.GetByRole(AriaRole.Dialog)
             .GetByRole(AriaRole.Button, new() { Name = "Remove" })
             .ClickAsync();
     }
@@ -74,7 +80,5 @@ public class TeamsPage
     public ILocator MemberEntry(string email) => _page.GetByText(email);
 
     private ILocator MemberRow(string email) =>
-        _page.Locator(".mud-list-item").Filter(new() { HasText = email });
+        _page.GetByTestId("team-member").Filter(new() { HasText = email });
 }
-
-

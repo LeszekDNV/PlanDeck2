@@ -47,7 +47,14 @@ public class SessionsTests : PageTest
         await sessions.EditTaskAsync(original, renamed, "A **bold** detail.");
 
         await Expect(sessions.ConfigTask(renamed)).ToBeVisibleAsync(new() { Timeout = 15_000 });
-        await Expect(sessions.ConfigTask(renamed).Locator("strong")).ToHaveTextAsync("bold", new() { Timeout = 15_000 });
+        await sessions.ConfigTask(renamed)
+            .GetByRole(AriaRole.Button, new() { Name = "Description", Exact = true })
+            .ClickAsync();
+        var boldText = sessions.ConfigTask(renamed).GetByText("bold", new() { Exact = true });
+        await Expect(boldText).ToBeVisibleAsync(new() { Timeout = 15_000 });
+        Assert.That(
+            await boldText.EvaluateAsync<string>("element => element.tagName"),
+            Is.EqualTo("STRONG"));
     }
 
     [Test]
@@ -89,6 +96,4 @@ public class SessionsTests : PageTest
         return Guid.Parse(segment);
     }
 }
-
-
 

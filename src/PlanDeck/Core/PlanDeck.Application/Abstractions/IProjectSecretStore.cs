@@ -13,6 +13,8 @@ public interface IProjectSecretStore
 
     Task SoftDeleteAsync(string secretName, CancellationToken cancellationToken);
 
+    Task RecoverAsync(string secretName, CancellationToken cancellationToken);
+
     void Invalidate(string secretName);
 }
 

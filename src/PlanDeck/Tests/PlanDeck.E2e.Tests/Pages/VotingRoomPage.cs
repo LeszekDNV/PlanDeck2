@@ -64,7 +64,6 @@ public class VotingRoomPage
 
     public async Task SelectTaskAsync(string taskTitle) =>
         await TaskListItems.Filter(new() { HasText = taskTitle })
-            .First
             .ClickAsync();
 
     public async Task VoteAsync(string value) =>
@@ -76,5 +75,4 @@ public class VotingRoomPage
     public async Task PickEstimateAsync(string value) =>
         await _page.GetByTestId($"pick-{value}").ClickAsync();
 }
-
 

@@ -197,11 +197,9 @@ public sealed class ProjectGrpcService(
         CallContext context = default)
     {
         await RequireAsync(request.ProjectId, ProjectRole.Owner, context.CancellationToken);
-        var ownedSessionIds = (await sessions.GetSessionsAsync(
-                request.ProjectId,
-                context.CancellationToken))
-            .Select(session => session.Id)
-            .ToArray();
+        var ownedSessionIds = await sessions.GetSessionIdsAsync(
+            request.ProjectId,
+            context.CancellationToken);
 
         var connection = await connections.GetAsync(
             request.ProjectId,
@@ -211,7 +209,20 @@ public sealed class ProjectGrpcService(
             await SoftDeleteSecretAsync(connection.SecretName, context.CancellationToken);
         }
 
-        await repository.DeleteAsync(request.ProjectId, context.CancellationToken);
+        try
+        {
+            await repository.DeleteAsync(request.ProjectId, context.CancellationToken);
+        }
+        catch (ProjectPersistenceException)
+        {
+            if (connection is not null)
+            {
+                await RecoverSecretAsync(connection.SecretName, CancellationToken.None);
+            }
+
+            throw;
+        }
+
         foreach (var sessionId in ownedSessionIds)
         {
             planningRoomService.InvalidateSession(new RoomKey(currentUser.TenantId, sessionId));
@@ -579,6 +590,21 @@ public sealed class ProjectGrpcService(
         try
         {
             await secretStore.SoftDeleteAsync(secretName, cancellationToken);
+            secretStore.Invalidate(secretName);
+        }
+        catch (ProjectSecretStoreException exception)
+        {
+            throw MapSecretFailure(exception);
+        }
+    }
+
+    private async Task RecoverSecretAsync(
+        string secretName,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await secretStore.RecoverAsync(secretName, cancellationToken);
             secretStore.Invalidate(secretName);
         }
         catch (ProjectSecretStoreException exception)

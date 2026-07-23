@@ -240,7 +240,14 @@ public sealed class ProjectRepository(
         }
 
         db.Projects.Remove(project);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+        {
+            throw new ProjectPersistenceException(exception);
+        }
     }
 
     private async Task<ProjectMember> LoadMemberAsync(
@@ -258,5 +265,4 @@ public sealed class ProjectRepository(
             ? await db.Database.BeginTransactionAsync(cancellationToken)
             : null;
 }
-
 

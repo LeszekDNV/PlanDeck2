@@ -280,6 +280,7 @@
 
                                             <div class="mt-3">
                                                 <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.CloudDownload"
+                                                           data-testid="config-ado-import"
                                                            Disabled="_addingTask" OnClick="OpenAdoImportForConfig" Class="mb-1">
                                                     @L["Sessions_ImportAdo"]
                                                 </MudButton>
@@ -304,7 +305,7 @@
                                             <MudList T="SessionMemberDto" Dense="true">
                                                 @foreach (var member in _members)
                                                 {
-                                                    <MudListItem T="SessionMemberDto">
+                                                    <MudListItem T="SessionMemberDto" data-testid="session-member">
                                                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                                             <MudText>
                                                                 @member.Email

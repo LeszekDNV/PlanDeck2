@@ -43,6 +43,7 @@ public sealed class KeyVaultProjectSecretStore(
         try
         {
             if (cache.TryGetValue<CacheEntry>(secretName, out var cached)
+                && cached is not null
                 && cached.ExpiresAtUtc > timeProvider.GetUtcNow())
             {
                 return cached.Value;
@@ -111,13 +112,42 @@ public sealed class KeyVaultProjectSecretStore(
         try
         {
             Invalidate(secretName);
-            await client.StartDeleteSecretAsync(secretName, cancellationToken);
+            var operation = await client.StartDeleteSecretAsync(secretName, cancellationToken);
+            await operation.WaitForCompletionAsync(cancellationToken);
         }
         catch (RequestFailedException exception)
             when (exception.Status == 404
                 || exception is { Status: 409, ErrorCode: "SecretBeingDeleted" })
         {
             // Soft deletion is intentionally idempotent so a failed SQL cleanup can be retried.
+        }
+        catch (RequestFailedException exception)
+        {
+            throw Map(exception);
+        }
+        catch (Exception exception) when (IsAuthenticationFailure(exception))
+        {
+            throw new ProjectSecretUnavailableException();
+        }
+        finally
+        {
+            secretLock.Release();
+        }
+    }
+
+    public async Task RecoverAsync(
+        string secretName,
+        CancellationToken cancellationToken)
+    {
+        var secretLock = _secretLocks.GetOrAdd(secretName, _ => new SemaphoreSlim(1, 1));
+        await secretLock.WaitAsync(cancellationToken);
+        try
+        {
+            var operation = await client.StartRecoverDeletedSecretAsync(
+                secretName,
+                cancellationToken);
+            await operation.WaitForCompletionAsync(cancellationToken);
+            Invalidate(secretName);
         }
         catch (RequestFailedException exception)
         {

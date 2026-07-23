@@ -16,6 +16,9 @@ public class ProjectDetailsPage
 
     public ILocator SelectedProjectTitle => _page.GetByTestId("project-selected");
 
+    public ILocator DeleteDialog =>
+        _page.GetByRole(AriaRole.Dialog).Filter(new() { HasText = "Delete project" });
+
     public async Task GotoAsync(Guid projectId)
     {
         await _page.GotoAsync($"{_baseUrl.TrimEnd('/')}/projects/{projectId:D}", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
@@ -30,11 +33,19 @@ public class ProjectDetailsPage
 
     public async Task DeleteProjectAsync()
     {
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Delete project", Exact = true }).ClickAsync();
+        await OpenDeleteProjectDialogAsync();
+        await ConfirmDeleteProjectAsync();
+    }
 
-        var dialog = _page.GetByRole(AriaRole.Dialog).Filter(new() { HasText = "Delete project" });
-        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
-        await dialog.GetByRole(AriaRole.Button, new() { Name = "Delete project", Exact = true }).ClickAsync();
+    public async Task OpenDeleteProjectDialogAsync()
+    {
+        await _page.GetByRole(AriaRole.Button, new() { Name = "Delete project", Exact = true }).ClickAsync();
+        await DeleteDialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task ConfirmDeleteProjectAsync()
+    {
+        await DeleteDialog.GetByRole(AriaRole.Button, new() { Name = "Delete project", Exact = true }).ClickAsync();
     }
 
     public async Task AssignTeamAsync(string teamName)
@@ -44,7 +55,6 @@ public class ProjectDetailsPage
         await _page.GetByRole(AriaRole.Button, new() { Name = "Assign", Exact = true }).ClickAsync();
     }
 }
-
 
 
 

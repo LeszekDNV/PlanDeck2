@@ -1,7 +1,7 @@
 ---
 change_id: reorganize-project-and-sessions
 title: Reorganize projects and project-owned sessions
-status: implemented
+status: impl_reviewed
 created: 2026-07-22
 updated: 2026-07-23
 archived_at: null
@@ -21,4 +21,3 @@ Po poprzednich zmianach dodaliśmy nadrzędną warstwę grupującą czyli projek
 3. Właściciel może nadać innym użytkownikom prawa do modyfikacji projektu i sesji w nim zawartych.
 
 Część funckjonalności została już zaimplementowana. Najważniejsze jest przebudowanie wyglądu aplikacji aby promował Projekt nad Sessją oraz uzależnienie sesji od projektu w backendzie.
-

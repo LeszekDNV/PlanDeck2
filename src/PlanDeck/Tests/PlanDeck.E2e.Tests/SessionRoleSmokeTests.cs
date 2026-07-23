@@ -4,7 +4,7 @@ using PlanDeck.E2e.Tests.Pages;
 namespace PlanDeck.E2e.Tests;
 
 [TestFixture]
-public class SessionAuthorizationMatrixTests : PageTest
+public class SessionRoleSmokeTests : PageTest
 {
     public override BrowserNewContextOptions ContextOptions() => new()
     {

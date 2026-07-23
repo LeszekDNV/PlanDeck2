@@ -42,8 +42,11 @@ stages:
             displayName: Build solution
             workingDirectory: src\PlanDeck
 
-          - pwsh: dotnet test PlanDeck.slnx --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results
-            displayName: Run tests
+          - pwsh: |
+              dotnet test Tests\PlanDeck.Unit.Tests\PlanDeck.Unit.Tests.csproj --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              dotnet test Tests\PlanDeck.Integration.Tests\PlanDeck.Integration.Tests.csproj --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results
+            displayName: Run unit and integration tests
             workingDirectory: src\PlanDeck
 
           - pwsh: |
@@ -64,7 +67,9 @@ stages:
                   if ([string]::IsNullOrWhiteSpace($env:E2E_SCENARIO_TOKEN)) {
                     Write-Error 'E2E_SCENARIO_TOKEN secret is required when runE2E is true.'
                   }
-                  dotnet test Tests\PlanDeck.E2e.Tests\PlanDeck.E2e.Tests.csproj --configuration Release --no-build -- TestRunParameters.Parameter(name="BaseUrl", value="${{ parameters.e2eBaseUrl }}") TestRunParameters.Parameter(name="RemoteEnvironment", value="Test") TestRunParameters.Parameter(name="E2eScenarioToken", value="$env:E2E_SCENARIO_TOKEN")
+                  pwsh Tests\PlanDeck.E2e.Tests\bin\Release\net10.0\playwright.ps1 install chromium
+                  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                  dotnet test Tests\PlanDeck.E2e.Tests\PlanDeck.E2e.Tests.csproj --configuration Release --no-build --logger trx --results-directory $(Agent.TempDirectory)\test-results -- TestRunParameters.Parameter(name="BaseUrl", value="${{ parameters.e2eBaseUrl }}") TestRunParameters.Parameter(name="RemoteEnvironment", value="Test") TestRunParameters.Parameter(name="E2eScenarioToken", value="$env:E2E_SCENARIO_TOKEN")
                 displayName: Run E2E against deployed BaseUrl
                 workingDirectory: src\PlanDeck
                 env:

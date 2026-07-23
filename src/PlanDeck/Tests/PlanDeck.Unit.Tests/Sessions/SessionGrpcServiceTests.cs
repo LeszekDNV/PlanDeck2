@@ -970,6 +970,10 @@ public sealed class SessionGrpcServiceTests
             => Task.FromResult<IReadOnlyList<PlanningSession>>(
                 _sessions.Where(s => s.ProjectId == projectId).ToList());
 
+        public Task<IReadOnlyList<Guid>> GetSessionIdsAsync(Guid projectId, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<Guid>>(
+                _sessions.Where(session => session.ProjectId == projectId).Select(session => session.Id).ToList());
+
         public Task<PlanningSession?> GetSessionAsync(Guid id, CancellationToken cancellationToken)
             => Task.FromResult(_sessions.FirstOrDefault(s => s.Id == id));
 

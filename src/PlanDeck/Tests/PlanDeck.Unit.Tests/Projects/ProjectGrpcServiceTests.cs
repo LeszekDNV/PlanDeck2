@@ -14,6 +14,8 @@ public sealed class ProjectGrpcServiceTests
     private static readonly Guid ProjectId = Guid.NewGuid();
     private RecordingProjectAccessResolver _access = null!;
     private FakeProjectRepository _repository = null!;
+    private FakeConnectionRepository _connections = null!;
+    private FakeSecretStore _secrets = null!;
     private ProjectGrpcService _service = null!;
 
     [SetUp]
@@ -21,14 +23,16 @@ public sealed class ProjectGrpcServiceTests
     {
         _access = new RecordingProjectAccessResolver();
         _repository = new FakeProjectRepository();
+        _connections = new FakeConnectionRepository();
+        _secrets = new FakeSecretStore();
         _service = new ProjectGrpcService(
             _repository,
             _access,
             new FakeCurrentUserContext(),
             new FakeSessionRepository(),
             new FakePlanningRoomService(),
-            new FakeConnectionRepository(),
-            new FakeSecretStore(),
+            _connections,
+            _secrets,
             new FakeConnectionValidator(),
             TimeProvider.System);
     }
@@ -90,6 +94,38 @@ public sealed class ProjectGrpcServiceTests
         Assert.That(
             _access.Requirements,
             Is.EqualTo(new[] { ProjectRole.Owner, ProjectRole.Owner }));
+    }
+
+    [Test]
+    public void DeleteProject_WhenSqlDeleteFails_RecoversSecret()
+    {
+        _connections.Connection = CreateConnection();
+        _repository.DeleteException = new ProjectPersistenceException(
+            new InvalidOperationException("SQL failure"));
+
+        Assert.ThrowsAsync<ProjectPersistenceException>(() =>
+            _service.DeleteProjectAsync(new DeleteProjectRequest { ProjectId = ProjectId }));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_secrets.DeletedNames, Is.EqualTo(new[] { "project-secret" }));
+            Assert.That(_secrets.RecoveredNames, Is.EqualTo(new[] { "project-secret" }));
+        });
+    }
+
+    [Test]
+    public void DeleteProject_WhenSecretRecoveryFails_ReturnsUnavailable()
+    {
+        _connections.Connection = CreateConnection();
+        _repository.DeleteException = new ProjectPersistenceException(
+            new InvalidOperationException("SQL failure"));
+        _secrets.RecoverException = new ProjectSecretUnavailableException();
+
+        var exception = Assert.ThrowsAsync<RpcException>(() =>
+            _service.DeleteProjectAsync(new DeleteProjectRequest { ProjectId = ProjectId }));
+
+        Assert.That(exception!.StatusCode, Is.EqualTo(StatusCode.Unavailable));
+        Assert.That(_secrets.RecoveredNames, Is.EqualTo(new[] { "project-secret" }));
     }
 
     [Test]
@@ -156,6 +192,8 @@ public sealed class ProjectGrpcServiceTests
     private sealed class FakeProjectRepository : IProjectRepository
     {
         public int InviteCalls { get; private set; }
+
+        public Exception? DeleteException { get; set; }
 
         public Task<PlanDeckProject> CreateAsync(
             string name,
@@ -226,8 +264,15 @@ public sealed class ProjectGrpcServiceTests
 
         public Task DeleteAsync(
             Guid projectId,
-            CancellationToken cancellationToken) =>
-            Task.CompletedTask;
+            CancellationToken cancellationToken)
+        {
+            if (DeleteException is not null)
+            {
+                throw DeleteException;
+            }
+
+            return Task.CompletedTask;
+        }
 
         private static PlanDeckProject Project(string name = "Project") => new()
         {
@@ -255,6 +300,11 @@ public sealed class ProjectGrpcServiceTests
             Guid projectId,
             CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<PlanningSession>>([]);
+
+        public Task<IReadOnlyList<Guid>> GetSessionIdsAsync(
+            Guid projectId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Guid>>([]);
 
         public Task<PlanningSession?> GetSessionAsync(
             Guid id,
@@ -346,10 +396,12 @@ public sealed class ProjectGrpcServiceTests
     private sealed class FakeConnectionRepository
         : IProjectAzureDevOpsConnectionRepository
     {
+        public ProjectAzureDevOpsConnection? Connection { get; set; }
+
         public Task<ProjectAzureDevOpsConnection?> GetAsync(
             Guid projectId,
             CancellationToken cancellationToken) =>
-            Task.FromResult<ProjectAzureDevOpsConnection?>(null);
+            Task.FromResult(Connection);
 
         public Task AddAsync(
             ProjectAzureDevOpsConnection connection,
@@ -374,6 +426,12 @@ public sealed class ProjectGrpcServiceTests
 
     private sealed class FakeSecretStore : IProjectSecretStore
     {
+        public List<string> DeletedNames { get; } = [];
+
+        public List<string> RecoveredNames { get; } = [];
+
+        public Exception? RecoverException { get; set; }
+
         public Task<string> CreateAsync(string value, CancellationToken cancellationToken) =>
             Task.FromResult($"pat-{Guid.NewGuid():N}");
 
@@ -390,13 +448,41 @@ public sealed class ProjectGrpcServiceTests
 
         public Task SoftDeleteAsync(
             string secretName,
-            CancellationToken cancellationToken) =>
-            Task.CompletedTask;
+            CancellationToken cancellationToken)
+        {
+            DeletedNames.Add(secretName);
+            return Task.CompletedTask;
+        }
+
+        public Task RecoverAsync(
+            string secretName,
+            CancellationToken cancellationToken)
+        {
+            RecoveredNames.Add(secretName);
+            if (RecoverException is not null)
+            {
+                throw RecoverException;
+            }
+
+            return Task.CompletedTask;
+        }
 
         public void Invalidate(string secretName)
         {
         }
     }
+
+    private static ProjectAzureDevOpsConnection CreateConnection() => new()
+    {
+        ProjectId = ProjectId,
+        OrganizationUrl = "https://dev.azure.com/test",
+        AzureDevOpsProject = "project",
+        EstimateField = "Microsoft.VSTS.Scheduling.StoryPoints",
+        DescriptionField = "System.Description",
+        ReproStepsField = "Microsoft.VSTS.TCM.ReproSteps",
+        AcceptanceCriteriaField = "Microsoft.VSTS.Common.AcceptanceCriteria",
+        SecretName = "project-secret"
+    };
 
     private sealed class FakeConnectionValidator : IAzureDevOpsConnectionValidator
     {

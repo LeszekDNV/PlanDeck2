@@ -6,6 +6,7 @@ namespace PlanDeck.Server.Testing;
 public sealed class InMemoryProjectSecretStore : IProjectSecretStore
 {
     private readonly ConcurrentDictionary<string, string> _secrets = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, string> _deletedSecrets = new(StringComparer.Ordinal);
 
     public Task<string> CreateAsync(string value, CancellationToken cancellationToken)
     {
@@ -37,8 +38,28 @@ public sealed class InMemoryProjectSecretStore : IProjectSecretStore
 
     public Task SoftDeleteAsync(string secretName, CancellationToken cancellationToken)
     {
-        _secrets.TryRemove(secretName, out _);
+        if (_secrets.TryRemove(secretName, out var value))
+        {
+            _deletedSecrets[secretName] = value;
+        }
+
         return Task.CompletedTask;
+    }
+
+    public Task RecoverAsync(string secretName, CancellationToken cancellationToken)
+    {
+        if (_deletedSecrets.TryRemove(secretName, out var value))
+        {
+            _secrets[secretName] = value;
+            return Task.CompletedTask;
+        }
+
+        if (_secrets.ContainsKey(secretName))
+        {
+            return Task.CompletedTask;
+        }
+
+        throw new ProjectSecretMissingException();
     }
 
     public void Invalidate(string secretName)

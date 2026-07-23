@@ -66,7 +66,6 @@ public class ProjectsPage
         await _page.GetByTestId("project-create-save").ClickAsync();
         await SelectedProject
             .Or(OperationError)
-            .First
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
 
         if (await OperationError.IsVisibleAsync())
@@ -94,6 +93,5 @@ public class ProjectsPage
     public ILocator ProjectEntry(string name) =>
         _page.GetByTestId("project-entry").Filter(new() { HasText = name });
 }
-
 
 

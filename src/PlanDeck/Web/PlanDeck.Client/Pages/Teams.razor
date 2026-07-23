@@ -79,7 +79,7 @@
                             <MudList T="TeamMemberDto">
                                 @foreach (var member in _members)
                                 {
-                                    <MudListItem T="TeamMemberDto">
+                                    <MudListItem T="TeamMemberDto" data-testid="team-member">
                                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                             <MudText>
                                                 @member.Email

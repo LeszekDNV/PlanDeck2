@@ -13,13 +13,15 @@ public class JoinSessionPage
         _baseUrl = baseUrl;
     }
 
-    public ILocator NameField => _page.Locator("[data-testid=join-name]");
+    public ILocator NameField => _page.GetByLabel("Your name", new() { Exact = true });
 
-    public ILocator SubmitButton => _page.Locator("[data-testid=join-submit]");
+    public ILocator SubmitButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Join", Exact = true });
 
-    public ILocator ErrorAlert => _page.Locator("[data-testid=join-error]");
+    public ILocator ErrorAlert => _page.GetByTestId("join-error");
 
-    public ILocator LoginMicrosoftButton => _page.Locator("[data-testid=join-login-ms]");
+    public ILocator LoginMicrosoftButton =>
+        _page.GetByRole(AriaRole.Button, new() { Name = "Sign in with a Microsoft account", Exact = true });
 
     public async Task GotoAsync(string code)
     {
@@ -41,5 +43,3 @@ public class JoinSessionPage
         await SubmitButton.ClickAsync();
     }
 }
-
-

@@ -8,6 +8,8 @@ public interface ISessionRepository
 
     Task<IReadOnlyList<PlanningSession>> GetSessionsAsync(Guid projectId, CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<Guid>> GetSessionIdsAsync(Guid projectId, CancellationToken cancellationToken);
+
     Task<PlanningSession?> GetSessionAsync(Guid id, CancellationToken cancellationToken);
 
     Task<PlanningSession> UpdateSessionAsync(PlanningSession session, CancellationToken cancellationToken);

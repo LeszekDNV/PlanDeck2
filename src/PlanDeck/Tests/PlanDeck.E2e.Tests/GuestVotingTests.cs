@@ -59,6 +59,35 @@ public class GuestVotingTests : PageTest
     }
 
     [Test]
+    public async Task Join_WithActiveCode_NavigatesToVotingPage()
+    {
+        var runId = Guid.NewGuid();
+        var shareCode = runId.ToString("N")[..12].ToUpperInvariant();
+        var scenarioClient = E2eScenarioClient.Create(
+            AspireAppFixture.BaseUrl,
+            AspireAppFixture.E2eScenarioToken);
+        var scenario = await scenarioClient.SeedAsync(
+            runId,
+            E2eScenarioSessionStatus.Active,
+            taskCount: 1);
+
+        try
+        {
+            var join = new JoinSessionPage(Page, AspireAppFixture.BaseUrl);
+            await join.GotoAsync(shareCode);
+            await join.SubmitNameAsync($"Guest {runId:N}");
+
+            await Expect(Page).ToHaveURLAsync(
+                new Regex($"/voting/{scenario.SessionId:D}$"),
+                new() { Timeout = 15_000 });
+        }
+        finally
+        {
+            await scenarioClient.CleanupAsync(runId);
+        }
+    }
+
+    [Test]
     public async Task Join_WithUnknownCode_ShowsError_AndStaysOnJoinPage()
     {
         var join = new JoinSessionPage(Page, AspireAppFixture.BaseUrl);
@@ -76,4 +105,3 @@ public class GuestVotingTests : PageTest
         return await projects.CreateProjectReturningIdAsync(prefix);
     }
 }
-

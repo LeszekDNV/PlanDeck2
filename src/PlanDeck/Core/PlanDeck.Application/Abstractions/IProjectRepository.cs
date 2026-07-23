@@ -57,3 +57,6 @@ public interface IProjectRepository
 
     Task DeleteAsync(Guid projectId, CancellationToken cancellationToken);
 }
+
+public sealed class ProjectPersistenceException(Exception innerException)
+    : Exception("The project could not be persisted.", innerException);

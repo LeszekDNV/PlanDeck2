@@ -124,7 +124,6 @@ public class SessionsPage
     {
         await SessionEntry(sessionName)
             .Or(OperationError)
-            .First
             .WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
 
         if (await OperationError.IsVisibleAsync())
@@ -168,7 +167,7 @@ public class SessionsPage
         }
 
         await AddTaskButton.ClickAsync();
-        await TaskEntry(title).First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        await TaskEntry(title).WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
     }
 
     public async Task EditTaskAsync(string currentTitle, string newTitle, string newDescription)
@@ -197,7 +196,7 @@ public class SessionsPage
 
     public async Task ImportAdoWorkItemAsync(int workItemId)
     {
-        await AdoImportButton.First.ClickAsync();
+        await _page.GetByTestId("config-ado-import").ClickAsync();
 
         var dialog = AdoDialog;
         await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
@@ -228,6 +227,5 @@ public class SessionsPage
     public ILocator TaskEntry(string title) =>
         _page.GetByTestId("config-task").Filter(new() { HasText = title });
 }
-
 
 

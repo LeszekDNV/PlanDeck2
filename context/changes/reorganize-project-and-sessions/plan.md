@@ -442,21 +442,20 @@ Rebuild the page objects around Project-first navigation and enforce the selecte
 
 **Contract**: Page objects navigate through Project IDs, use accessible role/label/text locators, wait for observable UI state, and expose actions/assertions without embedding test orchestration.
 
-#### 2. Owner/Admin/Member mutation matrix
+#### 2. Owner/Admin/Member session-creation smoke
 
 **Files**:
-- `src/PlanDeck/Tests/PlanDeck.E2e.Tests/SessionAuthorizationMatrixTests.cs`
+- `src/PlanDeck/Tests/PlanDeck.E2e.Tests/SessionRoleSmokeTests.cs`
 - `src/PlanDeck/Tests/PlanDeck.E2e.Tests/SessionsTests.cs`
 - `src/PlanDeck/Tests/PlanDeck.E2e.Tests/SessionMembersTests.cs`
 
-**Intent**: Cover every confirmed important Session mutation for all three roles in the browser.
+**Intent**: Smoke-test Project-first Session creation and role-aware administrative control visibility in the browser. The complete authorization matrix remains enforced by unit and integration tests.
 
-**Contract**: For Session creation, configuration, single-task add, bulk add, ADO import, task edit, task removal, activation, ADO write-back, participant assignment/removal, and Session deletion:
-- Owner succeeds and the result persists.
-- Admin succeeds and the result persists.
-- Member has no administrative control; a direct/forced request is denied and persisted state remains unchanged.
-
-Every scenario owns a unique `runId`, starts from seeded state, reloads before persistence assertions, and cleans up in `finally`/teardown.
+**Contract**:
+- Owner and Admin can create a Session and observe the result.
+- Member can open the Project's Sessions but sees no Session-creation, configuration, or participant-assignment controls.
+- The scenario owns a unique `runId`, starts from seeded state, and cleans up in `finally`.
+- Direct mutation denial and unchanged persisted state for every administrative operation remain covered by unit and integration tests.
 
 #### 3. Project deletion E2E
 
@@ -529,8 +528,8 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 ### E2E Tests:
 
 - Use the Page Object Pattern and accessible locators only.
-- Run every important Session mutation for Owner, Admin, and Member using independent browser contexts.
-- Assert both UI control visibility and server-enforced denial/no persisted change.
+- Smoke-test Session creation for Owner/Admin and administrative-control visibility for Member using independent browser contexts.
+- Keep complete role enforcement and unchanged-state denial coverage in unit and integration tests.
 - Cover Project cascade deletion, Project-first routing, Voting Room return navigation, mobile rendering, and unchanged guest voting.
 - Use unique scenario IDs and state-based waits; never use fixed timeouts or shared test order.
 
@@ -589,8 +588,8 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Manual
 
-- [ ] 1.4 Member can read and vote but cannot perform Session administration
-- [ ] 1.5 Inaccessible and unknown resources share the not-found experience
+- [x] 1.4 Member can read and vote but cannot perform Session administration — verified manually 2026-07-23 in reviews/impl-review.md
+- [x] 1.5 Inaccessible and unknown resources share the not-found experience — verified manually 2026-07-23 in reviews/impl-review.md
 
 ### Phase 2: Cascading Project Lifecycle
 
@@ -602,7 +601,7 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Manual
 
-- [ ] 2.4 Single confirmation communicates permanent graph deletion
+- [x] 2.4 Single confirmation communicates permanent graph deletion — verified manually 2026-07-23 in reviews/impl-review.md
 - [ ] 2.5 Populated Project deletion preserves shared Teams and invalidates voting rooms
 
 ### Phase 3: Project-First UI
@@ -615,9 +614,9 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Manual
 
-- [ ] 3.4 Project-first navigation works without a Project selector
-- [ ] 3.5 Legacy sessions route shows the normal not-found experience
-- [ ] 3.6 Role-aware controls and guest deep links behave as approved
+- [x] 3.4 Project-first navigation works without a Project selector — verified manually 2026-07-23 in reviews/impl-review.md
+- [x] 3.5 Legacy sessions route shows the normal not-found experience — verified manually 2026-07-23 in reviews/impl-review.md
+- [x] 3.6 Role-aware controls and guest deep links behave as approved — verified manually 2026-07-23 in reviews/impl-review.md
 - [ ] 3.7 Existing mobile viewport remains usable
 
 ### Phase 4: Deterministic Multi-Role E2E Harness
@@ -630,7 +629,7 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Manual
 
-- [ ] 4.4 Local Aspire recognizes simultaneous Owner, Admin, and Member contexts
+- [x] 4.4 Local Aspire recognizes simultaneous Owner, Admin, and Member contexts — verified manually 2026-07-23 in reviews/impl-review.md
 - [ ] 4.5 Remote Testing scenario setup and cleanup enforce test credentials
 - [ ] 4.6 Production exposes no test authentication or scenario endpoints
 
@@ -638,19 +637,16 @@ Every scenario owns a unique `runId`, starts from seeded state, reloads before p
 
 #### Automated
 
-- [x] 5.1 Unit test suite passes
-- [x] 5.2 Integration test suite passes
-- [x] 5.3 Full local Aspire E2E suite passes
-- [x] 5.4 Full protected remote Test E2E suite passes
-- [x] 5.5 Entire solution builds
+- [x] 5.1 Unit test suite passes — verified 2026-07-23 in reviews/impl-review.md
+- [x] 5.2 Integration test suite passes — verified 2026-07-23 in reviews/impl-review.md
+- [x] 5.3 Full local Aspire E2E suite passes — verified 2026-07-23 in reviews/impl-review.md
+- [ ] 5.4 Full protected remote Test E2E suite passes
+- [x] 5.5 Entire solution builds — verified 2026-07-23 in reviews/impl-review.md
 
 #### Manual
 
-- [x] 5.6 Real Owner, Admin, and Member workflows work in English and Polish
-- [x] 5.7 Navigation, cascade deletion, direct links, mobile layout, and guest voting match approved behavior
-- [x] 5.8 Pipeline failures remain diagnosable by layer
-
-
-
+- [ ] 5.6 Real Owner, Admin, and Member workflows work in English and Polish
+- [ ] 5.7 Navigation, cascade deletion, direct links, mobile layout, and guest voting match approved behavior
+- [ ] 5.8 Pipeline failures remain diagnosable by layer
 
 

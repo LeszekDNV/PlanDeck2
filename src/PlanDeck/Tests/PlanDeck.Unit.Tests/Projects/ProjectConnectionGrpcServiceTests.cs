@@ -495,6 +495,11 @@ public sealed class ProjectConnectionGrpcServiceTests
             return Task.CompletedTask;
         }
 
+        public Task RecoverAsync(
+            string secretName,
+            CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
         public void Invalidate(string secretName) => InvalidatedNames.Add(secretName);
     }
 
@@ -646,6 +651,15 @@ public sealed class ProjectConnectionGrpcServiceTests
             Guid projectId,
             CancellationToken cancellationToken) =>
             Task.FromResult(Sessions.Where(session => session.ProjectId == projectId).ToList() as IReadOnlyList<PlanningSession>);
+
+        public Task<IReadOnlyList<Guid>> GetSessionIdsAsync(
+            Guid projectId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Guid>>(
+                Sessions
+                    .Where(session => session.ProjectId == projectId)
+                    .Select(session => session.Id)
+                    .ToList());
 
         public Task<PlanningSession?> GetSessionAsync(Guid id, CancellationToken cancellationToken) =>
             throw new NotSupportedException();

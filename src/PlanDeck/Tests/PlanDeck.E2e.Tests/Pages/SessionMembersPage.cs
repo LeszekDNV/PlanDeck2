@@ -27,8 +27,9 @@ public class SessionMembersPage
 
     public async Task RemoveMemberAsync(string email)
     {
-        await _page.GetByRole(AriaRole.Button, new() { Name = "Remove member", Exact = true })
-            .Last
+        await _page.GetByTestId("session-member")
+            .Filter(new() { HasText = email })
+            .GetByRole(AriaRole.Button, new() { Name = "Remove member", Exact = true })
             .ClickAsync();
 
         var dialog = _page.GetByRole(AriaRole.Dialog).Filter(new() { HasText = "Remove member" });
@@ -38,7 +39,6 @@ public class SessionMembersPage
 
     public ILocator MemberEntry(string email) => _page.GetByText(email, new() { Exact = false });
 }
-
 
 
 
