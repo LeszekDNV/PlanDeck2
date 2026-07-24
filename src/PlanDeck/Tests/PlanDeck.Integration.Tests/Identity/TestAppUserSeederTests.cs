@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using PlanDeck.Application.Domain;
+using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Testing;
 
@@ -25,17 +25,22 @@ public sealed class TestAppUserSeederTests
         await using var db = new PlanDeckDbContext(
             options,
             new TestCurrentUserContext(TestMemberIdentities.TenantId));
-        var users = await db.AppUsers.OrderBy(user => user.Email).ToListAsync();
+        var identityUsers = await db.Users.OrderBy(user => user.Email).ToListAsync();
+        var appUsers = await db.AppUsers.ToListAsync();
 
-        Assert.That(users, Has.Count.EqualTo(TestMemberIdentities.All.Count));
+        Assert.That(identityUsers, Has.Count.EqualTo(TestMemberIdentities.All.Count));
+        Assert.That(appUsers, Has.Count.EqualTo(TestMemberIdentities.All.Count));
         Assert.Multiple(() =>
         {
             foreach (var identity in TestMemberIdentities.All)
             {
-                Assert.That(users, Has.One.Matches<AppUser>(user =>
+                Assert.That(identityUsers, Has.One.Matches<ApplicationUser>(user =>
                     user.Id == identity.AppUserId
-                    && user.EntraObjectId == identity.EntraObjectId
-                    && user.Email == identity.Email
+                    && user.Email == identity.Email));
+
+                Assert.That(appUsers, Has.One.Matches<Application.Domain.AppUser>(user =>
+                    user.Id == identity.AppUserId
+                    && user.Role == identity.Role
                     && user.IsActive));
             }
         });

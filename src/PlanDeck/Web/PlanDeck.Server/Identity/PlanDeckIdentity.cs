@@ -1,39 +1,35 @@
 using System.Globalization;
 using System.Security.Claims;
+using PlanDeck.Common.Identity;
 
 namespace PlanDeck.Server.Identity;
 
 public static class PlanDeckIdentity
 {
-    public const string TenantIdClaim = "tid";
-    public const string EntraObjectIdClaim = "oid";
-    public const string AppUserIdClaim = "plandeck_user_id";
-    public const string ActiveUserClaim = "plandeck_user_active";
-
     public static bool IsValidMember(ClaimsPrincipal? principal) =>
         principal?.Identity?.IsAuthenticated == true
         && !IsGuest(principal)
-        && TryReadGuid(principal, TenantIdClaim, out _)
-        && TryReadGuid(principal, EntraObjectIdClaim, out _)
-        && TryReadGuid(principal, AppUserIdClaim, out _)
+        && TryReadGuid(principal, PlanDeckClaimTypes.MemberTenantId, out _)
+        && TryReadGuid(principal, PlanDeckClaimTypes.UserId, out _)
+        && !string.IsNullOrWhiteSpace(principal.FindFirstValue(PlanDeckClaimTypes.TenantRole))
         && string.Equals(
-            principal.FindFirstValue(ActiveUserClaim),
+            principal.FindFirstValue(PlanDeckClaimTypes.ActiveUser),
             bool.TrueString,
             StringComparison.OrdinalIgnoreCase);
 
     public static bool IsValidGuest(ClaimsPrincipal? principal) =>
         principal?.Identity?.IsAuthenticated == true
         && IsGuest(principal)
-        && TryReadGuid(principal, TenantIdClaim, out _)
-        && TryReadGuid(principal, EntraObjectIdClaim, out _)
-        && TryReadGuid(principal, GuestAuthentication.SessionIdClaim, out _);
+        && TryReadGuid(principal, PlanDeckClaimTypes.EntraTenantId, out _)
+        && TryReadGuid(principal, PlanDeckClaimTypes.EntraObjectId, out _)
+        && TryReadGuid(principal, PlanDeckClaimTypes.SessionId, out _);
 
     public static bool IsValidRoomIdentity(ClaimsPrincipal? principal) =>
         IsValidMember(principal) || IsValidGuest(principal);
 
-    public static bool IsGuest(ClaimsPrincipal principal) =>
+    public static bool IsGuest(ClaimsPrincipal? principal) =>
         string.Equals(
-            principal.FindFirstValue(GuestAuthentication.IsGuestClaim),
+            principal?.FindFirstValue(PlanDeckClaimTypes.IsGuest),
             bool.TrueString,
             StringComparison.OrdinalIgnoreCase);
 

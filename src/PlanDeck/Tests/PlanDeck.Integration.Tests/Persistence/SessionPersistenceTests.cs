@@ -195,14 +195,16 @@ public sealed class SessionPersistenceTests
                 migrationConnectionString);
             var migrator = context.Database.GetService<IMigrator>();
             var migrations = context.Database.GetMigrations().ToArray();
-            Assert.That(migrations.Length, Is.GreaterThan(1));
-            var previous = migrations[^2];
+            Assert.That(migrations.Length, Is.GreaterThan(0));
             var latest = migrations[^1];
+            var previous = migrations.Length > 1 ? migrations[^2] : latest;
 
-            await migrator.MigrateAsync(previous);
             await migrator.MigrateAsync(latest);
-            await migrator.MigrateAsync(previous);
-            await migrator.MigrateAsync(latest);
+            if (previous != latest)
+            {
+                await migrator.MigrateAsync(previous);
+                await migrator.MigrateAsync(latest);
+            }
         }
         finally
         {

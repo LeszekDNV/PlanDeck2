@@ -1,7 +1,9 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using PlanDeck.Application.Planning;
+using PlanDeck.Common.Identity;
 using PlanDeck.Server.Identity;
 
 namespace PlanDeck.Server.Hubs;
@@ -12,6 +14,7 @@ public sealed class PlanningRoomHub(
     IVotingRoundService votingRoundService,
     RequestPrincipalAccessor principalAccessor) : Hub
 {
+    private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> SessionLocks = new();
     public async Task JoinRoom(string sessionId)
     {
         // Establish the caller for tenant-scoped data access within this hub invocation's DI scope.
@@ -76,19 +79,22 @@ public sealed class PlanningRoomHub(
         EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
 
-        // Persist the agreed-estimate clear BEFORE mutating in-memory state so a DB failure
-        // cannot leave memory and the database out of sync (mirrors SelectEstimate's persist-first order).
-        var taskId = planningRoomService.GetState(key).CurrentTaskId
-            ?? throw new HubException("There is no active task to reset.");
-        var persisted = await votingRoundService.SelectEstimateAsync(
-            key.SessionId, taskId, null, Context.ConnectionAborted);
-        if (!persisted)
+        await WithSessionLockAsync(key.SessionId, async () =>
         {
-            throw new HubException("The agreed estimate could not be cleared.");
-        }
+            // Persist the agreed-estimate clear BEFORE mutating in-memory state so a DB failure
+            // cannot leave memory and the database out of sync (mirrors SelectEstimate's persist-first order).
+            var taskId = planningRoomService.GetState(key).CurrentTaskId
+                ?? throw new HubException("There is no active task to reset.");
+            var persisted = await votingRoundService.SelectEstimateAsync(
+                key.SessionId, taskId, null, Context.ConnectionAborted);
+            if (!persisted)
+            {
+                throw new HubException("The agreed estimate could not be cleared.");
+            }
 
-        var state = planningRoomService.ResetRound(key, taskId);
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
+            var state = planningRoomService.ResetRound(key, taskId);
+            await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
+        });
     }
 
     public async Task SetActiveTask(string sessionId, string taskId)
@@ -103,22 +109,26 @@ public sealed class PlanningRoomHub(
     {
         EnsureNotGuest();
         var key = await AuthorizeAsync(sessionId);
-        var taskGuid = ParseTaskId(taskId);
 
-        if (!planningRoomService.IsValidEstimate(key, value))
+        await WithSessionLockAsync(key.SessionId, async () =>
         {
-            throw new HubException("The agreed estimate is not a valid value for the session scale.");
-        }
+            var taskGuid = ParseTaskId(taskId);
 
-        var persisted = await votingRoundService.SelectEstimateAsync(
-            key.SessionId, taskGuid, value, Context.ConnectionAborted);
-        if (!persisted)
-        {
-            throw new HubException("The agreed estimate could not be saved.");
-        }
+            if (!planningRoomService.IsValidEstimate(key, value))
+            {
+                throw new HubException("The agreed estimate is not a valid value for the session scale.");
+            }
 
-        var state = planningRoomService.ApplyAgreedEstimate(key, taskGuid, value);
-        await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
+            var persisted = await votingRoundService.SelectEstimateAsync(
+                key.SessionId, taskGuid, value, Context.ConnectionAborted);
+            if (!persisted)
+            {
+                throw new HubException("The agreed estimate could not be saved.");
+            }
+
+            var state = planningRoomService.ApplyAgreedEstimate(key, taskGuid, value);
+            await Clients.Group(key.GroupName).SendAsync("RoomStateChanged", state);
+        });
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -172,7 +182,7 @@ public sealed class PlanningRoomHub(
         get
         {
             if (!Guid.TryParse(
-                    ReadRequiredClaim(PlanDeckIdentity.AppUserIdClaim),
+                    ReadRequiredClaim(PlanDeckClaimTypes.UserId),
                     out var userId))
             {
                 throw new HubException("Authenticated PlanDeck user claim is missing or invalid.");
@@ -232,7 +242,7 @@ public sealed class PlanningRoomHub(
 
     private bool IsGuest =>
         string.Equals(
-            Context.User?.FindFirstValue(GuestAuthentication.IsGuestClaim),
+            Context.User?.FindFirstValue(PlanDeckClaimTypes.IsGuest),
             "true",
             StringComparison.OrdinalIgnoreCase);
 
@@ -245,7 +255,7 @@ public sealed class PlanningRoomHub(
             return;
         }
 
-        var scoped = Context.User?.FindFirstValue(GuestAuthentication.SessionIdClaim);
+        var scoped = Context.User?.FindFirstValue(PlanDeckClaimTypes.SessionId);
         if (!Guid.TryParse(scoped, out var scopedSessionId) || scopedSessionId != sessionId)
         {
             throw new HubException("This guest link is not valid for the requested session.");
@@ -269,5 +279,33 @@ public sealed class PlanningRoomHub(
         }
 
         return value;
+    }
+
+    private async Task<T> WithSessionLockAsync<T>(Guid sessionId, Func<Task<T>> action)
+    {
+        var semaphore = SessionLocks.GetOrAdd(sessionId, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(Context.ConnectionAborted);
+        try
+        {
+            return await action();
+        }
+        finally
+        {
+            semaphore.Release();
+        }
+    }
+
+    private async Task WithSessionLockAsync(Guid sessionId, Func<Task> action)
+    {
+        var semaphore = SessionLocks.GetOrAdd(sessionId, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(Context.ConnectionAborted);
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
 }

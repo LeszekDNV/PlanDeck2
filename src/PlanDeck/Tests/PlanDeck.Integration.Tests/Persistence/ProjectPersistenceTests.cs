@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Infrastructure.Persistence;
 
 namespace PlanDeck.Integration.Tests.Persistence;
@@ -15,14 +16,17 @@ public sealed class ProjectPersistenceTests
         var tenantId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         var newOwnerId = Guid.NewGuid();
-        var owner = User(ownerId, "owner@example.com");
-        var newOwner = User(newOwnerId, "new-owner@example.com");
+        var owner = CreateUser(ownerId, "owner@example.com");
+        var newOwner = CreateUser(newOwnerId, "new-owner@example.com");
 
         await using var db = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
-        db.AppUsers.AddRange(owner, newOwner);
+        AddUsers(db, owner, newOwner);
         await db.SaveChangesAsync();
 
-        var repository = new ProjectRepository(db, CurrentUser(tenantId, ownerId, owner.Email));
+        var repository = new ProjectRepository(
+            db,
+            CurrentUser(tenantId, ownerId, owner.Email),
+            IdentityRepo(db));
         var project = await repository.CreateAsync(
             "Ownership project",
             null,
@@ -69,11 +73,11 @@ public sealed class ProjectPersistenceTests
         var tenantId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var owner = User(ownerId, "owner@example.com");
-        var member = User(memberId, "member@example.com");
+        var owner = CreateUser(ownerId, "owner@example.com");
+        var member = CreateUser(memberId, "member@example.com");
 
         await using var db = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
-        db.AppUsers.AddRange(owner, member);
+        AddUsers(db, owner, member);
         var project = new PlanDeckProject
         {
             Name = $"project-{Guid.NewGuid():N}",
@@ -131,17 +135,59 @@ public sealed class ProjectPersistenceTests
     }
 
     [Test]
-    public async Task PendingInvitation_IsActivatedByMatchingProvisionedUser()
+    public async Task ExistingUser_IsAcceptedImmediately_WhenInvited()
     {
         var tenantId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
-        var owner = User(ownerId, "owner@example.com");
+        var owner = CreateUser(ownerId, "owner@example.com");
+        var invited = CreateUser(Guid.NewGuid(), $"invite-{Guid.NewGuid():N}@example.com");
+
+        await using var db = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
+        AddUsers(db, owner, invited);
+        await db.SaveChangesAsync();
+
+        var projects = new ProjectRepository(
+            db,
+            CurrentUser(tenantId, ownerId, owner.Email),
+            IdentityRepo(db));
+        var project = await projects.CreateAsync(
+            "Invitations project",
+            null,
+            owner.Email,
+            CancellationToken.None);
+        var invitation = await projects.InviteMemberAsync(
+            project.Id,
+            invited.Email,
+            ProjectRole.Member,
+            CancellationToken.None);
+
+        Assert.That(invitation.Status, Is.EqualTo(InvitationStatus.Accepted));
+        Assert.That(invitation.AppUserId, Is.EqualTo(invited.Id));
+
+        var access = new ProjectAccessResolver(
+            db,
+            CurrentUser(tenantId, invited.Id, invited.Email));
+        Assert.That(
+            await access.GetEffectiveRoleAsync(project.Id, CancellationToken.None),
+            Is.EqualTo(ProjectRole.Member));
+    }
+
+    [Test]
+    public async Task UnknownUser_IsLeftPending_WhenInvited()
+    {
+        var tenantId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        var owner = CreateUser(ownerId, "owner@example.com");
         var invitedEmail = $"invite-{Guid.NewGuid():N}@example.com";
 
         await using var db = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
-        db.AppUsers.Add(owner);
+        AddUsers(db, owner);
         await db.SaveChangesAsync();
-        var projects = new ProjectRepository(db, CurrentUser(tenantId, ownerId, owner.Email));
+
+        var projects = new ProjectRepository(
+            db,
+            CurrentUser(tenantId, ownerId, owner.Email),
+            IdentityRepo(db));
         var project = await projects.CreateAsync(
             "Invitations project",
             null,
@@ -152,36 +198,9 @@ public sealed class ProjectPersistenceTests
             invitedEmail,
             ProjectRole.Member,
             CancellationToken.None);
+
         Assert.That(invitation.Status, Is.EqualTo(InvitationStatus.Pending));
-        var unresolvedUserId = Guid.NewGuid();
-        var unresolvedAccess = new ProjectAccessResolver(
-            db,
-            CurrentUser(tenantId, unresolvedUserId, invitedEmail));
-        Assert.That(
-            await unresolvedAccess.GetEffectiveRoleAsync(project.Id, CancellationToken.None),
-            Is.Null);
-
-        var provisioned = await new AppUserRepository(db).UpsertAsync(
-            tenantId,
-            Guid.NewGuid(),
-            "Invited user",
-            invitedEmail.ToUpperInvariant(),
-            CancellationToken.None);
-
-        var activated = await db.ProjectMembers.SingleAsync(member => member.Id == invitation.Id);
-        Assert.Multiple(() =>
-        {
-            Assert.That(activated.Status, Is.EqualTo(InvitationStatus.Accepted));
-            Assert.That(activated.AppUserId, Is.EqualTo(provisioned.Id));
-            Assert.That(activated.AcceptedAtUtc, Is.Not.Null);
-        });
-
-        var resolvedAccess = new ProjectAccessResolver(
-            db,
-            CurrentUser(tenantId, provisioned.Id, invitedEmail));
-        Assert.That(
-            await resolvedAccess.GetEffectiveRoleAsync(project.Id, CancellationToken.None),
-            Is.EqualTo(ProjectRole.Member));
+        Assert.That(invitation.AppUserId, Is.Null);
     }
 
     [Test]
@@ -190,15 +209,15 @@ public sealed class ProjectPersistenceTests
         var tenantId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         var memberId = Guid.NewGuid();
-        var owner = User(ownerId, "owner@example.com");
-        var member = User(memberId, "member@example.com");
+        var owner = CreateUser(ownerId, "owner@example.com");
+        var member = CreateUser(memberId, "member@example.com");
         var projectId = Guid.NewGuid();
         var teamId = Guid.NewGuid();
         var sessionId = Guid.NewGuid();
 
         await using (var write = CreateContext(CurrentUser(tenantId, ownerId, owner.Email)))
         {
-            write.AppUsers.AddRange(owner, member);
+            AddUsers(write, owner, member);
             write.Projects.Add(new PlanDeckProject
             {
                 Id = projectId,
@@ -274,7 +293,10 @@ public sealed class ProjectPersistenceTests
 
         await using (var delete = CreateContext(CurrentUser(tenantId, ownerId, owner.Email)))
         {
-            var repository = new ProjectRepository(delete, CurrentUser(tenantId, ownerId, owner.Email));
+            var repository = new ProjectRepository(
+                delete,
+                CurrentUser(tenantId, ownerId, owner.Email),
+                IdentityRepo(delete));
             await repository.DeleteAsync(projectId, CancellationToken.None);
         }
 
@@ -457,13 +479,50 @@ public sealed class ProjectPersistenceTests
         });
     }
 
-    private static AppUser User(Guid id, string email) => new()
+    private sealed record TestUser(Guid Id, string Email, AppUser AppUser, ApplicationUser IdentityUser);
+
+    private static TestUser CreateUser(Guid id, string email)
     {
-        Id = id,
-        EntraObjectId = Guid.NewGuid(),
-        DisplayName = email,
-        Email = email
-    };
+        var uniqueEmail = MakeUniqueEmail(id, email);
+        return new(
+            id,
+            uniqueEmail,
+            new AppUser
+            {
+                Id = id,
+                FirstName = "Test",
+                LastName = "User",
+                Role = TenantRole.Member,
+                IsActive = true,
+            },
+            new ApplicationUser
+            {
+                Id = id,
+                UserName = uniqueEmail,
+                Email = uniqueEmail,
+                NormalizedEmail = uniqueEmail.ToUpperInvariant(),
+                NormalizedUserName = uniqueEmail.ToUpperInvariant(),
+            });
+    }
+
+    private static string MakeUniqueEmail(Guid id, string email)
+    {
+        var at = email.IndexOf('@', StringComparison.Ordinal);
+        return at < 0
+            ? $"{email}-{id:N}@example.com"
+            : $"{email[..at]}-{id:N}{email[at..]}";
+    }
+
+    private static void AddUsers(PlanDeckDbContext db, params TestUser[] users)
+    {
+        foreach (var user in users)
+        {
+            db.Users.Add(user.IdentityUser);
+            db.AppUsers.Add(user.AppUser);
+        }
+    }
+
+    private static IdentityAccountRepository IdentityRepo(PlanDeckDbContext db) => new(db);
 
     private static ProjectAzureDevOpsConnection Connection(Guid projectId) => new()
     {

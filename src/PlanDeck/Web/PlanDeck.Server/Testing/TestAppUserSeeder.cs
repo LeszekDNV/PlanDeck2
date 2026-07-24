@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Infrastructure.Persistence;
 
 namespace PlanDeck.Server.Testing;
@@ -20,64 +21,70 @@ public sealed class TestAppUserSeeder(DbContextOptions<PlanDeckDbContext> option
         foreach (var identity in TestMemberIdentities.All)
         {
             var normalizedEmail = identity.Email.ToUpperInvariant();
-            var user = await db.AppUsers.SingleOrDefaultAsync(
-                candidate => candidate.Id == identity.AppUserId
-                    || candidate.EntraObjectId == identity.EntraObjectId
-                    || candidate.NormalizedEmail == normalizedEmail,
+            var appUser = await db.AppUsers.SingleOrDefaultAsync(
+                candidate => candidate.Id == identity.AppUserId,
                 cancellationToken);
 
-            if (user is null)
+            var (firstName, lastName) = SplitName(identity.DisplayName);
+
+            if (appUser is null)
             {
+                EnsureApplicationUser(db, identity, normalizedEmail);
                 db.AppUsers.Add(new AppUser
                 {
                     Id = identity.AppUserId,
                     TenantId = TestMemberIdentities.TenantId,
-                    EntraObjectId = identity.EntraObjectId,
-                    DisplayName = identity.DisplayName,
-                    Email = identity.Email,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Role = identity.Role,
                     IsActive = true
                 });
                 continue;
             }
 
-            if (user.Id != identity.AppUserId
-                || user.EntraObjectId != identity.EntraObjectId
-                || !string.Equals(user.NormalizedEmail, normalizedEmail, StringComparison.Ordinal))
-            {
-                if (user.Id != identity.AppUserId)
-                {
-                    // Recover from stale local test data: re-create deterministic identity id and
-                    // clear memberships tied to the legacy id that would violate FK/unique constraints.
-                    await db.ProjectMembers
-                        .Where(member => member.TenantId == TestMemberIdentities.TenantId
-                            && member.AppUserId == user.Id)
-                        .ExecuteDeleteAsync(cancellationToken);
-                    await db.TeamMembers
-                        .Where(member => member.TenantId == TestMemberIdentities.TenantId
-                            && member.AppUserId == user.Id)
-                        .ExecuteDeleteAsync(cancellationToken);
+            appUser.FirstName = firstName;
+            appUser.LastName = lastName;
+            appUser.IsActive = true;
+            appUser.Role = identity.Role;
 
-                    db.AppUsers.Remove(user);
-                    db.AppUsers.Add(new AppUser
-                    {
-                        Id = identity.AppUserId,
-                        TenantId = TestMemberIdentities.TenantId,
-                        EntraObjectId = identity.EntraObjectId,
-                        DisplayName = identity.DisplayName,
-                        Email = identity.Email,
-                        IsActive = true
-                    });
-
-                    continue;
-                }
-            }
-
-            user.DisplayName = identity.DisplayName;
-            user.Email = identity.Email;
-            user.IsActive = true;
+            EnsureApplicationUser(db, identity, normalizedEmail);
         }
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void EnsureApplicationUser(
+        PlanDeckDbContext db,
+        TestMemberIdentity identity,
+        string normalizedEmail)
+    {
+        var applicationUser = db.Users.Local.SingleOrDefault(u => u.Id == identity.AppUserId)
+            ?? db.Users.AsNoTracking().SingleOrDefault(u => u.Id == identity.AppUserId);
+
+        if (applicationUser is not null)
+        {
+            return;
+        }
+
+        db.Users.Add(new ApplicationUser
+        {
+            Id = identity.AppUserId,
+            UserName = identity.UserName,
+            NormalizedUserName = identity.UserName.ToUpperInvariant(),
+            Email = identity.Email,
+            NormalizedEmail = normalizedEmail,
+            EmailConfirmed = true,
+            SecurityStamp = Guid.NewGuid().ToString(),
+            LockoutEnabled = false
+        });
+    }
+
+    private static (string FirstName, string LastName) SplitName(string displayName)
+    {
+        var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 1
+            ? (parts[0], string.Join(' ', parts[1..]))
+            : (displayName, string.Empty);
     }
 
     private sealed class SeedCurrentUserContext(Guid tenantId) : ICurrentUserContext

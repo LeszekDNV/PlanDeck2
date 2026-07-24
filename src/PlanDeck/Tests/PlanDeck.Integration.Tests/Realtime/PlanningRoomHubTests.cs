@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PlanDeck.Application.Domain;
+using PlanDeck.Common.Identity;
 using PlanDeck.Core.Shared.Realtime;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Integration.Tests;
@@ -808,10 +809,12 @@ public sealed class PlanningRoomHubTests
     {
         var identity = new ClaimsIdentity(
         [
-            new Claim("tid", TestTenantId),
-            new Claim("oid", TestObjectId),
-            new Claim(PlanDeckIdentity.AppUserIdClaim, TestAppUserId),
-            new Claim(PlanDeckIdentity.ActiveUserClaim, bool.TrueString),
+            new Claim(PlanDeckClaimTypes.EntraTenantId, TestTenantId),
+            new Claim(PlanDeckClaimTypes.EntraObjectId, TestObjectId),
+            new Claim(PlanDeckClaimTypes.MemberTenantId, TestTenantId),
+            new Claim(PlanDeckClaimTypes.UserId, TestAppUserId),
+            new Claim(PlanDeckClaimTypes.TenantRole, TenantRole.Owner.ToString()),
+            new Claim(PlanDeckClaimTypes.ActiveUser, bool.TrueString),
             new Claim("email", TestEmail)
         ], "Test");
 

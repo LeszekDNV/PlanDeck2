@@ -433,3 +433,6 @@ FodyWeavers.xsd
 /.agents/skills
 *.pem
 *.cer
+# Windows folder metadata
+desktop.ini
+folderico-*.ico

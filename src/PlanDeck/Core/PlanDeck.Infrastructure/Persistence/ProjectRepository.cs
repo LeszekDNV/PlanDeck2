@@ -7,7 +7,8 @@ namespace PlanDeck.Infrastructure.Persistence;
 
 public sealed class ProjectRepository(
     PlanDeckDbContext db,
-    ICurrentUserContext currentUser) : IProjectRepository
+    ICurrentUserContext currentUser,
+    IIdentityAccountRepository identityAccountRepository) : IProjectRepository
 {
     public async Task<PlanDeckProject> CreateAsync(
         string name,
@@ -106,18 +107,28 @@ public sealed class ProjectRepository(
         CancellationToken cancellationToken)
     {
         var normalizedEmail = email.Trim().ToUpperInvariant();
-        var appUser = await db.AppUsers.SingleOrDefaultAsync(
-            user => user.NormalizedEmail == normalizedEmail && user.IsActive,
+        var identityAccount = await identityAccountRepository.FindByNormalizedEmailAsync(
+            normalizedEmail,
             cancellationToken);
+
+        Guid? appUserId = null;
+        if (identityAccount is not null)
+        {
+            var appUser = await db.AppUsers.AsNoTracking().SingleOrDefaultAsync(
+                user => user.Id == identityAccount.Id && user.IsActive,
+                cancellationToken);
+            appUserId = appUser?.Id;
+        }
+
         var member = new ProjectMember
         {
             ProjectId = projectId,
-            AppUserId = appUser?.Id,
+            AppUserId = appUserId,
             Email = email,
             Role = role,
-            Status = appUser is null ? InvitationStatus.Pending : InvitationStatus.Accepted,
+            Status = appUserId is null ? InvitationStatus.Pending : InvitationStatus.Accepted,
             InvitedByUserId = currentUser.UserId,
-            AcceptedAtUtc = appUser is null ? null : DateTimeOffset.UtcNow
+            AcceptedAtUtc = appUserId is null ? null : DateTimeOffset.UtcNow
         };
         db.ProjectMembers.Add(member);
         await db.SaveChangesAsync(cancellationToken);

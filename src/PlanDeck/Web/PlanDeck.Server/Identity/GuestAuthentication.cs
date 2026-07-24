@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using PlanDeck.Common.Identity;
 
 namespace PlanDeck.Server.Identity;
 
@@ -12,8 +13,6 @@ public static class GuestAuthentication
 {
     public const string SchemeName = "Guest";
     public const string CookieName = "PlanDeck.Guest";
-    public const string IsGuestClaim = "is_guest";
-    public const string SessionIdClaim = "sid";
 
     /// <summary>
     /// Authorization policy admitting both members (cookie/OIDC) and guests to the planning room,
@@ -56,11 +55,11 @@ public static class GuestAuthentication
     {
         var identity = new ClaimsIdentity(
         [
-            new Claim("oid", participantId.ToString()),
-            new Claim("tid", tenantId.ToString()),
-            new Claim("name", displayName),
-            new Claim(SessionIdClaim, sessionId.ToString()),
-            new Claim(IsGuestClaim, "true")
+            new Claim(PlanDeckClaimTypes.EntraObjectId, participantId.ToString()),
+            new Claim(PlanDeckClaimTypes.EntraTenantId, tenantId.ToString()),
+            new Claim(PlanDeckClaimTypes.Name, displayName),
+            new Claim(PlanDeckClaimTypes.SessionId, sessionId.ToString()),
+            new Claim(PlanDeckClaimTypes.IsGuest, "true")
         ], SchemeName);
 
         return new ClaimsPrincipal(identity);

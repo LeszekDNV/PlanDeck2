@@ -1,21 +1,30 @@
 using System.Globalization;
 using System.Security.Claims;
 using PlanDeck.Application.Abstractions;
+using PlanDeck.Common.Identity;
+using PlanDeck.Infrastructure.Identity;
 
 namespace PlanDeck.Server.Identity;
 
 public sealed class HttpContextCurrentUserContext(
     IHttpContextAccessor httpContextAccessor,
-    RequestPrincipalAccessor principalAccessor) : ICurrentUserContext
+    RequestPrincipalAccessor principalAccessor,
+    IProvisioningContextAccessor provisioningAccessor) : ICurrentUserContext
 {
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
     private readonly RequestPrincipalAccessor _principalAccessor = principalAccessor;
+    private readonly IProvisioningContextAccessor _provisioningAccessor = provisioningAccessor;
 
-    public Guid TenantId => ReadRequiredGuidClaim(PlanDeckIdentity.TenantIdClaim);
+    public Guid TenantId =>
+        _provisioningAccessor.TenantId != Guid.Empty
+            ? _provisioningAccessor.TenantId
+            : IsGuest
+                ? ReadRequiredGuidClaim(PlanDeckClaimTypes.EntraTenantId)
+                : ReadRequiredGuidClaim(PlanDeckClaimTypes.MemberTenantId);
 
     public Guid UserId => IsGuest
         ? throw new InvalidOperationException("Guests do not have an internal PlanDeck user ID.")
-        : ReadRequiredGuidClaim(PlanDeckIdentity.AppUserIdClaim);
+        : ReadRequiredGuidClaim(PlanDeckClaimTypes.UserId);
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated == true;
 
@@ -23,13 +32,15 @@ public sealed class HttpContextCurrentUserContext(
 
     public string? Email => ReadStringClaim("email") ?? ReadStringClaim("preferred_username");
 
-    public string? ParticipantId => ReadStringClaim(PlanDeckIdentity.EntraObjectIdClaim);
+    public string? ParticipantId =>
+        IsGuest
+            ? ReadStringClaim(PlanDeckClaimTypes.EntraObjectId)
+            : ReadStringClaim(PlanDeckClaimTypes.ParticipantId);
 
-    public bool IsGuest =>
-        string.Equals(ReadStringClaim("is_guest"), "true", StringComparison.OrdinalIgnoreCase);
+    public bool IsGuest => PlanDeckIdentity.IsGuest(Principal);
 
     public Guid? SessionScope =>
-        Guid.TryParse(ReadStringClaim("sid"), CultureInfo.InvariantCulture, out var sid) ? sid : null;
+        Guid.TryParse(ReadStringClaim(PlanDeckClaimTypes.SessionId), CultureInfo.InvariantCulture, out var sid) ? sid : null;
 
     // Prefer an explicitly supplied principal (SignalR hub invocations) and fall back to the
     // ambient HttpContext for HTTP/gRPC requests.

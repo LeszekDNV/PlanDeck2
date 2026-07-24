@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PlanDeck.Application.Domain;
+using PlanDeck.Infrastructure.Identity;
 
 namespace PlanDeck.Infrastructure.Persistence.Configurations;
 
@@ -14,27 +15,24 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
         builder.Property(u => u.Id)
             .ValueGeneratedNever();
 
-        builder.Property(u => u.DisplayName)
+        builder.Property(u => u.FirstName)
             .IsRequired()
-            .HasMaxLength(256);
+            .HasMaxLength(128);
 
-        builder.Property(u => u.Email)
+        builder.Property(u => u.LastName)
             .IsRequired()
-            .HasMaxLength(320);
-
-        builder.Property(u => u.NormalizedEmail)
-            .IsRequired()
-            .HasMaxLength(320);
+            .HasMaxLength(128);
 
         builder.Property(u => u.IsActive)
             .IsRequired()
             .HasDefaultValue(true);
 
-        builder.HasIndex(u => new { u.TenantId, u.EntraObjectId })
-            .IsUnique();
+        builder.Property(u => u.Role)
+            .HasConversion<int>();
 
-        builder.HasIndex(u => new { u.TenantId, u.NormalizedEmail })
-            .IsUnique();
+        builder.HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<AppUser>(u => u.Id);
 
         builder.HasAlternateKey(u => new { u.TenantId, u.Id });
     }

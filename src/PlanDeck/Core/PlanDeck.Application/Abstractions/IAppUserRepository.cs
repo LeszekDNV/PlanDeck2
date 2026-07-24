@@ -4,12 +4,7 @@ namespace PlanDeck.Application.Abstractions;
 
 public interface IAppUserRepository
 {
-    Task<AppUser> UpsertAsync(
-        Guid tenantId,
-        Guid entraObjectId,
-        string displayName,
-        string email,
-        CancellationToken cancellationToken);
+    Task<AppUser?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<bool> IsActiveAsync(Guid tenantId, Guid appUserId, CancellationToken cancellationToken);
+    Task<bool> IsActiveAsync(Guid tenantId, Guid id, CancellationToken cancellationToken = default);
 }

@@ -1,18 +1,24 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
+using PlanDeck.Infrastructure.Identity;
 
 namespace PlanDeck.Infrastructure.Persistence;
 
 public sealed class PlanDeckDbContext(
     DbContextOptions<PlanDeckDbContext> options,
-    ICurrentUserContext currentUser) : DbContext(options)
+    ICurrentUserContext currentUser) : IdentityUserContext<ApplicationUser, Guid>(options)
 {
     private readonly ICurrentUserContext _currentUser = currentUser;
 
+    public DbSet<PlanDeckTenant> Tenants => Set<PlanDeckTenant>();
+
     public DbSet<AppUser> AppUsers => Set<AppUser>();
+
+    public DbSet<TenantInvitation> TenantInvitations => Set<TenantInvitation>();
 
     public DbSet<PlanDeckProject> Projects => Set<PlanDeckProject>();
 
@@ -37,7 +43,22 @@ public sealed class PlanDeckDbContext(
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PlanDeckDbContext).Assembly);
+
+        modelBuilder.Entity<ApplicationUser>(builder =>
+        {
+            builder.Property(u => u.UserName).HasMaxLength(320);
+            builder.Property(u => u.NormalizedUserName).HasMaxLength(320);
+            builder.Property(u => u.Email).HasMaxLength(320);
+            builder.Property(u => u.NormalizedEmail).HasMaxLength(320);
+
+            builder.HasIndex(u => u.NormalizedUserName).IsUnique();
+            builder.HasIndex(u => u.NormalizedEmail)
+                .IsUnique()
+                .HasFilter("[NormalizedEmail] IS NOT NULL");
+        });
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -92,7 +113,7 @@ public sealed class PlanDeckDbContext(
                         added.UpdatedAtUtc = now;
                     }
 
-                    NormalizeIdentityEmail(entry.Entity);
+                    NormalizeMemberEmail(entry.Entity);
                     break;
 
                 case EntityState.Modified:
@@ -102,7 +123,7 @@ public sealed class PlanDeckDbContext(
                         modified.UpdatedAtUtc = now;
                     }
 
-                    NormalizeIdentityEmail(entry.Entity);
+                    NormalizeMemberEmail(entry.Entity);
                     break;
 
                 case EntityState.Deleted:
@@ -112,14 +133,10 @@ public sealed class PlanDeckDbContext(
         }
     }
 
-    private static void NormalizeIdentityEmail(ITenantScoped entity)
+    private static void NormalizeMemberEmail(ITenantScoped entity)
     {
         switch (entity)
         {
-            case AppUser user:
-                user.Email = user.Email.Trim();
-                user.NormalizedEmail = user.Email.ToUpperInvariant();
-                break;
             case ProjectMember member:
                 member.Email = member.Email.Trim();
                 member.NormalizedEmail = member.Email.ToUpperInvariant();

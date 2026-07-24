@@ -2,12 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using System.Security.Claims;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Planning;
 using PlanDeck.Application.Services;
+using PlanDeck.Common.Identity;
 using PlanDeck.Infrastructure.AzureDevOps;
+using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Identity;
 using PlanDeck.Server.Realtime;
@@ -57,6 +59,9 @@ public static class ServiceCollectionExtensions
         {
             services.AddHttpClient<IAzureDevOpsConnectionValidator, AzureDevOpsConnectionValidator>(
                 client => client.Timeout = TimeSpan.FromSeconds(20));
+
+            ConfigureIdentity(services);
+
             var useTestScheme = configuration.GetValue<bool>("Authentication:UseTestScheme");
             if (useTestScheme && !environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
             {
@@ -109,6 +114,9 @@ public static class ServiceCollectionExtensions
 
             if (isMicrosoftAuthConfigured)
             {
+                // Phase 4 will re-introduce a multi-tenant Entra flow with explicit account
+                // linking. For Phase 1 the OIDC handler is left in place but does not yet
+                // provision a PlanDeck profile, so sign-in via Entra is not active.
                 authenticationBuilder.AddOpenIdConnect(options =>
                 {
                     options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
@@ -121,35 +129,6 @@ public static class ServiceCollectionExtensions
                     options.SaveTokens = false;
                     options.GetClaimsFromUserInfoEndpoint = true;
                     options.MapInboundClaims = false;
-                    options.Events.OnTokenValidated = async context =>
-                    {
-                        var principal = context.Principal;
-                        if (principal?.Identity is not ClaimsIdentity identity)
-                        {
-                            context.Fail("The authenticated identity is unavailable.");
-                            return;
-                        }
-
-                        try
-                        {
-                            var provisioner = context.HttpContext.RequestServices
-                                .GetRequiredService<IAppUserProvisioner>();
-                            var appUserId = await provisioner.ProvisionAsync(
-                                principal,
-                                context.HttpContext.RequestAborted);
-
-                            identity.AddClaim(new Claim(
-                                PlanDeckIdentity.AppUserIdClaim,
-                                appUserId.ToString()));
-                            identity.AddClaim(new Claim(
-                                PlanDeckIdentity.ActiveUserClaim,
-                                bool.TrueString));
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            context.Fail("The authenticated PlanDeck account is invalid or inactive.");
-                        }
-                    };
                 });
             }
 
@@ -167,8 +146,11 @@ public static class ServiceCollectionExtensions
             services.AddSingleton(TimeProvider.System);
             services.AddScoped<RequestPrincipalAccessor>();
             services.AddScoped<ICurrentUserContext, HttpContextCurrentUserContext>();
+            services.AddScoped<IProvisioningContextAccessor, ProvisioningContextAccessor>();
+            services.AddScoped<IIdentityAccountRepository, IdentityAccountRepository>();
+            services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
+            services.AddScoped<ICookieSessionValidator, CookieSessionValidator>();
             services.AddScoped<IAppUserRepository, AppUserRepository>();
-            services.AddScoped<IAppUserProvisioner, AppUserProvisioner>();
             services.AddScoped<TestAppUserSeeder>();
             services.AddScoped<E2eScenarioService>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
@@ -196,6 +178,30 @@ public static class ServiceCollectionExtensions
         }
     }
 
+    private static void ConfigureIdentity(IServiceCollection services)
+    {
+        services.AddIdentityCore<ApplicationUser>(options =>
+        {
+            options.User.RequireUniqueEmail = true;
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequiredLength = 12;
+            options.Lockout.AllowedForNewUsers = true;
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            options.SignIn.RequireConfirmedEmail = false;
+        })
+        .AddRoles<IdentityRole<Guid>>()
+        .AddEntityFrameworkStores<PlanDeckDbContext>()
+        .AddDefaultTokenProviders();
+
+        services.Replace(ServiceDescriptor.Scoped<
+            IUserClaimsPrincipalFactory<ApplicationUser>,
+            PlanDeckUserClaimsPrincipalFactory>());
+    }
+
     private static void AddPlanDeckAuthorization(IServiceCollection services)
     {
         services.AddAuthorization(options =>
@@ -221,19 +227,16 @@ public static class ServiceCollectionExtensions
             if (!PlanDeckIdentity.IsValidMember(principal)
                 || !PlanDeckIdentity.TryReadGuid(
                     principal!,
-                    PlanDeckIdentity.AppUserIdClaim,
-                    out var appUserId))
+                    PlanDeckClaimTypes.UserId,
+                    out var userId))
             {
                 context.RejectPrincipal();
                 return;
             }
 
-            var provisioner = context.HttpContext.RequestServices
-                .GetRequiredService<IAppUserProvisioner>();
-            if (!await provisioner.IsActiveAsync(
-                    principal!,
-                    appUserId,
-                    context.HttpContext.RequestAborted))
+            var validator = context.HttpContext.RequestServices
+                .GetRequiredService<ICookieSessionValidator>();
+            if (!await validator.IsValidAsync(principal!, context.HttpContext.RequestAborted))
             {
                 context.RejectPrincipal();
             }
@@ -249,8 +252,6 @@ public static class ServiceCollectionExtensions
             return Task.CompletedTask;
         };
     }
-
-
 
     public static async Task<WebApplication> ApplyMigrationsAsync(this WebApplication app)
     {

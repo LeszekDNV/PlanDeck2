@@ -2,13 +2,11 @@ namespace PlanDeck.Application.Domain;
 
 public sealed class AppUser : TenantEntity
 {
-    public Guid EntraObjectId { get; set; } = Guid.NewGuid();
+    public required string FirstName { get; set; }
 
-    public required string DisplayName { get; set; }
-
-    public required string Email { get; set; }
-
-    public string NormalizedEmail { get; set; } = string.Empty;
+    public required string LastName { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public TenantRole Role { get; set; }
 }

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
+using PlanDeck.Common.Identity;
 using PlanDeck.Server.Testing;
 
 namespace PlanDeck.Server.Identity;
@@ -79,11 +80,11 @@ public sealed class TestAuthenticationHandler(
 
             return Task.FromResult(BuildResult(
             [
-                new Claim("tid", TestMemberIdentities.TenantId.ToString()),
-                new Claim("oid", GuestObjectId),
-                new Claim("name", GuestDisplayName),
-                new Claim(GuestAuthentication.SessionIdClaim, parsedGuestSid.ToString()),
-                new Claim(GuestAuthentication.IsGuestClaim, "true")
+                new Claim(PlanDeckClaimTypes.EntraTenantId, TestMemberIdentities.TenantId.ToString()),
+                new Claim(PlanDeckClaimTypes.EntraObjectId, GuestObjectId),
+                new Claim(PlanDeckClaimTypes.Name, GuestDisplayName),
+                new Claim(PlanDeckClaimTypes.SessionId, parsedGuestSid.ToString()),
+                new Claim(PlanDeckClaimTypes.IsGuest, "true")
             ]));
         }
 
@@ -97,11 +98,13 @@ public sealed class TestAuthenticationHandler(
 
         return Task.FromResult(BuildResult(
         [
-            new Claim("tid", TestMemberIdentities.TenantId.ToString()),
-            new Claim("oid", member.EntraObjectId.ToString()),
-            new Claim(PlanDeckIdentity.AppUserIdClaim, member.AppUserId.ToString()),
-            new Claim(PlanDeckIdentity.ActiveUserClaim, bool.TrueString),
-            new Claim("name", member.DisplayName),
+            new Claim(PlanDeckClaimTypes.EntraTenantId, TestMemberIdentities.TenantId.ToString()),
+            new Claim(PlanDeckClaimTypes.EntraObjectId, member.EntraObjectId.ToString()),
+            new Claim(PlanDeckClaimTypes.MemberTenantId, TestMemberIdentities.TenantId.ToString()),
+            new Claim(PlanDeckClaimTypes.UserId, member.AppUserId.ToString()),
+            new Claim(PlanDeckClaimTypes.TenantRole, member.Role.ToString()),
+            new Claim(PlanDeckClaimTypes.ActiveUser, bool.TrueString),
+            new Claim(PlanDeckClaimTypes.Name, member.DisplayName),
             new Claim("email", member.Email)
         ]));
     }
