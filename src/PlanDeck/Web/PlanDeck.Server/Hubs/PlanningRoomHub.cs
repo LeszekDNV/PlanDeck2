@@ -175,7 +175,9 @@ public sealed class PlanningRoomHub(
         return key;
     }
 
-    private string ParticipantId => ReadRequiredClaim("oid");
+    private string ParticipantId => IsGuest
+        ? ReadRequiredClaim(PlanDeckClaimTypes.EntraObjectId)
+        : ReadRequiredClaim(PlanDeckClaimTypes.ParticipantId);
 
     private Guid UserId
     {
@@ -230,7 +232,10 @@ public sealed class PlanningRoomHub(
             throw new HubException("A valid session id is required.");
         }
 
-        if (!Guid.TryParse(ReadRequiredClaim("tid"), out var tenantGuid))
+        var tenantClaim = IsGuest
+            ? PlanDeckClaimTypes.EntraTenantId
+            : PlanDeckClaimTypes.MemberTenantId;
+        if (!Guid.TryParse(ReadRequiredClaim(tenantClaim), out var tenantGuid))
         {
             throw new HubException("Authenticated tenant claim is missing or invalid.");
         }

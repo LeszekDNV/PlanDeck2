@@ -1,0 +1,14 @@
+@inject IStringLocalizer<SharedResource> Localizer
+
+@if (_hasErrors)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">
+        <MudText Typo="Typo.body2" Class="mb-2">@Localizer["Account_ValidationSummary_Title"]</MudText>
+        <ul class="mud-typography-body2">
+            @foreach (var message in EditContext?.GetValidationMessages() ?? Enumerable.Empty<string>())
+            {
+                <li>@message</li>
+            }
+        </ul>
+    </MudAlert>
+}

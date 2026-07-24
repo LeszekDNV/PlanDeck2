@@ -353,7 +353,7 @@ public sealed class LocalAccountTests
     {
         var userId = await RegisterUserAsync($"badtoken{UniqueSuffix()}", $"badtoken-{UniqueSuffix()}@example.com", ValidPassword(), confirmEmail: false);
 
-        var response = await _client.GetAsync($"/account/confirm-email?userId={userId}&token=invalid-token");
+        var response = await _client.GetAsync($"/api/account/confirm-email?userId={userId}&token=invalid-token");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         var result = await response.Content.ReadFromJsonAsync<AccountStatusResponse>();
@@ -575,7 +575,7 @@ public sealed class LocalAccountTests
         var user = await userManager.FindByIdAsync(otherUserId.ToString());
         var confirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user!);
         var response = await _client.GetAsync(
-            $"/account/confirm-email?userId={otherUserId}&token={Uri.EscapeDataString(confirmationToken)}");
+            $"/api/account/confirm-email?userId={otherUserId}&token={Uri.EscapeDataString(confirmationToken)}");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var invitation = await scope.ServiceProvider.GetRequiredService<PlanDeckDbContext>().TenantInvitations
@@ -604,7 +604,7 @@ public sealed class LocalAccountTests
         var user = await userManager.FindByIdAsync(userId.ToString());
         var token = await userManager.GenerateEmailConfirmationTokenAsync(user!);
         return await _client.GetAsync(
-            $"/account/confirm-email?userId={userId}&token={Uri.EscapeDataString(token)}");
+            $"/api/account/confirm-email?userId={userId}&token={Uri.EscapeDataString(token)}");
     }
 
     private async Task<string> GeneratePasswordResetTokenAsync(Guid userId)
@@ -712,7 +712,7 @@ public sealed class LocalAccountTests
         Assert.That(user, Is.Not.Null);
         var token = await userManager.GenerateEmailConfirmationTokenAsync(user!);
         var response = await _client.GetAsync(
-            $"/account/confirm-email?userId={userId}&token={Uri.EscapeDataString(token)}");
+            $"/api/account/confirm-email?userId={userId}&token={Uri.EscapeDataString(token)}");
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 

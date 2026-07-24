@@ -39,10 +39,11 @@
             <AuthorizeView>
                 <Authorized>
                     <MudText Class="mr-4">@context.User.Identity?.Name</MudText>
-                    <MudButton Color="Color.Inherit" OnClick="Logout">@Localizer["Auth_Logout"]</MudButton>
+                    <MudButton Color="Color.Inherit" OnClick="@(() => LogoutAsync(context.User))">@Localizer["Auth_Logout"]</MudButton>
                 </Authorized>
                 <NotAuthorized>
                     <MudButton Color="Color.Inherit" OnClick="Login">@Localizer["Auth_Login"]</MudButton>
+                    <MudButton Href="/account/register" Color="Color.Inherit" Variant="Variant.Outlined" Class="ml-2">@Localizer["Account_Register_Link"]</MudButton>
                 </NotAuthorized>
             </AuthorizeView>
         </MudHidden>
@@ -82,7 +83,7 @@
                     </MudButton>
                     <MudButton Variant="Variant.Text" Color="Color.Error"
                                FullWidth="true"
-                               OnClick="LogoutAndClose">
+                               OnClick="@(() => LogoutAndCloseAsync(context.User))">
                         @Localizer["Auth_Logout"]
                     </MudButton>
                 </Authorized>
@@ -101,6 +102,12 @@
                                FullWidth="true"
                                OnClick="LoginAndClose">
                         @Localizer["Auth_Login"]
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                               FullWidth="true"
+                               Href="/account/register"
+                               OnClick="(() => _drawerOpen = false)">
+                        @Localizer["Account_Register_Link"]
                     </MudButton>
                 </NotAuthorized>
             </AuthorizeView>

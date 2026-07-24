@@ -1,0 +1,56 @@
+@page "/account/login"
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IAccountClientService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>@Localizer["Account_Login_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h4" GutterBottom="true">@Localizer["Account_Login_Heading"]</MudText>
+
+            <AccountStatusMessage Status="@_statusMessage" Errors="@_errors" Severity="@_statusSeverity" />
+
+            <EditForm Model="@_model" OnValidSubmit="HandleSubmitAsync" FormName="login">
+
+
+                <MudTextField @bind-Value="_model.Login"
+                              Label="@Localizer["Account_Login_Label"]"
+                              autocomplete="username"
+                              aria-required="true"
+                              Disabled="@_isBusy"
+                              Class="mb-4"
+                              For="@(() => _model.Login)" />
+
+                <MudTextField @bind-Value="_model.Password"
+                              Label="@Localizer["Account_Password_Label"]"
+                              InputType="InputType.Password"
+                              autocomplete="current-password"
+                              aria-required="true"
+                              Disabled="@_isBusy"
+                              Class="mb-4"
+                              For="@(() => _model.Password)" />
+
+                <MudCheckBox @bind-Value="_model.RememberMe"
+                             Label="@Localizer["Account_RememberMe"]"
+                             Disabled="@_isBusy"
+                             Class="mb-4" />
+
+                <AccountActionButtons PrimaryText="@Localizer["Auth_Login"]"
+                                      EntraText="@Localizer["Join_LoginMicrosoft"]"
+                                      ShowEntra="true"
+                                      IsBusy="@_isBusy"
+                                      OnEntraClick="LoginWithEntraAsync" />
+            </EditForm>
+        </MudCardContent>
+        <MudCardActions Class="justify-center">
+            <MudButton Href="/account/forgot-password" Variant="Variant.Text" Color="Color.Primary">
+                @Localizer["Account_ForgotPassword_Link"]
+            </MudButton>
+            <MudButton Href="/account/register" Variant="Variant.Text" Color="Color.Primary">
+                @Localizer["Account_Register_Link"]
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>

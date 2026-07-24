@@ -1,20 +1,48 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 using MudBlazor;
+using PlanDeck.Client.Services;
 
 namespace PlanDeck.Client.Layout;
 
 public partial class MainLayout
 {
+    [Inject]
+    private IAccountClientService AccountService { get; set; } = null!;
+
     private bool _drawerOpen;
     private bool _isDarkMode = true;
     private MudTheme? _theme;
 
     private void Login() =>
         Navigation.NavigateTo(
-            $"/auth/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",
+            $"/account/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",
             forceLoad: true);
 
-    private void Logout() => Navigation.NavigateTo("/auth/logout", forceLoad: true);
+    private async Task LogoutAsync(ClaimsPrincipal user)
+    {
+        if (IsGuest(user))
+        {
+            AccountService.LogoutGuest();
+            return;
+        }
+
+        await AccountService.LogoutAsync();
+    }
+
+    private async Task LogoutAndCloseAsync(ClaimsPrincipal user)
+    {
+        _drawerOpen = false;
+        await LogoutAsync(user);
+    }
+
+    private static bool IsGuest(ClaimsPrincipal user) =>
+        string.Equals(
+            user.FindFirst("is_guest")?.Value,
+            bool.TrueString,
+            StringComparison.OrdinalIgnoreCase);
 
     private async Task SetCultureAsync(string culture)
     {
@@ -32,12 +60,6 @@ public partial class MainLayout
     {
         _drawerOpen = false;
         await SetCultureAsync(culture);
-    }
-
-    private void LogoutAndClose()
-    {
-        _drawerOpen = false;
-        Logout();
     }
 
     private void LoginAndClose()

@@ -1,0 +1,13 @@
+@if (!string.IsNullOrWhiteSpace(Status))
+{
+    <MudAlert Severity="@Severity" Class="mb-4">
+        @Status
+    </MudAlert>
+}
+
+@foreach (var error in Errors)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-2">
+        @error
+    </MudAlert>
+}

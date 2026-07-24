@@ -1,0 +1,56 @@
+@page "/account/confirm-email"
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IAccountClientService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>@Localizer["Account_ConfirmEmail_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h4" GutterBottom="true">@Localizer["Account_ConfirmEmail_Heading"]</MudText>
+
+            <AccountStatusMessage Status="@_statusMessage" Errors="@_errors" Severity="@_statusSeverity" />
+
+            @if (_showResend)
+            {
+                <EditForm Model="@_resendModel" OnValidSubmit="HandleResendAsync" FormName="resend-confirmation">
+                    <DataAnnotationsValidator />
+
+                    <MudTextField @bind-Value="_resendModel.Email"
+                                  Label="@Localizer["Account_Email_Label"]"
+                                  InputType="InputType.Email"
+                                  Required="true"
+                                  RequiredError="@Localizer["Account_Email_Required"]"
+                                  autocomplete="email"
+                                  aria-required="true"
+                                  Disabled="@_isBusy"
+                                  Class="mb-4"
+                                  For="@(() => _resendModel.Email)" />
+
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Disabled="@_isBusy">
+                        @if (_isBusy)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">@Localizer["Account_Processing"]</MudText>
+                        }
+                        else
+                        {
+                            @Localizer["Account_ResendConfirmation_Button"]
+                        }
+                    </MudButton>
+                </EditForm>
+
+                <MudStack Class="mt-4" Row="true" Justify="Justify.Center">
+                    <MudButton Href="/account/login" Variant="Variant.Text" Color="Color.Primary">
+                        @Localizer["Account_Login_Link"]
+                    </MudButton>
+                </MudStack>
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>

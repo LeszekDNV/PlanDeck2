@@ -1,0 +1,84 @@
+@page "/account/register"
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IAccountClientService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>@Localizer["Account_Register_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h4" GutterBottom="true">@Localizer["Account_Register_Heading"]</MudText>
+
+            <InvitationGoalDisplay InvitationToken="@InvitationToken" />
+            <AccountStatusMessage Status="@_statusMessage" Errors="@_errors" Severity="@_statusSeverity" />
+
+            <EditForm Model="@_model" OnValidSubmit="HandleSubmitAsync" FormName="register">
+
+
+                <MudTextField @bind-Value="_model.Email"
+                              Label="@Localizer["Account_Email_Label"]"
+                              InputType="InputType.Email"
+                              autocomplete="email"
+                              aria-required="true"
+                              Disabled="@_isBusy"
+                              Class="mb-4"
+                              For="@(() => _model.Email)" />
+
+                <MudTextField @bind-Value="_model.UserName"
+                              Label="@Localizer["Account_UserName_Label"]"
+                              autocomplete="username"
+                              aria-required="true"
+                              Disabled="@_isBusy"
+                              Class="mb-4"
+                              For="@(() => _model.UserName)" />
+
+                <MudTextField @bind-Value="_model.FirstName"
+                              Label="@Localizer["Account_FirstName_Label"]"
+                              autocomplete="given-name"
+                              Disabled="@_isBusy"
+                              Class="mb-4"
+                              For="@(() => _model.FirstName)" />
+
+                <MudTextField @bind-Value="_model.LastName"
+                              Label="@Localizer["Account_LastName_Label"]"
+                              autocomplete="family-name"
+                              Disabled="@_isBusy"
+                              Class="mb-4"
+                              For="@(() => _model.LastName)" />
+
+                <MudTextField @bind-Value="_model.Password"
+                              @bind-Value:after="() => _passwordError = null"
+                              Label="@Localizer["Account_Password_Label"]"
+                              InputType="InputType.Password"
+                              autocomplete="new-password"
+                              aria-required="true"
+                              Disabled="@_isBusy"
+                              Error="@(!string.IsNullOrWhiteSpace(_passwordError))"
+                              ErrorText="@_passwordError"
+                              Class="mb-1"
+                              For="@(() => _model.Password)" />
+
+                <MudTextField @bind-Value="_model.ConfirmPassword"
+                              Label="@Localizer["Account_ConfirmPassword_Label"]"
+                              InputType="InputType.Password"
+                              autocomplete="new-password"
+                              aria-required="true"
+                              Disabled="@_isBusy"
+                              Class="mb-4"
+                              For="@(() => _model.ConfirmPassword)" />
+
+                <AccountActionButtons PrimaryText="@Localizer["Account_Register_Button"]"
+                                      EntraText="@Localizer["Account_Register_Entra_Button"]"
+                                      ShowEntra="true"
+                                      IsBusy="@_isBusy"
+                                      OnEntraClick="RegisterWithEntraAsync" />
+            </EditForm>
+        </MudCardContent>
+        <MudCardActions Class="justify-center">
+            <MudButton Href="/account/login" Variant="Variant.Text" Color="Color.Primary">
+                @Localizer["Account_Login_Link"]
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>

@@ -381,8 +381,8 @@ Przepisać testy na realne przepływy i całkowicie usunąć alternatywną tożs
 - [x] Phase 1: Identity foundation and tenant model — 811b825
 - [x] Phase 2: Local registration and sign-in — 6c21f1e
 - [x] Phase 3: Email confirmation and password reset — 5cbb0b4
-- [x] Phase 4: Multi-tenant Entra and explicit account linking
-- [ ] Phase 5: Account UI and localization
+- [x] Phase 4: Multi-tenant Entra and explicit account linking — a7ba02b
+- [x] Phase 5: Account UI and localization
 - [ ] Phase 6: Public operations required by tests
 - [ ] Phase 7: Test migration and removal of authentication backdoors
 

@@ -40,9 +40,6 @@ public sealed class MainLayoutPage
     public async Task LogOutAsync()
     {
         await LogOutButton.ClickAsync();
-        await _page.WaitForURLAsync(
-            new Regex($"{Regex.Escape(_baseUrl)}/?$"),
-            new() { Timeout = 60_000 });
         await LogInButton.WaitForAsync(new()
         {
             State = WaitForSelectorState.Visible,
@@ -66,14 +63,14 @@ public sealed class MainLayoutPage
 
     public async Task LogInAsync()
     {
-        await LogInButton.ClickAsync();
+        // The test scheme exposes GET /auth/login as the deterministic login trigger.
+        await _page.GotoAsync(
+            $"{_baseUrl.TrimEnd('/')}/auth/login?returnUrl=/",
+            new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
         await TestOwner.WaitForAsync(new()
         {
             State = WaitForSelectorState.Visible,
             Timeout = 60_000
         });
-        await _page.WaitForURLAsync(
-            new Regex("/projects$"),
-            new() { Timeout = 60_000 });
     }
 }

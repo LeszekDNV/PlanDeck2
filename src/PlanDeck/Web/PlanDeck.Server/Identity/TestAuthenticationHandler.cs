@@ -98,10 +98,13 @@ public sealed class TestAuthenticationHandler(
 
         return Task.FromResult(BuildResult(
         [
+            new Claim(ClaimTypes.NameIdentifier, member.AppUserId.ToString()),
+            new Claim("http://schemas.microsoft.com/accesscontrolservice/2010/07/claims/identityprovider", SchemeName),
             new Claim(PlanDeckClaimTypes.EntraTenantId, TestMemberIdentities.TenantId.ToString()),
             new Claim(PlanDeckClaimTypes.EntraObjectId, member.EntraObjectId.ToString()),
             new Claim(PlanDeckClaimTypes.MemberTenantId, TestMemberIdentities.TenantId.ToString()),
             new Claim(PlanDeckClaimTypes.UserId, member.AppUserId.ToString()),
+            new Claim(PlanDeckClaimTypes.ParticipantId, member.AppUserId.ToString()),
             new Claim(PlanDeckClaimTypes.TenantRole, member.Role.ToString()),
             new Claim(PlanDeckClaimTypes.ActiveUser, bool.TrueString),
             new Claim(PlanDeckClaimTypes.Name, member.DisplayName),

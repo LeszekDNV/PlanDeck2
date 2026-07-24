@@ -1,0 +1,112 @@
+@page "/account/security"
+@attribute [Authorize]
+@inject IStringLocalizer<SharedResource> Localizer
+@inject IAccountClientService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>@Localizer["Account_Security_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h4" GutterBottom="true">@Localizer["Account_Security_Heading"]</MudText>
+
+            <AccountStatusMessage Status="@_statusMessage" Errors="@_errors" Severity="@_statusSeverity" />
+
+            @if (_info is null && _errors.Count == 0)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (_info is not null)
+            {
+                <MudList T="string" Dense="true">
+                    <MudListItem Icon="@Icons.Material.Filled.Person">
+                        <MudText Typo="Typo.body1">@Localizer["Account_UserName_Label"]: @_info.UserName</MudText>
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Email">
+                        <MudText Typo="Typo.body1">@Localizer["Account_Email_Label"]: @_info.Email</MudText>
+                    </MudListItem>
+                    <MudListItem Icon="@GetConfirmationIcon()">
+                        <MudText Typo="Typo.body1">
+                            @(_info.EmailConfirmed ? Localizer["Account_EmailConfirmed"] : Localizer["Account_EmailNotConfirmed"])
+                        </MudText>
+                    </MudListItem>
+                </MudList>
+
+                <MudDivider Class="my-4" />
+
+                <MudText Typo="Typo.h6" GutterBottom="true">@Localizer["Account_LoginMethods"]</MudText>
+
+                @if (_info.Logins.Count == 0)
+                {
+                    <MudText Typo="Typo.body2">@Localizer["Account_NoExternalLogins"]</MudText>
+                }
+                else
+                {
+                    @foreach (var login in _info.Logins)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                            <MudText Typo="Typo.body1">@GetProviderDisplayName(login)</MudText>
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Error"
+                                       Disabled="@_isBusy"
+                                       OnClick="@(() => UnlinkAsync(login))">
+                                @Localizer["Account_Unlink"]
+                            </MudButton>
+                        </MudStack>
+                    }
+                }
+
+                @if (!_showLinkForm)
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Class="mt-4"
+                               Disabled="@_isBusy"
+                               OnClick="ShowLinkForm"
+                               StartIcon="@Icons.Custom.Brands.Microsoft">
+                        @Localizer["Account_LinkMicrosoft"]
+                    </MudButton>
+                }
+                else
+                {
+                    <EditForm Model="@_linkModel" OnValidSubmit="HandleLinkAsync" FormName="link-entra" Class="mt-4">
+                        <DataAnnotationsValidator />
+
+                        <MudText Typo="Typo.body2" GutterBottom="true">
+                            @Localizer["Account_LinkMicrosoft_PasswordPrompt"]
+                        </MudText>
+
+                        <MudTextField @bind-Value="_linkModel.Password"
+                                      Label="@Localizer["Account_Password_Label"]"
+                                      InputType="InputType.Password"
+                                      Required="true"
+                                      RequiredError="@Localizer["Account_Password_Required"]"
+                                      autocomplete="current-password"
+                                      aria-required="true"
+                                      Disabled="@_isBusy"
+                                      Class="mb-4"
+                                      For="@(() => _linkModel.Password)" />
+
+                        <MudStack Row="true" Spacing="2">
+                            <MudButton ButtonType="ButtonType.Submit"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       FullWidth="true"
+                                       Disabled="@_isBusy">
+                                @Localizer["Account_LinkMicrosoft"]
+                            </MudButton>
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Secondary"
+                                       OnClick="HideLinkForm"
+                                       Disabled="@_isBusy">
+                                @Localizer["Account_Cancel"]
+                            </MudButton>
+                        </MudStack>
+                    </EditForm>
+                }
+            }
+        </MudCardContent>
+    </MudCard>
+</MudContainer>

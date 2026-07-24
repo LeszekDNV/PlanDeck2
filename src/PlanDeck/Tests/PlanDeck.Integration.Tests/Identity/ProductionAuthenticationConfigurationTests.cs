@@ -15,6 +15,9 @@ public sealed class ProductionAuthenticationConfigurationTests
     {
         var services = new ServiceCollection();
         var configuration = new ConfigurationManager();
+        configuration["EmailSettings:Host"] = "smtp.example.com";
+        configuration["EmailSettings:SenderAddress"] = "noreply@example.com";
+        configuration["EmailSettings:PublicBaseUrl"] = "https://example.com";
 
         Assert.That(
             () => services.AddExternalServices(
@@ -30,6 +33,9 @@ public sealed class ProductionAuthenticationConfigurationTests
         var services = new ServiceCollection();
         var configuration = new ConfigurationManager();
         configuration["Authentication:UseTestScheme"] = bool.TrueString;
+        configuration["EmailSettings:Host"] = "smtp.example.com";
+        configuration["EmailSettings:SenderAddress"] = "noreply@example.com";
+        configuration["EmailSettings:PublicBaseUrl"] = "https://example.com";
 
         Assert.That(
             () => services.AddExternalServices(

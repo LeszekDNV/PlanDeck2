@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -368,7 +368,9 @@
     <value>Jedno zadanie w wierszu. Użyj 'Tytuł | Opis', aby dodać opis.</value>
   </data>
   <data name="Sessions_BulkPastePlaceholder" xml:space="preserve">
-    <value>Ekran logowania | Zbuduj stronę logowania&#10;Wylogowanie&#10;Pulpit | Widżety przeglądu</value>
+    <value>Ekran logowania | Zbuduj stronę logowania
+Wylogowanie
+Pulpit | Widżety przeglądu</value>
   </data>
   <data name="Sessions_BulkAdd" xml:space="preserve">
     <value>Dodaj wklejone zadania</value>
@@ -687,5 +689,287 @@
   </data>
   <data name="Account_UnconfirmedCannotLogin" xml:space="preserve">
     <value>Potwierdź adres e-mail przed zalogowaniem.</value>
+  </data>
+  <data name="Account_PasswordUppercase" xml:space="preserve">
+    <value>Jedna wielka litera</value>
+  </data>
+  <data name="Account_UserName_TooShort" xml:space="preserve">
+    <value>Nazwa użytkownika musi mieć co najmniej 3 znaki.</value>
+  </data>
+  <data name="Account_LastName_Label" xml:space="preserve">
+    <value>Nazwisko</value>
+  </data>
+  <data name="Account_Login_Label" xml:space="preserve">
+    <value>Nazwa użytkownika lub email</value>
+  </data>
+  <data name="Account_PasswordMinLength" xml:space="preserve">
+    <value>Co najmniej 12 znaków</value>
+  </data>
+  <data name="Account_Password_MinLengthError" xml:space="preserve">
+    <value>Hasło musi mieć co najmniej 12 znaków.</value>
+  </data>
+  <data name="Account_Password_UppercaseError" xml:space="preserve">
+    <value>Hasło musi zawierać co najmniej jedną wielką literę.</value>
+  </data>
+  <data name="Account_Password_LowercaseError" xml:space="preserve">
+    <value>Hasło musi zawierać co najmniej jedną małą literę.</value>
+  </data>
+  <data name="Account_Password_DigitError" xml:space="preserve">
+    <value>Hasło musi zawierać co najmniej jedną cyfrę.</value>
+  </data>
+  <data name="Account_Password_SpecialError" xml:space="preserve">
+    <value>Hasło musi zawierać co najmniej jeden znak specjalny.</value>
+  </data>
+  <data name="Account_NewPassword_Label" xml:space="preserve">
+    <value>Nowe hasło</value>
+  </data>
+  <data name="Account_UnlinkSuccess" xml:space="preserve">
+    <value>Zewnętrzna metoda logowania została odłączona.</value>
+  </data>
+  <data name="Account_Error_DuplicateUserName" xml:space="preserve">
+    <value>Ta nazwa użytkownika jest już zajęta.</value>
+  </data>
+  <data name="Account_Error_InvitationInvalidOrExpired" xml:space="preserve">
+    <value>Zaproszenie jest nieprawidłowe, wygasło lub nie pasuje do adresu email.</value>
+  </data>
+  <data name="Account_Email_Label" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Account_LinkMicrosoft_PasswordPrompt" xml:space="preserve">
+    <value>Podaj swoje obecne hasło, aby połączyć konto Microsoft.</value>
+  </data>
+  <data name="Account_PasswordSpecial" xml:space="preserve">
+    <value>Jeden znak specjalny</value>
+  </data>
+  <data name="Account_EntraError_PublicRegistrationDisabled" xml:space="preserve">
+    <value>Publiczna rejestracja jest wyłączona.</value>
+  </data>
+  <data name="Account_Register_Heading" xml:space="preserve">
+    <value>Utwórz konto PlanDeck</value>
+  </data>
+  <data name="Account_UserName_NoAt" xml:space="preserve">
+    <value>Nazwa użytkownika nie może zawierać '@'.</value>
+  </data>
+  <data name="Account_Unlink" xml:space="preserve">
+    <value>Odłącz</value>
+  </data>
+  <data name="Account_PasswordRequirements" xml:space="preserve">
+    <value>Hasło musi spełniać następujące wymagania:</value>
+  </data>
+  <data name="Account_Name_TooLong" xml:space="preserve">
+    <value>Imię lub nazwisko nie może przekraczać 100 znaków.</value>
+  </data>
+  <data name="Account_EntraError_AccountInactive" xml:space="preserve">
+    <value>Powiązane konto jest nieaktywne.</value>
+  </data>
+  <data name="Account_RememberMe" xml:space="preserve">
+    <value>Zapamiętaj mnie</value>
+  </data>
+  <data name="Account_PasswordLowercase" xml:space="preserve">
+    <value>Jedna mała litera</value>
+  </data>
+  <data name="Account_EntraError_ExternalIdentityUsedElsewhere" xml:space="preserve">
+    <value>Ta tożsamość Microsoft jest już powiązana z innym kontem.</value>
+  </data>
+  <data name="Account_Email_Invalid" xml:space="preserve">
+    <value>Podaj poprawny adres email.</value>
+  </data>
+  <data name="Account_Login_Title" xml:space="preserve">
+    <value>Zaloguj się</value>
+  </data>
+  <data name="Account_EntraError_AlreadyLinked" xml:space="preserve">
+    <value>Ta tożsamość Microsoft jest już powiązana z Twoim kontem.</value>
+  </data>
+  <data name="Account_Login_Required" xml:space="preserve">
+    <value>Podaj nazwę użytkownika lub adres email.</value>
+  </data>
+  <data name="Account_ResetPassword_Heading" xml:space="preserve">
+    <value>Ustaw nowe hasło</value>
+  </data>
+  <data name="Account_Register_CheckEmail" xml:space="preserve">
+    <value>Twoje konto zostało utworzone. Sprawdź email, aby potwierdzić adres.</value>
+  </data>
+  <data name="Account_Or" xml:space="preserve">
+    <value>lub</value>
+  </data>
+  <data name="Account_FirstName_Label" xml:space="preserve">
+    <value>Imię</value>
+  </data>
+  <data name="Account_ConfirmPassword_Label" xml:space="preserve">
+    <value>Potwierdź hasło</value>
+  </data>
+  <data name="Account_Error_DuplicateEmail" xml:space="preserve">
+    <value>Ten email jest już zarejestrowany.</value>
+  </data>
+  <data name="Account_UserName_Label" xml:space="preserve">
+    <value>Nazwa użytkownika</value>
+  </data>
+  <data name="Account_ForgotPassword_Heading" xml:space="preserve">
+    <value>Zresetuj hasło</value>
+  </data>
+  <data name="Account_EmailConfirmed" xml:space="preserve">
+    <value>Email potwierdzony</value>
+  </data>
+  <data name="Account_PasswordDigit" xml:space="preserve">
+    <value>Jedna cyfra</value>
+  </data>
+  <data name="Account_Email_Required" xml:space="preserve">
+    <value>Email jest wymagany.</value>
+  </data>
+  <data name="Account_Login_Heading" xml:space="preserve">
+    <value>Zaloguj się do PlanDeck</value>
+  </data>
+  <data name="Account_EmailNotConfirmed" xml:space="preserve">
+    <value>Email niepotwierdzony</value>
+  </data>
+  <data name="Account_Error_InvalidUserName" xml:space="preserve">
+    <value>Nieprawidłowa nazwa użytkownika.</value>
+  </data>
+  <data name="Account_UserName_Required" xml:space="preserve">
+    <value>Nazwa użytkownika jest wymagana.</value>
+  </data>
+  <data name="Account_ConfirmPassword_Required" xml:space="preserve">
+    <value>Potwierdź hasło.</value>
+  </data>
+  <data name="Account_Error_InvalidPassword" xml:space="preserve">
+    <value>Nieprawidłowe hasło.</value>
+  </data>
+  <data name="Account_Provider_MicrosoftEntra" xml:space="preserve">
+    <value>Microsoft</value>
+  </data>
+  <data name="Account_InvitationDetected" xml:space="preserve">
+    <value>Dołączasz przez zaproszenie. Zarejestruj się używając adresu email z zaproszenia.</value>
+  </data>
+  <data name="Account_Password_Required" xml:space="preserve">
+    <value>Hasło jest wymagane.</value>
+  </data>
+  <data name="Account_Password_Invalid" xml:space="preserve">
+    <value>Hasło musi mieć co najmniej 12 znaków i zawierać wielką i małą literę, cyfrę oraz znak specjalny.</value>
+  </data>
+  <data name="Account_EntraError_AccountNotFound" xml:space="preserve">
+    <value>Nie znaleziono konta.</value>
+  </data>
+  <data name="Account_Register_Entra_Button" xml:space="preserve">
+    <value>Utwórz konto przez Microsoft</value>
+  </data>
+  <data name="Account_EntraError_DuplicateEmail" xml:space="preserve">
+    <value>Konto z tym adresem email już istnieje. Zaloguj się i połącz tożsamość Microsoft w ustawieniach bezpieczeństwa.</value>
+  </data>
+  <data name="Account_Password_Label" xml:space="preserve">
+    <value>Hasło</value>
+  </data>
+  <data name="Account_EntraError_EmailRequired" xml:space="preserve">
+    <value>Konto Microsoft musi dostarczyć adres email.</value>
+  </data>
+  <data name="Account_EntraError_Title" xml:space="preserve">
+    <value>Logowanie Microsoft nie powiodło się</value>
+  </data>
+  <data name="Account_EntraError_Heading" xml:space="preserve">
+    <value>Logowanie Microsoft nie powiodło się</value>
+  </data>
+  <data name="Account_EntraError_Generic" xml:space="preserve">
+    <value>Nie udało się zalogować kontem Microsoft. Spróbuj ponownie lub użyj konta lokalnego.</value>
+  </data>
+  <data name="Account_Back" xml:space="preserve">
+    <value>Wróć</value>
+  </data>
+  <data name="Account_Register_Button" xml:space="preserve">
+    <value>Utwórz konto</value>
+  </data>
+  <data name="Account_Register_Link" xml:space="preserve">
+    <value>Utwórz konto</value>
+  </data>
+  <data name="Account_ForgotPassword_Button" xml:space="preserve">
+    <value>Wyślij link resetujący</value>
+  </data>
+  <data name="Account_Error_InvalidCredentials" xml:space="preserve">
+    <value>Nieprawidłowe dane logowania. Sprawdź login i hasło.</value>
+  </data>
+  <data name="Account_Cancel" xml:space="preserve">
+    <value>Anuluj</value>
+  </data>
+  <data name="Account_EntraError_InvalidState" xml:space="preserve">
+    <value>Link jest nieprawidłowy lub wygasł.</value>
+  </data>
+  <data name="Account_Error_LockedOut" xml:space="preserve">
+    <value>Konto jest tymczasowo zablokowane z powodu zbyt wielu nieudanych prób. Spróbuj później.</value>
+  </data>
+  <data name="Account_EntraError_AccountTenantConflict" xml:space="preserve">
+    <value>To konto należy do innej przestrzeni PlanDeck.</value>
+  </data>
+  <data name="Account_LinkMicrosoft" xml:space="preserve">
+    <value>Połącz konto Microsoft</value>
+  </data>
+  <data name="Account_ForgotPassword_Link" xml:space="preserve">
+    <value>Zapomniałeś hasła?</value>
+  </data>
+  <data name="Account_Error_InvalidEmail" xml:space="preserve">
+    <value>Nieprawidłowy adres email.</value>
+  </data>
+  <data name="Account_PasswordsDoNotMatch" xml:space="preserve">
+    <value>Hasła nie są zgodne.</value>
+  </data>
+  <data name="Account_Login_Link" xml:space="preserve">
+    <value>Masz już konto? Zaloguj się</value>
+  </data>
+  <data name="Account_Security_Heading" xml:space="preserve">
+    <value>Bezpieczeństwo konta</value>
+  </data>
+  <data name="Account_ConfirmEmail_Title" xml:space="preserve">
+    <value>Potwierdź email</value>
+  </data>
+  <data name="Account_Register_Title" xml:space="preserve">
+    <value>Utwórz konto</value>
+  </data>
+  <data name="Account_Processing" xml:space="preserve">
+    <value>Przetwarzanie...</value>
+  </data>
+  <data name="Account_ConfirmEmail_Heading" xml:space="preserve">
+    <value>Potwierdzenie adresu email</value>
+  </data>
+  <data name="Account_Error_Failure" xml:space="preserve">
+    <value>Coś poszło nie tak. Spróbuj ponownie.</value>
+  </data>
+  <data name="Account_Error_WeakPassword" xml:space="preserve">
+    <value>Hasło jest za słabe.</value>
+  </data>
+  <data name="Account_ForgotPassword_Title" xml:space="preserve">
+    <value>Zapomniałeś hasła</value>
+  </data>
+  <data name="Account_ResetPassword_Title" xml:space="preserve">
+    <value>Resetuj hasło</value>
+  </data>
+  <data name="Account_Error_PublicRegistrationDisabled" xml:space="preserve">
+    <value>Publiczna rejestracja jest wyłączona.</value>
+  </data>
+  <data name="Account_NoExternalLogins" xml:space="preserve">
+    <value>Brak powiązanych zewnętrznych metod logowania.</value>
+  </data>
+  <data name="Account_Security_Title" xml:space="preserve">
+    <value>Bezpieczeństwo</value>
+  </data>
+  <data name="Account_EntraError_DuplicateUserName" xml:space="preserve">
+    <value>Nie udało się utworzyć unikalnej nazwy użytkownika z tego konta Microsoft.</value>
+  </data>
+  <data name="Account_LoginMethods" xml:space="preserve">
+    <value>Metody logowania</value>
+  </data>
+  <data name="Account_ResendConfirmation_Button" xml:space="preserve">
+    <value>Wyślij ponownie email potwierdzający</value>
+  </data>
+  <data name="Account_UserName_TooLong" xml:space="preserve">
+    <value>Nazwa użytkownika nie może przekraczać 32 znaków.</value>
+  </data>
+  <data name="Account_EntraError_ExternalIdentityNotFound" xml:space="preserve">
+    <value>Tożsamość Microsoft nie jest powiązana z żadnym kontem PlanDeck.</value>
+  </data>
+  <data name="Account_ResetPassword_Button" xml:space="preserve">
+    <value>Resetuj hasło</value>
+  </data>
+  <data name="Account_Home_RegisterButton" xml:space="preserve">
+    <value>Zarejestruj się</value>
+  </data>
+  <data name="Account_ValidationSummary_Title" xml:space="preserve">
+    <value>Popraw następujące błędy:</value>
   </data>
 </root>

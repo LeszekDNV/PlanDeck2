@@ -1,0 +1,26 @@
+@page "/account/entra/error"
+@inject IStringLocalizer<SharedResource> Localizer
+@inject NavigationManager Navigation
+
+<PageTitle>@Localizer["Account_EntraError_Title"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h4" GutterBottom="true">@Localizer["Account_EntraError_Heading"]</MudText>
+
+            <MudAlert Severity="Severity.Error" Class="mb-4">
+                @_message
+            </MudAlert>
+
+            <MudStack Row="true" Justify="Justify.Center">
+                <MudButton Href="@(_returnUrl ?? "/")" Variant="Variant.Text" Color="Color.Primary">
+                    @Localizer["Account_Back"]
+                </MudButton>
+                <MudButton Href="/account/login" Variant="Variant.Text" Color="Color.Primary">
+                    @Localizer["Account_Login_Link"]
+                </MudButton>
+            </MudStack>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>

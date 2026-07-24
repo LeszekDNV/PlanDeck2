@@ -1,0 +1,6 @@
+@if (!string.IsNullOrWhiteSpace(InvitationToken))
+{
+    <MudAlert Severity="Severity.Info" Class="mb-4">
+        @Localizer["Account_InvitationDetected"]
+    </MudAlert>
+}

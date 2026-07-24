@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,22 @@ namespace PlanDeck.Unit.Tests.Identity;
 [TestFixture]
 public sealed class SmtpEmailSenderTests
 {
+    [Test]
+    public void EmailResources_Localizer_ReturnsHtmlBodyNotKeyName()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddLocalization();
+        var provider = services.BuildServiceProvider();
+        var localizer = provider.GetRequiredService<IStringLocalizer<EmailResources>>();
+
+        var html = localizer["Email_ConfirmationHtmlBody", "TestUser", "https://example.com/confirm"].Value;
+
+        Assert.That(html, Does.Contain("<a href="));
+        Assert.That(html, Does.Contain("TestUser"));
+        Assert.That(html, Does.Not.Contain("Email_ConfirmationHtmlBody"));
+    }
+
     [Test]
     public void SendConfirmationLinkAsync_MissingHost_ThrowsInvalidOperationException()
     {

@@ -21,7 +21,7 @@ if (!useTestSchemeBootstrap)
 }
 
 // Add services to the container.
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddLocalization();
 builder.Services.AddGrpc();
 builder.Services.AddSignalR();
 

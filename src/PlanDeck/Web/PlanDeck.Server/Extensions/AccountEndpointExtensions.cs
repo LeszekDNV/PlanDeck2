@@ -11,6 +11,7 @@ using PlanDeck.Application.Account;
 using PlanDeck.Common.Identity;
 using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Server.Identity;
+using PlanDeck.Server.Models;
 
 namespace PlanDeck.Server.Extensions;
 
@@ -91,7 +92,7 @@ public static class AccountEndpointExtensions
         .WithName("AccountLogin")
         .WithDisplayName("Account Login");
 
-        app.MapGet("/account/confirm-email", async (
+        app.MapGet("/api/account/confirm-email", async (
             Guid userId,
             string token,
             IAccountLifecycleService lifecycleService,
@@ -167,16 +168,67 @@ public static class AccountEndpointExtensions
         .WithName("AccountAntiforgery")
         .WithDisplayName("Account Antiforgery");
 
+        app.MapGet("/account/security-info", async (
+            HttpContext httpContext,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            var userId = ReadCurrentUserId(httpContext.User);
+            if (userId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var logins = await userManager.GetLoginsAsync(user);
+            var loginInfos = logins
+                .Select(l => new LinkedLoginInfo(l.LoginProvider, l.ProviderDisplayName))
+                .ToList();
+
+            return Results.Ok(new AccountSecurityInfo(
+                user.Id,
+                user.UserName ?? string.Empty,
+                user.Email,
+                user.EmailConfirmed,
+                loginInfos));
+        })
+        .RequireAuthorization(PlanDeckPolicies.MemberAccount)
+        .WithName("AccountSecurityInfo")
+        .WithDisplayName("Account Security Info");
+
         app.MapPost("/account/logout", async (
             IAntiforgery antiforgery,
-            HttpContext httpContext) =>
+            HttpContext httpContext,
+            IConfiguration configuration) =>
         {
             if (!await antiforgery.IsRequestValidAsync(httpContext))
             {
                 return Results.BadRequest(new AccountResponse("InvalidAntiForgeryToken", null, ["Invalid antiforgery token."]));
             }
 
-            await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            // Use the default scheme so the sign-out works both for the production
+            // Cookie scheme and the deterministic Test scheme.
+            await httpContext.SignOutAsync();
+
+            // In the test scheme the deterministic identity is selected by the
+            // e2e-user cookie; clear it so the browser becomes anonymous after reload.
+            if (configuration.GetValue<bool>("Authentication:UseTestScheme")
+                && httpContext.Request.Cookies.ContainsKey(TestAuthenticationHandler.UserSelectionCookie))
+            {
+                var cookieOptions = CreateCookieOptions(httpContext.Request);
+                httpContext.Response.Cookies.Delete(
+                    TestAuthenticationHandler.UserSelectionCookie,
+                    cookieOptions);
+                httpContext.Response.Cookies.Append(
+                    TestAuthenticationHandler.UserSelectionCookie,
+                    TestAuthenticationHandler.AnonymousSelection,
+                    cookieOptions);
+            }
+
             return Results.Ok(new AccountResponse("Success", null, null, "/"));
         })
         .RequireAuthorization(PlanDeckPolicies.MemberAccount)
@@ -255,6 +307,7 @@ public static class AccountEndpointExtensions
             UnlinkEntraRequest request,
             HttpContext httpContext,
             IAntiforgery antiforgery,
+            UserManager<ApplicationUser> userManager,
             IExternalAccountService externalAccountService,
             CancellationToken cancellationToken) =>
         {
@@ -269,10 +322,23 @@ public static class AccountEndpointExtensions
                 return Results.Unauthorized();
             }
 
+            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var logins = await userManager.GetLoginsAsync(user);
+            var login = logins.FirstOrDefault(l => l.LoginProvider == request.Provider);
+            if (login is null)
+            {
+                return Results.Ok(new AccountResponse("Success"));
+            }
+
             var result = await externalAccountService.UnlinkAsync(
                 userId.Value,
-                request.Provider,
-                request.ProviderKey,
+                login.LoginProvider,
+                login.ProviderKey,
                 cancellationToken);
 
             return result.Succeeded
@@ -337,6 +403,16 @@ public static class AccountEndpointExtensions
 
         return userId;
     }
+
+    private static CookieOptions CreateCookieOptions(HttpRequest request) =>
+        new()
+        {
+            HttpOnly = true,
+            IsEssential = true,
+            Path = "/",
+            SameSite = SameSiteMode.Lax,
+            Secure = request.IsHttps
+        };
 
     private static string ResolveLocalReturnUrl(HttpRequest request, string? returnUrl)
     {
