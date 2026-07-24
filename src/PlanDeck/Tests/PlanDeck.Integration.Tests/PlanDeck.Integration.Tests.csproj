@@ -31,7 +31,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Aspire\PlanDeck.AppHost\PlanDeck.AppHost.csproj" />
+    <ProjectReference Include="..\..\Aspire\PlanDeck.AppHost\PlanDeck.AppHost.csproj">
+      <Aliases>AppHost</Aliases>
+    </ProjectReference>
     <ProjectReference Include="..\..\Core\PlanDeck.Infrastructure\PlanDeck.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Web\PlanDeck.Server\PlanDeck.Server.csproj" />
   </ItemGroup>

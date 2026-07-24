@@ -15,7 +15,7 @@ public sealed class AppUserRepository(PlanDeckDbContext db) : IAppUserRepository
         Guid tenantId,
         Guid id,
         CancellationToken cancellationToken = default) =>
-        db.AppUsers.AnyAsync(
+        db.AppUsers.IgnoreQueryFilters().AnyAsync(
             user => user.TenantId == tenantId && user.Id == id && user.IsActive,
             cancellationToken);
 }

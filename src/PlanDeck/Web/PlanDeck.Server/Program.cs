@@ -28,7 +28,8 @@ builder.Services.AddSignalR();
 builder.Services
     .AddSqlDatabase(builder.Configuration)
     .AddLocalServices()
-    .AddExternalServices(builder.Configuration, builder.Environment);
+    .AddExternalServices(builder.Configuration, builder.Environment)
+    .AddAccountRateLimiting(builder.Configuration);
 
 builder.Services.AddCodeFirstGrpc(config =>
 {
@@ -70,6 +71,8 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 });
 
 app.UseStaticFiles();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 
@@ -119,35 +122,36 @@ app.MapGet("/auth/login", async (string? returnUrl, HttpContext httpContext) =>
     return Results.Challenge(new AuthenticationProperties { RedirectUri = target });
 });
 
+// GET /auth/logout is intentionally restricted to non-interactive identities (guest and test
+// scheme). Authenticated members must use POST /account/logout with antiforgery.
 app.MapGet("/auth/logout", async (HttpContext httpContext) =>
 {
+    var authType = httpContext.User.Identity?.AuthenticationType;
+    var cookieOptions = CreateTestCookieOptions(httpContext.Request);
+
     if (useTestScheme)
     {
-        var cookieOptions = CreateTestCookieOptions(httpContext.Request);
+        httpContext.Response.Cookies.Delete(
+            TestAuthenticationHandler.GuestSessionCookie,
+            cookieOptions);
         httpContext.Response.Cookies.Append(
             TestAuthenticationHandler.UserSelectionCookie,
             TestAuthenticationHandler.AnonymousSelection,
             cookieOptions);
-        httpContext.Response.Cookies.Delete(
-            TestAuthenticationHandler.GuestSessionCookie,
-            cookieOptions);
         await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
         return Results.LocalRedirect("/");
     }
 
-    if (PlanDeckIdentity.IsValidGuest(httpContext.User))
+    if (PlanDeckIdentity.IsGuest(httpContext.User))
     {
         await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
         return Results.LocalRedirect("/");
     }
 
-    await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
-    var schemes = isOidcConfigured
-        ? new[] { CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme }
-        : new[] { CookieAuthenticationDefaults.AuthenticationScheme };
-
-    return Results.SignOut(new AuthenticationProperties { RedirectUri = "/" }, schemes);
+    return Results.NotFound();
 });
+
+app.MapAccountEndpoints();
 
 // Anonymous guest redeem: exchange a share code + temporary name for a session-scoped guest cookie.
 app.MapPost("/guest/join", async (
@@ -254,4 +258,6 @@ static string ResolveLocalReturnUrl(HttpRequest request, string? returnUrl)
 namespace PlanDeck.Server
 {
     public sealed class ServerEntryPoint;
+
+    public partial class Program;
 }

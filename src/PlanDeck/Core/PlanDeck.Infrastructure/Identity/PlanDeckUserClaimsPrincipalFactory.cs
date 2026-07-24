@@ -36,6 +36,7 @@ public sealed class PlanDeckUserClaimsPrincipalFactory(
         }
 
         var appUser = await db.AppUsers.AsNoTracking()
+            .IgnoreQueryFilters()
             .SingleOrDefaultAsync(u => u.Id == user.Id);
 
         if (appUser is not null && appUser.IsActive)

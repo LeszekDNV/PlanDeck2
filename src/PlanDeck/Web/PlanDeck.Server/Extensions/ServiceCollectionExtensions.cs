@@ -1,8 +1,10 @@
+using System.Threading.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Planning;
@@ -139,8 +141,61 @@ public static class ServiceCollectionExtensions
             return services;
         }
 
+        public IServiceCollection AddAccountRateLimiting(IConfiguration configuration)
+        {
+            var disabled = configuration.GetValue<bool>("RateLimiting:Disable");
+
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                var registerLimit = disabled ? int.MaxValue : 3;
+                var registerWindow = disabled ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromMinutes(10);
+                options.AddFixedWindowLimiter("register", configureOptions =>
+                {
+                    configureOptions.PermitLimit = registerLimit;
+                    configureOptions.Window = registerWindow;
+                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    configureOptions.QueueLimit = 0;
+                });
+
+                var loginLimit = disabled ? int.MaxValue : 10;
+                var loginWindow = disabled ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromMinutes(1);
+                options.AddFixedWindowLimiter("login", configureOptions =>
+                {
+                    configureOptions.PermitLimit = loginLimit;
+                    configureOptions.Window = loginWindow;
+                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    configureOptions.QueueLimit = 0;
+                });
+
+                var resendLimit = disabled ? int.MaxValue : 3;
+                var resendWindow = disabled ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromMinutes(10);
+                options.AddFixedWindowLimiter("resend-confirmation", configureOptions =>
+                {
+                    configureOptions.PermitLimit = resendLimit;
+                    configureOptions.Window = resendWindow;
+                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    configureOptions.QueueLimit = 0;
+                });
+
+                var forgotLimit = disabled ? int.MaxValue : 3;
+                var forgotWindow = disabled ? TimeSpan.FromMilliseconds(1) : TimeSpan.FromMinutes(10);
+                options.AddFixedWindowLimiter("forgot-password", configureOptions =>
+                {
+                    configureOptions.PermitLimit = forgotLimit;
+                    configureOptions.Window = forgotWindow;
+                    configureOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                    configureOptions.QueueLimit = 0;
+                });
+            });
+
+            return services;
+        }
+
         public IServiceCollection AddLocalServices()
         {
+            services.AddAntiforgery();
             services.AddMemoryCache();
             services.AddHttpContextAccessor();
             services.AddSingleton(TimeProvider.System);
@@ -149,6 +204,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IProvisioningContextAccessor, ProvisioningContextAccessor>();
             services.AddScoped<IIdentityAccountRepository, IdentityAccountRepository>();
             services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
+            services.AddScoped<ILocalAccountService, LocalAccountService>();
             services.AddScoped<ICookieSessionValidator, CookieSessionValidator>();
             services.AddScoped<IAppUserRepository, AppUserRepository>();
             services.AddScoped<TestAppUserSeeder>();
@@ -196,6 +252,9 @@ public static class ServiceCollectionExtensions
         .AddRoles<IdentityRole<Guid>>()
         .AddEntityFrameworkStores<PlanDeckDbContext>()
         .AddDefaultTokenProviders();
+
+        services.AddScoped<SignInManager<ApplicationUser>>();
+        services.AddScoped<IUserConfirmation<ApplicationUser>, DefaultUserConfirmation<ApplicationUser>>();
 
         services.Replace(ServiceDescriptor.Scoped<
             IUserClaimsPrincipalFactory<ApplicationUser>,

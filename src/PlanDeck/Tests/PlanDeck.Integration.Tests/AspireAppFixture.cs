@@ -1,3 +1,5 @@
+extern alias AppHost;
+
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
@@ -26,7 +28,7 @@ public class AspireAppFixture
     public async Task StartAsync()
     {
         var builder = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.PlanDeck_AppHost>();
+            .CreateAsync<AppHost::Projects.PlanDeck_AppHost>();
         EnsureAzureProvisioningConfigured(builder.Configuration);
 
         _app = await builder.BuildAsync();
