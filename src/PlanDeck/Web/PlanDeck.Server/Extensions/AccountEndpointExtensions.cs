@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using PlanDeck.Application.Abstractions;
@@ -182,6 +184,106 @@ public static class AccountEndpointExtensions
         .WithName("AccountLogout")
         .WithDisplayName("Account Logout");
 
+        app.MapGet("/account/entra/login", (
+            string? returnUrl,
+            HttpContext httpContext) =>
+        {
+            var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
+            var properties = EntraCallbackHandler.CreateChallengeProperties("login", target);
+            return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
+        })
+        .AllowAnonymous()
+        .WithName("AccountEntraLogin")
+        .WithDisplayName("Account Entra Login");
+
+        app.MapGet("/account/entra/register", (
+            string? returnUrl,
+            string? invitationToken,
+            HttpContext httpContext) =>
+        {
+            var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
+            var properties = EntraCallbackHandler.CreateChallengeProperties("register", target, invitationToken);
+            return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
+        })
+        .AllowAnonymous()
+        .WithName("AccountEntraRegister")
+        .WithDisplayName("Account Entra Register");
+
+        app.MapPost("/account/entra/link", async (
+            LinkEntraRequest request,
+            HttpContext httpContext,
+            IAntiforgery antiforgery,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            if (!await antiforgery.IsRequestValidAsync(httpContext))
+            {
+                return Results.BadRequest(new AccountResponse("InvalidAntiForgeryToken", null, ["Invalid antiforgery token."]));
+            }
+
+            var userId = ReadCurrentUserId(httpContext.User);
+            if (userId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var user = await userManager.FindByIdAsync(userId.Value.ToString());
+            if (user is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (!await userManager.HasPasswordAsync(user))
+            {
+                return Results.BadRequest(new AccountResponse("NoLocalPassword", null, ["Add a local password before linking a Microsoft identity."]));
+            }
+
+            if (!await userManager.CheckPasswordAsync(user, request.Password))
+            {
+                return Results.BadRequest(new AccountResponse("InvalidPassword", null, ["Invalid password."]));
+            }
+
+            var target = ResolveLocalReturnUrl(httpContext.Request, request.ReturnUrl);
+            var properties = EntraCallbackHandler.CreateChallengeProperties("link", target, linkUserId: userId.Value);
+            return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
+        })
+        .RequireAuthorization(PlanDeckPolicies.MemberAccount)
+        .RequireRateLimiting("login")
+        .WithName("AccountEntraLink")
+        .WithDisplayName("Account Entra Link");
+
+        app.MapPost("/account/entra/unlink", async (
+            UnlinkEntraRequest request,
+            HttpContext httpContext,
+            IAntiforgery antiforgery,
+            IExternalAccountService externalAccountService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!await antiforgery.IsRequestValidAsync(httpContext))
+            {
+                return Results.BadRequest(new AccountResponse("InvalidAntiForgeryToken", null, ["Invalid antiforgery token."]));
+            }
+
+            var userId = ReadCurrentUserId(httpContext.User);
+            if (userId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await externalAccountService.UnlinkAsync(
+                userId.Value,
+                request.Provider,
+                request.ProviderKey,
+                cancellationToken);
+
+            return result.Succeeded
+                ? Results.Ok(new AccountResponse(result.Status.ToString()))
+                : Results.BadRequest(new AccountResponse(result.Status.ToString(), null, result.Errors));
+        })
+        .RequireAuthorization(PlanDeckPolicies.MemberAccount)
+        .RequireRateLimiting("login")
+        .WithName("AccountEntraUnlink")
+        .WithDisplayName("Account Entra Unlink");
+
         return app;
     }
 
@@ -223,6 +325,17 @@ public static class AccountEndpointExtensions
 
         return await userManager.FindByNameAsync(normalizedIdentifier)
             .WaitAsync(cancellationToken);
+    }
+
+    private static Guid? ReadCurrentUserId(ClaimsPrincipal user)
+    {
+        var claim = user.FindFirst(PlanDeckClaimTypes.UserId);
+        if (claim is null || !Guid.TryParse(claim.Value, out var userId) || userId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return userId;
     }
 
     private static string ResolveLocalReturnUrl(HttpRequest request, string? returnUrl)

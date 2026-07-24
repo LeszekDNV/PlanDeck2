@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Planning;
 using PlanDeck.Application.Services;
@@ -117,12 +118,9 @@ public static class ServiceCollectionExtensions
 
             if (isMicrosoftAuthConfigured)
             {
-                // Phase 4 will re-introduce a multi-tenant Entra flow with explicit account
-                // linking. For Phase 1 the OIDC handler is left in place but does not yet
-                // provision a PlanDeck profile, so sign-in via Entra is not active.
                 authenticationBuilder.AddOpenIdConnect(options =>
                 {
-                    options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
+                    options.Authority = "https://login.microsoftonline.com/organizations/v2.0";
                     options.ClientId = clientId;
                     options.ClientSecret = clientSecret;
                     options.CallbackPath = string.IsNullOrWhiteSpace(callbackPath)
@@ -132,6 +130,26 @@ public static class ServiceCollectionExtensions
                     options.SaveTokens = false;
                     options.GetClaimsFromUserInfoEndpoint = true;
                     options.MapInboundClaims = false;
+
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        NameClaimType = "name",
+                        RoleClaimType = "roles",
+                        ValidateIssuer = true,
+                        IssuerValidator = EntraIssuerValidator.Validate
+                    };
+
+                    options.Events.OnRedirectToIdentityProvider = context =>
+                    {
+                        var handler = context.HttpContext.RequestServices.GetRequiredService<EntraCallbackHandler>();
+                        return handler.OnRedirectToIdentityProviderAsync(context);
+                    };
+
+                    options.Events.OnTokenValidated = context =>
+                    {
+                        var handler = context.HttpContext.RequestServices.GetRequiredService<EntraCallbackHandler>();
+                        return handler.OnTokenValidatedAsync(context);
+                    };
                 });
             }
 
@@ -207,6 +225,8 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
             services.AddScoped<ILocalAccountService, LocalAccountService>();
             services.AddScoped<IAccountLifecycleService, AccountLifecycleService>();
+            services.AddScoped<IExternalAccountService, ExternalAccountService>();
+            services.AddScoped<EntraCallbackHandler>();
             services.AddScoped<ICookieSessionValidator, CookieSessionValidator>();
             services.AddScoped<IAppUserRepository, AppUserRepository>();
             services.AddScoped<TestAppUserSeeder>();
@@ -345,6 +365,7 @@ public static class ServiceCollectionExtensions
 
         return app;
     }
+
 }
 
 

@@ -36,48 +36,54 @@ public sealed class AccountLifecycleService(
             return ConfirmEmailResult.AlreadyConfirmed();
         }
 
-        await using var transaction = await BeginTransactionAsync(cancellationToken);
+        var executionStrategy = db.Database.CreateExecutionStrategy();
+        return await executionStrategy.ExecuteAsync(
+            async (ct) =>
+            {
+                await using var transaction = await BeginTransactionAsync(ct);
 
-        var identityResult = await userManager.ConfirmEmailAsync(user, token);
-        if (!identityResult.Succeeded)
-        {
-            await RollbackAsync(transaction, cancellationToken);
-            return ConfirmEmailResult.InvalidToken(identityResult.Errors.Select(e => e.Description).ToList());
-        }
+                var identityResult = await userManager.ConfirmEmailAsync(user, token);
+                if (!identityResult.Succeeded)
+                {
+                    await RollbackAsync(transaction, ct);
+                    return ConfirmEmailResult.InvalidToken(identityResult.Errors.Select(e => e.Description).ToList());
+                }
 
-        var appUser = await db.AppUsers
-            .AsNoTracking()
-            .IgnoreQueryFilters()
-            .SingleOrDefaultAsync(u => u.Id == user.Id, cancellationToken);
+                var appUser = await db.AppUsers
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .SingleOrDefaultAsync(u => u.Id == user.Id, ct);
 
-        if (appUser is not null)
-        {
-            provisioningAccessor.TenantId = appUser.TenantId;
-            var now = timeProvider.GetUtcNow();
-            var normalizedEmail = user.NormalizedEmail ?? lookupNormalizer.NormalizeEmail(user.Email ?? string.Empty);
+                if (appUser is not null)
+                {
+                    provisioningAccessor.TenantId = appUser.TenantId;
+                    var now = timeProvider.GetUtcNow();
+                    var normalizedEmail = user.NormalizedEmail ?? lookupNormalizer.NormalizeEmail(user.Email ?? string.Empty);
 
-            await AcceptTenantInvitationAsync(appUser.TenantId, normalizedEmail, now, cancellationToken);
-            await ActivatePendingMembershipsAsync<ProjectMember>(
-                db.ProjectMembers,
-                appUser.TenantId,
-                appUser.Id,
-                normalizedEmail,
-                now,
-                cancellationToken);
-            await ActivatePendingMembershipsAsync<TeamMember>(
-                db.TeamMembers,
-                appUser.TenantId,
-                appUser.Id,
-                normalizedEmail,
-                now,
-                cancellationToken);
+                    await AcceptTenantInvitationAsync(appUser.TenantId, normalizedEmail, now, ct);
+                    await ActivatePendingMembershipsAsync<ProjectMember>(
+                        db.ProjectMembers,
+                        appUser.TenantId,
+                        appUser.Id,
+                        normalizedEmail,
+                        now,
+                        ct);
+                    await ActivatePendingMembershipsAsync<TeamMember>(
+                        db.TeamMembers,
+                        appUser.TenantId,
+                        appUser.Id,
+                        normalizedEmail,
+                        now,
+                        ct);
 
-            await db.SaveChangesAsync(cancellationToken);
-            provisioningAccessor.TenantId = Guid.Empty;
-        }
+                    await db.SaveChangesAsync(ct);
+                    provisioningAccessor.TenantId = Guid.Empty;
+                }
 
-        await CommitAsync(transaction, cancellationToken);
-        return ConfirmEmailResult.Success();
+                await CommitAsync(transaction, ct);
+                return ConfirmEmailResult.Success();
+            },
+            cancellationToken);
     }
 
     public async Task<ResendConfirmationResult> ResendConfirmationAsync(
@@ -259,3 +265,4 @@ public sealed class AccountLifecycleService(
         }
     }
 }
+
