@@ -150,34 +150,9 @@ app.MapFallbackToFile("index.html");
 
 app.Run();
 
-static string ResolveLocalReturnUrl(HttpRequest request, string? returnUrl)
-{
-    if (string.IsNullOrWhiteSpace(returnUrl))
-    {
-        return "/";
-    }
-
-    if (returnUrl[0] == '/'
-        && (returnUrl.Length == 1 || (returnUrl[1] != '/' && returnUrl[1] != '\\')))
-    {
-        return returnUrl;
-    }
-
-    if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var absoluteReturnUrl)
-        && string.Equals(absoluteReturnUrl.Scheme, request.Scheme, StringComparison.OrdinalIgnoreCase)
-        && absoluteReturnUrl.Authority.Equals(request.Host.Value, StringComparison.OrdinalIgnoreCase))
-    {
-        return $"{absoluteReturnUrl.PathAndQuery}{absoluteReturnUrl.Fragment}";
-    }
-
-    return "/";
-}
-
-
 namespace PlanDeck.Server
 {
     public sealed class ServerEntryPoint;
 
     public partial class Program;
 }
-

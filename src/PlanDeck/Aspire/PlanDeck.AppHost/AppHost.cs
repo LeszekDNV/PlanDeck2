@@ -79,7 +79,7 @@ if (builder.ExecutionContext.IsPublishMode)
         .WithEnvironment("EmailSettings__Host", "smtp")
         .WithEnvironment("EmailSettings__Port", "587")
         .WithEnvironment("EmailSettings__SenderAddress", builder.Configuration["EmailSettings:SenderAddress"] ?? "noreply@plandeck.app")
-        .WithEnvironment("EmailSettings__PublicBaseUrl", planDeckServer.GetEndpoint("https").Url);
+        .WithEnvironment("EmailSettings__PublicBaseUrl", planDeckServer.GetEndpoint("https"));
 
     var entraTenantId = builder.Configuration["AZURE_ENTRA_TENANT_ID"]
         ?? builder.Configuration["Authentication:Microsoft:TenantId"]
@@ -174,4 +174,3 @@ static string ResolvePublishTarget(
 
     return PublishTargetProduction;
 }
-
