@@ -1,7 +1,7 @@
 ---
 change_id: create-local-account
 title: Lokalne konta użytkowników i logowanie przez Entra ID
-status: implemented
+status: impl_reviewed
 created: 2026-07-23
 updated: 2026-07-25
 archived_at: null

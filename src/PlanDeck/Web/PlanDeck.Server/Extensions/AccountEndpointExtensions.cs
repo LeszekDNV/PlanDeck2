@@ -209,8 +209,7 @@ public static class AccountEndpointExtensions
                 return Results.BadRequest(new AccountResponse("InvalidAntiForgeryToken", null, ["Invalid antiforgery token."]));
             }
 
-            // Use the default scheme so the sign-out works both for the production
-            // Cookie scheme and the deterministic Test scheme.
+            // Use the default application cookie scheme registered by Identity.
             await httpContext.SignOutAsync();
 
 
@@ -418,6 +417,5 @@ public static class AccountEndpointExtensions
         IReadOnlyList<string>? Errors = null,
         string? ReturnUrl = null);
 }
-
 
 

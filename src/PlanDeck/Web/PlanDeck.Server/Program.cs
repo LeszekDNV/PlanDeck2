@@ -3,9 +3,8 @@ using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Services;
 using PlanDeck.Server.Hubs;
 using PlanDeck.Server.Identity;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using ProtoBuf.Grpc.Server;
 using System.Globalization;
 
@@ -58,26 +57,35 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 
 app.UseAuthorization();
 
-app.MapGet("/auth/login", (string? returnUrl, HttpContext httpContext) =>
-{
-    var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
-    return Results.Challenge(new AuthenticationProperties { RedirectUri = target });
-});
-
-// GET /auth/logout is intentionally restricted to non-interactive identities (guest and test
-// scheme). Authenticated members must use POST /account/logout with antiforgery.
-app.MapGet("/auth/logout", async (HttpContext httpContext) =>
-{
-    if (PlanDeckIdentity.IsGuest(httpContext.User))
-    {
-        await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
-        return Results.LocalRedirect("/");
-    }
-
-    return Results.NotFound();
-});
+// Keep the removed mutating route as an explicit tombstone so the SPA fallback cannot return 200.
+app.MapGet("/auth/logout", static () => Results.NotFound())
+    .ExcludeFromDescription();
 
 app.MapAccountEndpoints();
+
+app.MapPost("/guest/logout", async (
+    IAntiforgery antiforgery,
+    HttpContext httpContext) =>
+{
+    if (!await antiforgery.IsRequestValidAsync(httpContext))
+    {
+        return Results.BadRequest(new
+        {
+            Status = "InvalidAntiForgeryToken",
+            Errors = new[] { "Invalid antiforgery token." }
+        });
+    }
+
+    var guestAuthentication = await httpContext.AuthenticateAsync(GuestAuthentication.SchemeName);
+    if (!guestAuthentication.Succeeded
+        || !PlanDeckIdentity.IsGuest(guestAuthentication.Principal))
+    {
+        return Results.NotFound();
+    }
+
+    await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
+    return Results.Ok(new { Status = "Success", ReturnUrl = "/" });
+}).AllowAnonymous();
 
 // Anonymous guest redeem: exchange a share code + temporary name for a session-scoped guest cookie.
 app.MapPost("/guest/join", async (
@@ -172,6 +180,4 @@ namespace PlanDeck.Server
 
     public partial class Program;
 }
-
-
 

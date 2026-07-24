@@ -10,7 +10,7 @@ public interface IAccountClientService
 
     Task<AccountActionResponse> LogoutAsync(CancellationToken cancellationToken = default);
 
-    void LogoutGuest();
+    Task<AccountActionResponse> LogoutGuestAsync(CancellationToken cancellationToken = default);
 
     Task<AccountActionResponse> ConfirmEmailAsync(Guid userId, string token, CancellationToken cancellationToken = default);
 

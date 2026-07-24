@@ -61,14 +61,11 @@ Tests use **NUnit** (`[Test]`, `[TestFixture]`; `NUnit.Framework` is a global `u
   - `PLANDECK_PUBLISH_TARGET=Testing` (or `Publishing__Target=Testing`)
   - `PLANDECK_PUBLISH_TARGET=Production` (or `Publishing__Target=Production`)
 - `Testing` target is the publicly reachable `rg-test` environment for manual testing:
-  - enables `Authentication__UseTestScheme=true`
-  - uses deterministic manual personas such as Test Owner
+  - uses real Identity with local or Entra accounts
   - deploys Container App ingress as **external/public**
   - does not expose or require automated E2E scenario configuration
-- `Production` target must stay externally reachable and must not use test auth:
-  - set `Authentication__UseTestScheme=false`
+- `Production` target must stay externally reachable:
   - provide Entra credentials via `AZURE_ENTRA_TENANT_ID`, `AZURE_ENTRA_CLIENT_ID`, `AZURE_ENTRA_CLIENT_SECRET` (or equivalent `Authentication:Microsoft:*` config)
-  - do not provide test-only scenario token as a production deployment default
 - For production rollout, use a dedicated production environment and keep it separate from `rg-test`.
 
 ## Conventions

@@ -49,39 +49,19 @@ public sealed class AccountClientService(
         return result;
     }
 
-    public async Task<AccountActionResponse> LogoutAsync(CancellationToken cancellationToken = default)
+    public Task<AccountActionResponse> LogoutAsync(CancellationToken cancellationToken = default) =>
+        LogoutCoreAsync("account/logout", cancellationToken);
+
+    public Task<AccountActionResponse> LogoutGuestAsync(CancellationToken cancellationToken = default) =>
+        LogoutCoreAsync("guest/logout", cancellationToken);
+
+    private async Task<AccountActionResponse> LogoutCoreAsync(
+        string endpoint,
+        CancellationToken cancellationToken)
     {
-        AccountActionResponse result;
-        HttpResponseMessage? response = null;
-        try
-        {
-            await EnsureAntiforgeryTokenAsync(cancellationToken);
-            response = await httpClient.PostAsync(
-                "account/logout",
-                null,
-                cancellationToken);
-
-            result = await ReadResponseAsync(response, cancellationToken);
-        }
-        catch
-        {
-            // Deterministic test identities may not satisfy antiforgery; fall back to the
-            // test-scheme GET logout route, which always clears the test-auth cookie.
-            navigation.NavigateTo("auth/logout", forceLoad: true);
-            return new AccountActionResponse("Failure", null, ["Logout failed."]);
-        }
-
-        // Deterministic test identities have no ASP.NET Identity security stamp, so antiforgery
-        // rejects the POST, and the Test scheme handler does not support SignOutAsync. Fall back
-        // to the test-scheme GET logout route, which always clears the test-auth cookie.
-        if (!result.Succeeded
-            && ((result.Errors.FirstOrDefault() is { } error
-                 && error.Contains("antiforgery", StringComparison.OrdinalIgnoreCase))
-                || response.StatusCode == System.Net.HttpStatusCode.InternalServerError))
-        {
-            navigation.NavigateTo("auth/logout", forceLoad: true);
-            return result;
-        }
+        await EnsureAntiforgeryTokenAsync(cancellationToken);
+        var response = await httpClient.PostAsync(endpoint, null, cancellationToken);
+        var result = await ReadResponseAsync(response, cancellationToken);
 
         if (result.ReturnUrl is not null)
         {
@@ -90,9 +70,6 @@ public sealed class AccountClientService(
 
         return result;
     }
-
-    public void LogoutGuest() =>
-        navigation.NavigateTo("auth/logout", forceLoad: true);
 
     public async Task<AccountActionResponse> ConfirmEmailAsync(
         Guid userId,
@@ -270,6 +247,5 @@ public sealed class AccountClientService(
 
     private sealed record AntiforgeryTokenResponse(string Token);
 }
-
 
 

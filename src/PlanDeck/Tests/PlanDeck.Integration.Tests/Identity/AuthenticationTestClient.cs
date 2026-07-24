@@ -38,6 +38,15 @@ internal sealed class AuthenticationTestClient : IDisposable
     public Task<HttpResponseMessage> PostAsJsonAsync<T>(string requestUri, T value) =>
         _httpClient.PostAsJsonAsync(requestUri, value);
 
+    public async Task<HttpResponseMessage> PostWithAntiforgeryAsync(
+        string requestUri,
+        string requestToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+        request.Headers.Add("RequestVerificationToken", requestToken);
+        return await _httpClient.SendAsync(request);
+    }
+
     public async Task<CurrentUserReply> GetCurrentUserAsync()
     {
         var service = _channel.CreateGrpcService<IAuthService>();

@@ -93,10 +93,15 @@ public sealed class GuestJoinEndpointTests
         Assert.That(GetSetCookies(joinResponse), Has.Some.Contains(GuestAuthentication.CookieName));
         Assert.That(browser.HasCookie(GuestAuthentication.CookieName), Is.True);
 
-        var logoutResponse = await browser.GetAsync("/auth/logout");
+        var antiforgeryResponse = await browser.GetAsync("/account/antiforgery");
+        var antiforgery = await antiforgeryResponse.Content
+            .ReadFromJsonAsync<AntiforgeryTokenResponse>();
+        var logoutResponse = await browser.PostWithAntiforgeryAsync(
+            "/guest/logout",
+            antiforgery!.Token);
 
-        Assert.That(logoutResponse.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-        Assert.That(browser.HasCookie(GuestAuthentication.CookieName), Is.True);
+        Assert.That(logoutResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.That(browser.HasCookie(GuestAuthentication.CookieName), Is.False);
     }
 
     [Test]
@@ -209,8 +214,9 @@ public sealed class GuestJoinEndpointTests
 
     private static IEnumerable<string> GetSetCookies(HttpResponseMessage response) =>
         response.Headers.TryGetValues("Set-Cookie", out var values) ? values : [];
-}
 
+    private sealed record AntiforgeryTokenResponse(string Token);
+}
 
 
 

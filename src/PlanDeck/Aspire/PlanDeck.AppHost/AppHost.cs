@@ -20,20 +20,18 @@ var isNamedTestingEnvironment = !string.IsNullOrWhiteSpace(azureEnvironmentName)
     && (string.Equals(azureEnvironmentName, "test", StringComparison.OrdinalIgnoreCase)
         || azureEnvironmentName.Contains("testing", StringComparison.OrdinalIgnoreCase));
 
-var usePublishedTestAuth = builder.ExecutionContext.IsPublishMode
+var isTestingPublishTarget = builder.ExecutionContext.IsPublishMode
     && (string.Equals(
             publishTarget,
             PublishTargetTesting,
             StringComparison.OrdinalIgnoreCase)
         || isNamedTestingEnvironment);
 
-var useTestAuth = usePublishedTestAuth;
-
 var planDeckServer = builder
     .AddProject<Projects.PlanDeck_Server>("plandeck-server")
     .WithExternalHttpEndpoints();
 
-if (!useTestAuth)
+if (!isTestingPublishTarget)
 {
     var keyVault = builder.AddAzureKeyVault("key-vault")
         .ClearDefaultRoleAssignments()
@@ -176,5 +174,4 @@ static string ResolvePublishTarget(
 
     return PublishTargetProduction;
 }
-
 

@@ -88,7 +88,7 @@ public partial class Projects
 
     private void Login() =>
         Navigation.NavigateTo(
-            $"/auth/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",
+            $"/account/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",
             forceLoad: true);
 
     private void ShowError(RpcException ex)

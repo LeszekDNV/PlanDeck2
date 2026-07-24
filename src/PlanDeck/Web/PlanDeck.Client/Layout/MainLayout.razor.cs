@@ -25,7 +25,7 @@ public partial class MainLayout
     {
         if (IsGuest(user))
         {
-            AccountService.LogoutGuest();
+            await AccountService.LogoutGuestAsync();
             return;
         }
 

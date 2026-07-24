@@ -42,8 +42,8 @@ stages:
             workingDirectory: src\PlanDeck
 
           - pwsh: |
-              dotnet test Tests\PlanDeck.Integration.Tests\PlanDeck.Integration.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~ProductionAuthenticationConfigurationTests|FullyQualifiedName~E2eScenarioEndpointTests"
-            displayName: Run Production auth and scenario integration checks
+              dotnet test Tests\PlanDeck.Integration.Tests\PlanDeck.Integration.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~ProductionAuthenticationConfigurationTests"
+            displayName: Run production authentication configuration checks
             workingDirectory: src\PlanDeck
 
           - pwsh: |
@@ -102,5 +102,4 @@ stages:
                       azd env set AZURE_LOCATION $(AZURE_LOCATION)
                       azd env set AZURE_RESOURCE_GROUP $(AZURE_RESOURCE_GROUP)
                       azd env set Publishing__Target Testing
-                      azd env set Authentication__UseTestScheme true
                       azd up --no-prompt

@@ -65,5 +65,5 @@ public partial class JoinSession
     private sealed record GuestJoinResult(Guid SessionId);
 
     private void LoginWithMicrosoft() =>
-        Navigation.NavigateTo("/auth/login?returnUrl=/projects", forceLoad: true);
+        Navigation.NavigateTo("/account/login?returnUrl=/projects", forceLoad: true);
 }
