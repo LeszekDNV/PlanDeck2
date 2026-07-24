@@ -60,6 +60,11 @@ public static class AccountEndpointExtensions
 
             if (checkResult.Succeeded)
             {
+                if (!user.EmailConfirmed)
+                {
+                    return MapLoginFailure(LocalLoginStatus.InvalidCredentials, returnUrl, httpContext.Request);
+                }
+
                 var principal = await signInManager.CreateUserPrincipalAsync(user);
                 await httpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
@@ -83,6 +88,71 @@ public static class AccountEndpointExtensions
         .RequireRateLimiting("login")
         .WithName("AccountLogin")
         .WithDisplayName("Account Login");
+
+        app.MapGet("/account/confirm-email", async (
+            Guid userId,
+            string token,
+            IAccountLifecycleService lifecycleService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await lifecycleService.ConfirmEmailAsync(userId, token, cancellationToken);
+
+            return result.Status switch
+            {
+                ConfirmEmailStatus.Success => Results.Ok(new AccountResponse(result.Status.ToString())),
+                ConfirmEmailStatus.AlreadyConfirmed => Results.Ok(new AccountResponse(result.Status.ToString())),
+                _ => Results.BadRequest(new AccountResponse(result.Status.ToString(), null, result.Errors))
+            };
+        })
+        .AllowAnonymous()
+        .WithName("AccountConfirmEmail")
+        .WithDisplayName("Account Confirm Email");
+
+        app.MapPost("/account/resend-confirmation", async (
+            ResendConfirmationRequest request,
+            IAccountLifecycleService lifecycleService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await lifecycleService.ResendConfirmationAsync(request.Email, cancellationToken);
+            return Results.Ok(new AccountResponse(result.Status.ToString(), null, result.Errors));
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting("resend-confirmation")
+        .WithName("AccountResendConfirmation")
+        .WithDisplayName("Account Resend Confirmation");
+
+        app.MapPost("/account/forgot-password", async (
+            ForgotPasswordRequest request,
+            IAccountLifecycleService lifecycleService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await lifecycleService.SendPasswordResetAsync(request.Email, cancellationToken);
+            return Results.Ok(new AccountResponse(result.Status.ToString(), null, result.Errors));
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting("forgot-password")
+        .WithName("AccountForgotPassword")
+        .WithDisplayName("Account Forgot Password");
+
+        app.MapPost("/account/reset-password", async (
+            ResetPasswordRequest request,
+            IAccountLifecycleService lifecycleService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await lifecycleService.ResetPasswordAsync(
+                request.Email,
+                request.Token,
+                request.NewPassword,
+                cancellationToken);
+
+            return result.Status == ResetPasswordStatus.Success
+                ? Results.Ok(new AccountResponse(result.Status.ToString()))
+                : Results.BadRequest(new AccountResponse(result.Status.ToString(), null, result.Errors));
+        })
+        .AllowAnonymous()
+        .RequireRateLimiting("forgot-password")
+        .WithName("AccountResetPassword")
+        .WithDisplayName("Account Reset Password");
 
         app.MapGet("/account/antiforgery", async (
             IAntiforgery antiforgery,

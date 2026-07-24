@@ -63,6 +63,7 @@ public static class ServiceCollectionExtensions
                 client => client.Timeout = TimeSpan.FromSeconds(20));
 
             ConfigureIdentity(services);
+            ConfigureEmailServices(services, configuration, environment);
 
             var useTestScheme = configuration.GetValue<bool>("Authentication:UseTestScheme");
             if (useTestScheme && !environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
@@ -205,6 +206,7 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IIdentityAccountRepository, IdentityAccountRepository>();
             services.AddScoped<IAccountProvisioningService, AccountProvisioningService>();
             services.AddScoped<ILocalAccountService, LocalAccountService>();
+            services.AddScoped<IAccountLifecycleService, AccountLifecycleService>();
             services.AddScoped<ICookieSessionValidator, CookieSessionValidator>();
             services.AddScoped<IAppUserRepository, AppUserRepository>();
             services.AddScoped<TestAppUserSeeder>();
@@ -231,6 +233,28 @@ public static class ServiceCollectionExtensions
             services.AddScoped<SessionMemberGrpcService>();
             services.AddScoped<AuthGrpcService>();
             return services;
+        }
+    }
+
+    private static void ConfigureEmailServices(
+        IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
+    {
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
+        services.AddScoped<IEmailSender<ApplicationUser>, SmtpEmailSender>();
+
+        if (environment.IsProduction())
+        {
+            var settings = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>();
+            if (settings is null
+                || string.IsNullOrWhiteSpace(settings.Host)
+                || string.IsNullOrWhiteSpace(settings.SenderAddress)
+                || string.IsNullOrWhiteSpace(settings.PublicBaseUrl))
+            {
+                throw new InvalidOperationException(
+                    "Production requires EmailSettings:Host, SenderAddress, and PublicBaseUrl.");
+            }
         }
     }
 

@@ -84,7 +84,9 @@ if (builder.ExecutionContext.IsPublishMode)
     planDeckServer
         .WithReference(sqlDatabase, "DefaultConnection")
         .WithEnvironment("EmailSettings__Host", "smtp")
-        .WithEnvironment("EmailSettings__Port", "587");
+        .WithEnvironment("EmailSettings__Port", "587")
+        .WithEnvironment("EmailSettings__SenderAddress", builder.Configuration["EmailSettings:SenderAddress"] ?? "noreply@plandeck.app")
+        .WithEnvironment("EmailSettings__PublicBaseUrl", planDeckServer.GetEndpoint("https").Url);
 
     if (usePublishedTestAuth)
     {
@@ -146,6 +148,8 @@ else
         .WithEnvironment("AZURE_TOKEN_CREDENTIALS", "AzureCliCredential")
         .WithEnvironment("EmailSettings__Host", "localhost")
         .WithEnvironment("EmailSettings__Port", "1025")
+        .WithEnvironment("EmailSettings__SenderAddress", "noreply@plandeck.local")
+        .WithEnvironment("EmailSettings__PublicBaseUrl", "https://localhost:7443")
         .WaitFor(sqlDatabase)
         .WaitFor(mailSmtp);
 }

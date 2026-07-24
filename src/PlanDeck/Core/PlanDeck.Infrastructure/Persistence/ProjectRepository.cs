@@ -261,6 +261,36 @@ public sealed class ProjectRepository(
         }
     }
 
+    public async Task<int> ActivatePendingMembershipsByEmailAsync(
+        Guid tenantId,
+        Guid appUserId,
+        string normalizedEmail,
+        DateTimeOffset acceptedAtUtc,
+        CancellationToken cancellationToken)
+    {
+        var pending = await db.ProjectMembers
+            .IgnoreQueryFilters()
+            .Where(m =>
+                m.TenantId == tenantId
+                && m.NormalizedEmail == normalizedEmail
+                && m.Status == InvitationStatus.Pending)
+            .ToListAsync(cancellationToken);
+
+        foreach (var member in pending)
+        {
+            member.AppUserId = appUserId;
+            member.Status = InvitationStatus.Accepted;
+            member.AcceptedAtUtc = acceptedAtUtc;
+        }
+
+        if (pending.Count > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return pending.Count;
+    }
+
     private async Task<ProjectMember> LoadMemberAsync(
         Guid projectId,
         Guid memberId,

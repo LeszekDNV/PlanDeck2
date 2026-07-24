@@ -658,4 +658,34 @@
   <data name="Sessions_PermissionDenied" xml:space="preserve">
     <value>Nie masz uprawnień do modyfikowania tej sesji.</value>
   </data>
+  <data name="Account_ConfirmationSuccess" xml:space="preserve">
+    <value>Twój adres e-mail został potwierdzony. Możesz się teraz zalogować.</value>
+  </data>
+  <data name="Account_ConfirmationAlreadyConfirmed" xml:space="preserve">
+    <value>Twój adres e-mail jest już potwierdzony.</value>
+  </data>
+  <data name="Account_ConfirmationFailed" xml:space="preserve">
+    <value>Link potwierdzający jest nieprawidłowy lub wygasł.</value>
+  </data>
+  <data name="Account_ResendConfirmationSent" xml:space="preserve">
+    <value>Jeśli podany adres e-mail istnieje i nie jest potwierdzony, wysłaliśmy link potwierdzający.</value>
+  </data>
+  <data name="Account_ResendConfirmationFailed" xml:space="preserve">
+    <value>Nie udało się wysłać e-maila potwierdzającego. Spróbuj ponownie później.</value>
+  </data>
+  <data name="Account_ForgotPasswordSent" xml:space="preserve">
+    <value>Jeśli podany adres e-mail istnieje i jest potwierdzony, wysłaliśmy link do resetu hasła.</value>
+  </data>
+  <data name="Account_ForgotPasswordFailed" xml:space="preserve">
+    <value>Nie udało się wysłać e-maila resetującego hasło. Spróbuj ponownie później.</value>
+  </data>
+  <data name="Account_ResetPasswordSuccess" xml:space="preserve">
+    <value>Twoje hasło zostało zresetowane. Zaloguj się używając nowego hasła.</value>
+  </data>
+  <data name="Account_ResetPasswordFailed" xml:space="preserve">
+    <value>Link do resetu hasła jest nieprawidłowy lub wygasł.</value>
+  </data>
+  <data name="Account_UnconfirmedCannotLogin" xml:space="preserve">
+    <value>Potwierdź adres e-mail przed zalogowaniem.</value>
+  </data>
 </root>

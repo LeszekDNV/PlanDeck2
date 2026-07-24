@@ -658,4 +658,34 @@
   <data name="Sessions_PermissionDenied" xml:space="preserve">
     <value>You don't have permission to modify this session.</value>
   </data>
+  <data name="Account_ConfirmationSuccess" xml:space="preserve">
+    <value>Your email has been confirmed. You can now sign in.</value>
+  </data>
+  <data name="Account_ConfirmationAlreadyConfirmed" xml:space="preserve">
+    <value>Your email is already confirmed.</value>
+  </data>
+  <data name="Account_ConfirmationFailed" xml:space="preserve">
+    <value>The confirmation link is invalid or has expired.</value>
+  </data>
+  <data name="Account_ResendConfirmationSent" xml:space="preserve">
+    <value>If the email exists and is not confirmed, a confirmation link has been sent.</value>
+  </data>
+  <data name="Account_ResendConfirmationFailed" xml:space="preserve">
+    <value>We could not send the confirmation email. Please try again later.</value>
+  </data>
+  <data name="Account_ForgotPasswordSent" xml:space="preserve">
+    <value>If the email exists and is confirmed, a password reset link has been sent.</value>
+  </data>
+  <data name="Account_ForgotPasswordFailed" xml:space="preserve">
+    <value>We could not send the password reset email. Please try again later.</value>
+  </data>
+  <data name="Account_ResetPasswordSuccess" xml:space="preserve">
+    <value>Your password has been reset. Please sign in with your new password.</value>
+  </data>
+  <data name="Account_ResetPasswordFailed" xml:space="preserve">
+    <value>The password reset link is invalid or has expired.</value>
+  </data>
+  <data name="Account_UnconfirmedCannotLogin" xml:space="preserve">
+    <value>Please confirm your email before signing in.</value>
+  </data>
 </root>

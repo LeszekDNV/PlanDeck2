@@ -13,6 +13,13 @@ public interface ITeamRepository
     Task<TeamMember> AddMemberAsync(Guid teamId, string email, string? displayName, CancellationToken cancellationToken);
 
     Task<bool> RemoveMemberAsync(Guid teamId, Guid memberId, CancellationToken cancellationToken);
+
+    Task<int> ActivatePendingMembershipsByEmailAsync(
+        Guid tenantId,
+        Guid appUserId,
+        string normalizedEmail,
+        DateTimeOffset acceptedAtUtc,
+        CancellationToken cancellationToken);
 }
 
 public sealed class TeamNotFoundException(Guid teamId)

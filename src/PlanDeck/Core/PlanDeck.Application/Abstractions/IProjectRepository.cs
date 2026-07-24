@@ -56,6 +56,13 @@ public interface IProjectRepository
         CancellationToken cancellationToken);
 
     Task DeleteAsync(Guid projectId, CancellationToken cancellationToken);
+
+    Task<int> ActivatePendingMembershipsByEmailAsync(
+        Guid tenantId,
+        Guid appUserId,
+        string normalizedEmail,
+        DateTimeOffset acceptedAtUtc,
+        CancellationToken cancellationToken);
 }
 
 public sealed class ProjectPersistenceException(Exception innerException)

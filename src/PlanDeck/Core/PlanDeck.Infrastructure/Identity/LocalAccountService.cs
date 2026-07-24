@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Account;
 using PlanDeck.Application.Domain;
@@ -17,7 +19,10 @@ public sealed class LocalAccountService(
     ILookupNormalizer lookupNormalizer,
     IProvisioningContextAccessor provisioningAccessor,
     TimeProvider timeProvider,
-    IConfiguration configuration) : ILocalAccountService
+    IConfiguration configuration,
+    IEmailSender<ApplicationUser> emailSender,
+    IOptions<EmailSettings> emailSettings,
+    ILogger<LocalAccountService> logger) : ILocalAccountService
 {
     private const int MinUserNameLength = 3;
     private const int MaxUserNameLength = 32;
@@ -145,6 +150,8 @@ public sealed class LocalAccountService(
                     await db.SaveChangesAsync(token);
                     await transaction.CommitAsync(token);
 
+                    await TrySendConfirmationEmailAsync(applicationUser, token);
+
                     return LocalRegisterResult.Success(applicationUser.Id);
                 },
                 cancellationToken);
@@ -161,6 +168,22 @@ public sealed class LocalAccountService(
 
     private bool IsPublicRegistrationEnabled() =>
         configuration.GetValue<bool?>("Authentication:AllowPublicRegistration") ?? true;
+
+    private async Task TrySendConfirmationEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var baseUrl = emailSettings.Value.PublicBaseUrl.TrimEnd('/');
+            var link = $"{baseUrl}/account/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+            await emailSender.SendConfirmationLinkAsync(user, user.Email ?? string.Empty, link);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to send confirmation email to {Email}.", user.Email);
+        }
+    }
 
     private async Task<TenantInvitation?> FindValidInvitationAsync(
         string token,

@@ -636,6 +636,14 @@ public sealed class ProjectConnectionGrpcServiceTests
             DeleteCalls++;
             return Task.CompletedTask;
         }
+
+        public Task<int> ActivatePendingMembershipsByEmailAsync(
+            Guid tenantId,
+            Guid appUserId,
+            string normalizedEmail,
+            DateTimeOffset acceptedAtUtc,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(0);
     }
 
     private sealed class StubSessionRepository : ISessionRepository

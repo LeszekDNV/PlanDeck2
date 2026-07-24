@@ -274,6 +274,14 @@ public sealed class ProjectGrpcServiceTests
             return Task.CompletedTask;
         }
 
+        public Task<int> ActivatePendingMembershipsByEmailAsync(
+            Guid tenantId,
+            Guid appUserId,
+            string normalizedEmail,
+            DateTimeOffset acceptedAtUtc,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(0);
+
         private static PlanDeckProject Project(string name = "Project") => new()
         {
             Id = ProjectId,
