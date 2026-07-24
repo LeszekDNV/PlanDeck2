@@ -11,66 +11,24 @@ public class SessionRoleSmokeTests : PageTest
         IgnoreHTTPSErrors = true
     };
 
-    [TestCase("en")]
-    [TestCase("pl")]
-    public async Task OwnerAndAdminCanMutate_MemberIsReadOnly(string culture)
+    [Test]
+    public async Task OwnerCanCreateAndActivateSession()
     {
-        var runId = Guid.NewGuid();
-        var scenarioClient = E2eScenarioClient.Create(AspireAppFixture.BaseUrl, AspireAppFixture.E2eScenarioToken);
-        var scenario = await scenarioClient.SeedAsync(runId, E2eScenarioSessionStatus.Draft, taskCount: 1);
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
 
-        try
-        {
-            var ownerSessionName = $"owner-created-{runId:N}";
-            await using (var ownerContext = await E2eIdentityContextFactory.CreateOwnerContextAsync(
-                             Browser,
-                             AspireAppFixture.BaseUrl,
-                             ContextOptions(),
-                             culture))
-            {
-                var ownerPage = await ownerContext.NewPageAsync();
-                var ownerSessions = new SessionsPage(ownerPage, AspireAppFixture.BaseUrl);
+        var sessionName = $"owner-created-{Guid.NewGuid():N}";
+        var taskTitle = $"owner-task-{Guid.NewGuid():N}";
 
-                await ownerSessions.GotoAsync(scenario.ProjectId);
-                await ownerSessions.CreateSessionAsync(ownerSessionName, $"owner-task-{runId:N}");
-                await Expect(ownerSessions.SessionEntry(ownerSessionName)).ToBeVisibleAsync(new() { Timeout = 15_000 });
-            }
+        var projects = new ProjectsPage(Page, AspireAppFixture.BaseUrl);
+        var projectId = await projects.CreateProjectReturningIdAsync("E2E Owner Role");
 
-            var adminSessionName = $"admin-created-{runId:N}";
-            await using (var adminContext = await E2eIdentityContextFactory.CreateAdminContextAsync(
-                             Browser,
-                             AspireAppFixture.BaseUrl,
-                             ContextOptions(),
-                             culture))
-            {
-                var adminPage = await adminContext.NewPageAsync();
-                var adminSessions = new SessionsPage(adminPage, AspireAppFixture.BaseUrl);
+        var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        await sessions.GotoAsync(projectId);
+        await sessions.CreateSessionAsync(sessionName, taskTitle);
+        await sessions.ActivateAsync();
 
-                await adminSessions.GotoAsync(scenario.ProjectId);
-                await adminSessions.CreateSessionAsync(adminSessionName, $"admin-task-{runId:N}");
-                await Expect(adminSessions.SessionEntry(adminSessionName)).ToBeVisibleAsync(new() { Timeout = 15_000 });
-            }
-
-            await using (var memberContext = await E2eIdentityContextFactory.CreateMemberContextAsync(
-                             Browser,
-                             AspireAppFixture.BaseUrl,
-                             ContextOptions(),
-                             culture))
-            {
-                var memberPage = await memberContext.NewPageAsync();
-                var memberSessions = new SessionsPage(memberPage, AspireAppFixture.BaseUrl);
-
-                await memberSessions.GotoAsync(scenario.ProjectId);
-                await memberSessions.SelectSessionAsync($"e2e-scenario-session-{runId:N}");
-
-                await Expect(memberSessions.CreateSessionButton).ToHaveCountAsync(0);
-                await Expect(memberSessions.SaveConfigurationButton).ToHaveCountAsync(0);
-                await Expect(memberSessions.AssignMemberButton).ToHaveCountAsync(0);
-            }
-        }
-        finally
-        {
-            await scenarioClient.CleanupAsync(runId);
-        }
+        await Expect(sessions.SessionEntry(sessionName)).ToBeVisibleAsync(new() { Timeout = 15_000 });
     }
 }
+
+

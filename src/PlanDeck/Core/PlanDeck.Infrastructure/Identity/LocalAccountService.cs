@@ -38,6 +38,7 @@ public sealed class LocalAccountService(
         var userName = (request.UserName ?? string.Empty).Trim();
         var password = request.Password ?? string.Empty;
         var invitationToken = request.InvitationToken;
+        var autoConfirmEmail = configuration.GetValue<bool>("Testing:E2e:AutoConfirmEmail");
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -100,7 +101,7 @@ public sealed class LocalAccountService(
         {
             UserName = userName,
             Email = email,
-            EmailConfirmed = false
+            EmailConfirmed = autoConfirmEmail
         };
 
         var executionStrategy = db.Database.CreateExecutionStrategy();
@@ -150,7 +151,10 @@ public sealed class LocalAccountService(
                     await db.SaveChangesAsync(token);
                     await transaction.CommitAsync(token);
 
-                    await TrySendConfirmationEmailAsync(applicationUser, token);
+                    if (!autoConfirmEmail)
+                    {
+                        await TrySendConfirmationEmailAsync(applicationUser, token);
+                    }
 
                     return LocalRegisterResult.Success(applicationUser.Id);
                 },
@@ -229,3 +233,6 @@ public sealed class LocalAccountService(
         return LocalRegisterResult.Failure(status, errorList.Select(e => e.Description).ToArray());
     }
 }
+
+
+

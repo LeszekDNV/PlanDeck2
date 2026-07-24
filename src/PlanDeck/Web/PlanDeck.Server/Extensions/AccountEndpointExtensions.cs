@@ -202,8 +202,7 @@ public static class AccountEndpointExtensions
 
         app.MapPost("/account/logout", async (
             IAntiforgery antiforgery,
-            HttpContext httpContext,
-            IConfiguration configuration) =>
+            HttpContext httpContext) =>
         {
             if (!await antiforgery.IsRequestValidAsync(httpContext))
             {
@@ -214,20 +213,6 @@ public static class AccountEndpointExtensions
             // Cookie scheme and the deterministic Test scheme.
             await httpContext.SignOutAsync();
 
-            // In the test scheme the deterministic identity is selected by the
-            // e2e-user cookie; clear it so the browser becomes anonymous after reload.
-            if (configuration.GetValue<bool>("Authentication:UseTestScheme")
-                && httpContext.Request.Cookies.ContainsKey(TestAuthenticationHandler.UserSelectionCookie))
-            {
-                var cookieOptions = CreateCookieOptions(httpContext.Request);
-                httpContext.Response.Cookies.Delete(
-                    TestAuthenticationHandler.UserSelectionCookie,
-                    cookieOptions);
-                httpContext.Response.Cookies.Append(
-                    TestAuthenticationHandler.UserSelectionCookie,
-                    TestAuthenticationHandler.AnonymousSelection,
-                    cookieOptions);
-            }
 
             return Results.Ok(new AccountResponse("Success", null, null, "/"));
         })
@@ -404,16 +389,6 @@ public static class AccountEndpointExtensions
         return userId;
     }
 
-    private static CookieOptions CreateCookieOptions(HttpRequest request) =>
-        new()
-        {
-            HttpOnly = true,
-            IsEssential = true,
-            Path = "/",
-            SameSite = SameSiteMode.Lax,
-            Secure = request.IsHttps
-        };
-
     private static string ResolveLocalReturnUrl(HttpRequest request, string? returnUrl)
     {
         if (string.IsNullOrWhiteSpace(returnUrl))
@@ -443,3 +418,6 @@ public static class AccountEndpointExtensions
         IReadOnlyList<string>? Errors = null,
         string? ReturnUrl = null);
 }
+
+
+

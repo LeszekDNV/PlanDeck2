@@ -14,6 +14,8 @@ public class TeamsTests : PageTest
     [Test]
     public async Task CreateTeam_AddMember_RendersBoth()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         var teamName = $"E2E Team {Guid.NewGuid():N}";
         var memberEmail = $"e2e-{Guid.NewGuid():N}@example.com";
 
@@ -29,6 +31,8 @@ public class TeamsTests : PageTest
     [Test]
     public async Task RemoveMember_AfterConfirmation_RemovesFromList()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         var teamName = $"E2E Team {Guid.NewGuid():N}";
         var memberEmail = $"e2e-{Guid.NewGuid():N}@example.com";
 
@@ -43,3 +47,4 @@ public class TeamsTests : PageTest
         await Expect(teams.MemberEntry(memberEmail)).Not.ToBeVisibleAsync(new() { Timeout = 15_000 });
     }
 }
+

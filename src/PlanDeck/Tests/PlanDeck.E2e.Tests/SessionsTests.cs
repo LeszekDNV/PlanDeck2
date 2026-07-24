@@ -14,6 +14,8 @@ public class SessionsTests : PageTest
     [Test]
     public async Task ProjectFirstSession_CreatesSessionVisibleInProjectRoute()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         var sessionName = $"E2E Session {Guid.NewGuid():N}";
         var taskTitle = $"E2E Task {Guid.NewGuid():N}";
 
@@ -34,6 +36,8 @@ public class SessionsTests : PageTest
     [Test]
     public async Task EditTask_UpdatesTitleAndRendersMarkdownDescription()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         var sessionName = $"E2E Edit {Guid.NewGuid():N}";
         var original = $"Original {Guid.NewGuid():N}";
         var renamed = $"Renamed {Guid.NewGuid():N}";
@@ -60,6 +64,8 @@ public class SessionsTests : PageTest
     [Test]
     public async Task RootRedirectsToProjects_AndLegacySessionsRouteIsNotFound()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         await Page.GotoAsync(AspireAppFixture.BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
         await Expect(Page).ToHaveURLAsync(new Regex("/projects$"), new() { Timeout = 15_000 });
 
@@ -71,6 +77,8 @@ public class SessionsTests : PageTest
     [Test]
     public async Task Sessions_RendersOnMobileViewport()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         var longProjectName = $"E2E Mobile Project With Very Long Name {Guid.NewGuid():N}";
         var longSessionName = $"E2E Mobile Session With Very Long Name {Guid.NewGuid():N}";
         var longTaskName = $"E2E Mobile Task With Very Long Name {Guid.NewGuid():N}";
@@ -111,3 +119,5 @@ public class SessionsTests : PageTest
         return Guid.Parse(segment);
     }
 }
+
+

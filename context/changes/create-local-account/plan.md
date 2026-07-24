@@ -383,6 +383,7 @@ Przepisać testy na realne przepływy i całkowicie usunąć alternatywną tożs
 - [x] Phase 3: Email confirmation and password reset — 5cbb0b4
 - [x] Phase 4: Multi-tenant Entra and explicit account linking — a7ba02b
 - [x] Phase 5: Account UI and localization — 85e15e4
-- [x] Phase 6: Public operations required by tests
-- [ ] Phase 7: Test migration and removal of authentication backdoors
+- [x] Phase 6: Public operations required by tests — adf1a0f
+- [x] Phase 7: Test migration and removal of authentication backdoors
+
 

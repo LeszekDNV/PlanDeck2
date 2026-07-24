@@ -14,6 +14,8 @@ public class SessionMembersTests : PageTest
     [Test]
     public async Task AssignAndRemoveMember_UpdatesMemberList()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         var sessionName = $"E2E Members {Guid.NewGuid():N}";
         var taskTitle = $"E2E Task {Guid.NewGuid():N}";
         var email = $"member-{Guid.NewGuid():N}@example.com";
@@ -44,3 +46,5 @@ public class SessionMembersTests : PageTest
         return Guid.Parse(uri.Segments.Last().Trim('/'));
     }
 }
+
+

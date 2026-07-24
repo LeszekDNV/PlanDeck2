@@ -13,10 +13,6 @@ public sealed class MainLayoutPage
         _baseUrl = baseUrl;
     }
 
-    public ILocator TestOwner =>
-        _page.GetByRole(AriaRole.Toolbar)
-            .GetByText("Test Owner", new() { Exact = true });
-
     public ILocator LogOutButton =>
         _page.GetByRole(AriaRole.Toolbar)
             .GetByRole(AriaRole.Button, new() { Name = "Log out", Exact = true });
@@ -30,7 +26,7 @@ public sealed class MainLayoutPage
         await _page.GotoAsync(
             _baseUrl,
             new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
-        await TestOwner.WaitForAsync(new()
+        await LogOutButton.WaitForAsync(new()
         {
             State = WaitForSelectorState.Visible,
             Timeout = 60_000
@@ -55,19 +51,6 @@ public sealed class MainLayoutPage
             Timeout = 120_000
         });
         await LogInButton.WaitForAsync(new()
-        {
-            State = WaitForSelectorState.Visible,
-            Timeout = 60_000
-        });
-    }
-
-    public async Task LogInAsync()
-    {
-        // The test scheme exposes GET /auth/login as the deterministic login trigger.
-        await _page.GotoAsync(
-            $"{_baseUrl.TrimEnd('/')}/auth/login?returnUrl=/",
-            new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
-        await TestOwner.WaitForAsync(new()
         {
             State = WaitForSelectorState.Visible,
             Timeout = 60_000

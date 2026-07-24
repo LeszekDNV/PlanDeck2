@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -5,7 +8,10 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PlanDeck.Application.Domain;
+using PlanDeck.Common.Identity;
 using PlanDeck.Core.Shared.Realtime;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Integration.Tests;
@@ -19,6 +25,7 @@ namespace PlanDeck.Realtime.IntegrationTests;
 public sealed class GuestHubTests
 {
     private const string GuestSessionHeader = "X-Test-Guest-Sid";
+    private const string IntegrationGuestScheme = "IntegrationGuest";
     private const string TestTenantId = "11111111-1111-1111-1111-111111111111";
     private const string GuestObjectId = "44444444-4444-4444-4444-444444444444";
 
@@ -33,13 +40,22 @@ public sealed class GuestHubTests
         _factory = new WebApplicationFactory<ServerEntryPoint>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.UseSetting("Authentication:UseTestScheme", "true");
             builder.UseSetting(
                 "ConnectionStrings:DefaultConnection",
                 "Server=(localdb)\\MSSQLLocalDB;Database=PlanDeckGuestHubTest;Trusted_Connection=True;");
 
             builder.ConfigureServices(services =>
             {
+                services
+                    .AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = IntegrationGuestScheme;
+                        options.DefaultChallengeScheme = IntegrationGuestScheme;
+                    })
+                    .AddScheme<AuthenticationSchemeOptions, IntegrationGuestAuthenticationHandler>(
+                        IntegrationGuestScheme,
+                        _ => { });
+
                 var toRemove = services
                     .Where(descriptor =>
                         descriptor.ServiceType == typeof(DbContextOptions<PlanDeckDbContext>)
@@ -207,5 +223,30 @@ public sealed class GuestHubTests
     {
         var entered = await signal.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.That(entered, Is.True, "Timed out waiting for a RoomStateChanged broadcast.");
+    }
+
+    private sealed class IntegrationGuestAuthenticationHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            if (!Request.Headers.TryGetValue(GuestSessionHeader, out var sidValue)
+                || !Guid.TryParse(sidValue.ToString(), out var sid))
+            {
+                return Task.FromResult(AuthenticateResult.NoResult());
+            }
+
+            var principal = GuestAuthentication.BuildPrincipal(
+                Guid.Parse(GuestObjectId),
+                Guid.Parse(TestTenantId),
+                "Guest",
+                sid);
+
+            var ticket = new AuthenticationTicket(principal, IntegrationGuestScheme);
+            return Task.FromResult(AuthenticateResult.Success(ticket));
+        }
     }
 }

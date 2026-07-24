@@ -37,6 +37,9 @@ public sealed class PlanningRoomHubTests
     private const string TestAppUserId = "aaaaaaaa-2222-2222-2222-222222222222";
     private const string TestEmail = "test.owner@plandeck.local";
     private const string NoResultScheme = "NoResult";
+    private const string IntegrationMemberScheme = "IntegrationMember";
+    private const string GuestSessionHeader = "X-Test-Guest-Sid";
+    private const string GuestObjectId = "44444444-4444-4444-4444-444444444444";
 
     private WebApplicationFactory<ServerEntryPoint> _factory = null!;
     private string _databaseName = null!;
@@ -49,7 +52,6 @@ public sealed class PlanningRoomHubTests
         _factory = new WebApplicationFactory<ServerEntryPoint>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
-            builder.UseSetting("Authentication:UseTestScheme", "true");
             builder.UseSetting(
                 "ConnectionStrings:DefaultConnection",
                 "Server=(localdb)\\MSSQLLocalDB;Database=PlanDeckHubTest;Trusted_Connection=True;");
@@ -58,6 +60,15 @@ public sealed class PlanningRoomHubTests
             // exercises the real seeding/persistence path without a SQL Server.
             builder.ConfigureServices(services =>
             {
+                services
+                    .AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = IntegrationMemberScheme;
+                        options.DefaultChallengeScheme = IntegrationMemberScheme;
+                    })
+                    .AddScheme<AuthenticationSchemeOptions, IntegrationMemberAuthenticationHandler>(
+                        IntegrationMemberScheme, null);
+
                 var toRemove = services
                     .Where(descriptor =>
                         descriptor.ServiceType == typeof(DbContextOptions<PlanDeckDbContext>)
@@ -99,7 +110,11 @@ public sealed class PlanningRoomHubTests
             builder.ConfigureServices(services =>
             {
                 services
-                    .AddAuthentication()
+                    .AddAuthentication(options =>
+                    {
+                        options.DefaultAuthenticateScheme = NoResultScheme;
+                        options.DefaultChallengeScheme = NoResultScheme;
+                    })
                     .AddScheme<AuthenticationSchemeOptions, NoResultAuthenticationHandler>(
                         NoResultScheme, null);
                 services.AddAuthorization(options =>
@@ -813,6 +828,7 @@ public sealed class PlanningRoomHubTests
             new Claim(PlanDeckClaimTypes.EntraObjectId, TestObjectId),
             new Claim(PlanDeckClaimTypes.MemberTenantId, TestTenantId),
             new Claim(PlanDeckClaimTypes.UserId, TestAppUserId),
+            new Claim(PlanDeckClaimTypes.ParticipantId, TestObjectId),
             new Claim(PlanDeckClaimTypes.TenantRole, TenantRole.Owner.ToString()),
             new Claim(PlanDeckClaimTypes.ActiveUser, bool.TrueString),
             new Claim("email", TestEmail)
@@ -842,8 +858,7 @@ public sealed class PlanningRoomHubTests
 
     private HubConnection CreateGuestConnection(Guid sessionId)
     {
-        return CreateConnection(options =>
-            options.Headers[TestAuthenticationHandler.GuestSessionHeader] = sessionId.ToString());
+        return CreateConnection(options => options.Headers.Add(GuestSessionHeader, sessionId.ToString()));
     }
 
     private static async Task WaitForBroadcastAsync(SemaphoreSlim signal)
@@ -852,6 +867,31 @@ public sealed class PlanningRoomHubTests
         Assert.That(entered, Is.True, "Timed out waiting for a RoomStateChanged broadcast.");
     }
 
+
+    private sealed class IntegrationMemberAuthenticationHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder)
+        : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    {
+        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            if (Request.Headers.TryGetValue(GuestSessionHeader, out var sidValue)
+                && Guid.TryParse(sidValue.ToString(), out var sid))
+            {
+                var guestPrincipal = GuestAuthentication.BuildPrincipal(
+                    Guid.Parse(GuestObjectId),
+                    Guid.Parse(TestTenantId),
+                    "Guest",
+                    sid);
+                return Task.FromResult(AuthenticateResult.Success(
+                    new AuthenticationTicket(guestPrincipal, IntegrationMemberScheme)));
+            }
+
+            return Task.FromResult(AuthenticateResult.Success(
+                new AuthenticationTicket(BuildTestPrincipal(), IntegrationMemberScheme)));
+        }
+    }
     private sealed class NoResultAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
@@ -864,3 +904,13 @@ public sealed class PlanningRoomHubTests
         }
     }
 }
+
+
+
+
+
+
+
+
+
+

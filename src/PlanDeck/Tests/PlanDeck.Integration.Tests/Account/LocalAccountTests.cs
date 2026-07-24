@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Account;
 using PlanDeck.Application.Domain;
+using PlanDeck.Common.Identity;
 using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Identity;
@@ -488,18 +490,22 @@ public sealed class LocalAccountTests
         var projectName = $"Project {UniqueSuffix()}";
         var memberEmail = $"projmember-{UniqueSuffix()}@example.com";
         PlanDeckProject project;
+        string? invitationToken;
         {
             await using var scope = _factory.Services.CreateAsyncScope();
             var provisioningAccessor = scope.ServiceProvider.GetRequiredService<IProvisioningContextAccessor>();
             provisioningAccessor.TenantId = tenantId;
+            var principalAccessor = scope.ServiceProvider.GetRequiredService<RequestPrincipalAccessor>();
+            principalAccessor.Principal = BuildMemberPrincipal(ownerId, tenantId, ownerEmail);
             var repository = scope.ServiceProvider.GetRequiredService<IProjectRepository>();
             project = await repository.CreateAsync(projectName, null, ownerEmail, CancellationToken.None);
-            await repository.InviteMemberAsync(project.Id, memberEmail, ProjectRole.Member, CancellationToken.None);
+            var inviteResult = await repository.InviteMemberAsync(project.Id, memberEmail, ProjectRole.Member, CancellationToken.None);
+            invitationToken = inviteResult.InvitationToken;
         }
 
         var memberUserName = $"projmember{UniqueSuffix()}";
         var memberPassword = ValidPassword();
-        var memberUserId = await RegisterUserAsync(memberUserName, memberEmail, memberPassword, confirmEmail: false);
+        var memberUserId = await RegisterUserAsync(memberUserName, memberEmail, memberPassword, confirmEmail: false, invitationToken: invitationToken);
 
         var confirmResponse = await ConfirmEmailDirectAsync(memberUserId);
         Assert.That(confirmResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -524,21 +530,26 @@ public sealed class LocalAccountTests
         var ownerEmail = $"teamowner-{UniqueSuffix()}@example.com";
         await RegisterUserAsync(ownerUserName, ownerEmail, ValidPassword());
         var tenantId = await GetTenantIdForUserAsync(ownerUserName);
+        var ownerId = await GetUserIdByUserNameAsync(ownerUserName);
 
         var memberEmail = $"teammember-{UniqueSuffix()}@example.com";
         Team team;
+        string? invitationToken;
         {
             await using var scope = _factory.Services.CreateAsyncScope();
             var provisioningAccessor = scope.ServiceProvider.GetRequiredService<IProvisioningContextAccessor>();
             provisioningAccessor.TenantId = tenantId;
+            var principalAccessor = scope.ServiceProvider.GetRequiredService<RequestPrincipalAccessor>();
+            principalAccessor.Principal = BuildMemberPrincipal(ownerId, tenantId, ownerEmail);
             var repository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
             team = await repository.CreateTeamAsync($"Team {UniqueSuffix()}", null, CancellationToken.None);
-            await repository.AddMemberAsync(team.Id, memberEmail, null, CancellationToken.None);
+            var inviteResult = await repository.AddMemberAsync(team.Id, memberEmail, null, CancellationToken.None);
+            invitationToken = inviteResult.InvitationToken;
         }
 
         var memberUserName = $"teammember{UniqueSuffix()}";
         var memberPassword = ValidPassword();
-        var memberUserId = await RegisterUserAsync(memberUserName, memberEmail, memberPassword, confirmEmail: false);
+        var memberUserId = await RegisterUserAsync(memberUserName, memberEmail, memberPassword, confirmEmail: false, invitationToken: invitationToken);
 
         var confirmResponse = await ConfirmEmailDirectAsync(memberUserId);
         Assert.That(confirmResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
@@ -683,9 +694,10 @@ public sealed class LocalAccountTests
         string userName,
         string email,
         string password,
-        bool confirmEmail = true)
+        bool confirmEmail = true,
+        string? invitationToken = null)
     {
-        var request = new LocalRegisterRequest(email, "Test", "User", userName, password);
+        var request = new LocalRegisterRequest(email, "Test", "User", userName, password, invitationToken);
         var response = await _client.PostAsJsonAsync("/account/register", request);
         if (response.StatusCode != HttpStatusCode.OK)
         {
@@ -758,6 +770,20 @@ public sealed class LocalAccountTests
         await db.SaveChangesAsync();
     }
 
+    private static ClaimsPrincipal BuildMemberPrincipal(Guid userId, Guid tenantId, string email)
+    {
+        var identity = new ClaimsIdentity(
+        [
+            new Claim(PlanDeckClaimTypes.MemberTenantId, tenantId.ToString()),
+            new Claim(PlanDeckClaimTypes.UserId, userId.ToString()),
+            new Claim(PlanDeckClaimTypes.ParticipantId, userId.ToString()),
+            new Claim(PlanDeckClaimTypes.TenantRole, TenantRole.Owner.ToString()),
+            new Claim(PlanDeckClaimTypes.ActiveUser, bool.TrueString),
+            new Claim("email", email)
+        ], "Test");
+
+        return new ClaimsPrincipal(identity);
+    }
     private static string UniqueSuffix() =>
         Guid.NewGuid().ToString("N")[..10];
 
@@ -775,3 +801,12 @@ public sealed class LocalAccountTests
 
     private sealed record AccountStatusResponse(string Status, IReadOnlyList<string>? Errors = null);
 }
+
+
+
+
+
+
+
+
+

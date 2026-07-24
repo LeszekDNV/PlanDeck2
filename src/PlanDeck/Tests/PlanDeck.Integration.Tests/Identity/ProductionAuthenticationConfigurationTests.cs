@@ -28,7 +28,7 @@ public sealed class ProductionAuthenticationConfigurationTests
     }
 
     [Test]
-    public void ProductionWithTestAuthentication_FailsClosed()
+    public void ProductionWithLegacyTestAuthenticationFlag_StillFailsWithoutEntraConfiguration()
     {
         var services = new ServiceCollection();
         var configuration = new ConfigurationManager();
@@ -42,7 +42,7 @@ public sealed class ProductionAuthenticationConfigurationTests
                 configuration,
                 new ProductionEnvironment()),
             Throws.TypeOf<InvalidOperationException>()
-                .With.Message.Contains("only permitted"));
+                .With.Message.Contains("Production requires"));
     }
 
     private sealed class ProductionEnvironment : IHostEnvironment
@@ -57,3 +57,4 @@ public sealed class ProductionAuthenticationConfigurationTests
             new NullFileProvider();
     }
 }
+

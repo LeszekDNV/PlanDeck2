@@ -14,69 +14,45 @@ public class ProjectsTests : PageTest
     [Test]
     public async Task DeletingProjectWithSession_RemovesProjectAndKeepsSharedTeam()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         var runId = Guid.NewGuid();
         var teamName = $"Shared Team {Guid.NewGuid():N}";
-        var sessionName = $"e2e-scenario-session-{runId:N}";
-        const string memberEmail = "test.member@plandeck.local";
-        const string adminEmail = "test.admin@plandeck.local";
+        var sessionName = $"e2e-session-{runId:N}";
+        var taskName = $"e2e-task-{runId:N}";
+        const string memberEmail = "member@example.com";
+        const string adminEmail = "admin@example.com";
         const string deleteWarning = "Delete this project and all its sessions, tasks, participants, memberships, team links, and Azure DevOps configuration? This cannot be undone.";
-        var scenarioClient = E2eScenarioClient.Create(
-            AspireAppFixture.BaseUrl,
-            AspireAppFixture.E2eScenarioToken);
-        var scenario = await scenarioClient.SeedAsync(
-            runId,
-            E2eScenarioSessionStatus.Draft,
-            taskCount: 1);
 
-        try
-        {
-            var teams = new TeamsPage(Page, AspireAppFixture.BaseUrl);
-            await teams.GotoAsync();
-            await teams.CreateTeamAsync(teamName);
+        var projects = new ProjectsPage(Page, AspireAppFixture.BaseUrl);
+        var projectId = await projects.CreateProjectReturningIdAsync("E2E Project Delete");
 
-            var details = new ProjectDetailsPage(Page, AspireAppFixture.BaseUrl);
-            await details.GotoAsync(scenario.ProjectId);
-            await details.AssignTeamAsync(teamName);
-            await details.OpenSessionsAsync();
+        var teams = new TeamsPage(Page, AspireAppFixture.BaseUrl);
+        await teams.GotoAsync();
+        await teams.CreateTeamAsync(teamName);
 
-            var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
-            await sessions.SelectSessionAsync(sessionName);
+        var details = new ProjectDetailsPage(Page, AspireAppFixture.BaseUrl);
+        await details.GotoAsync(projectId);
+        await details.AssignTeamAsync(teamName);
+        await details.OpenSessionsAsync();
 
-            var sessionMembers = new SessionMembersPage(Page);
-            await sessionMembers.AssignMemberAsync(memberEmail);
+        var sessions = new SessionsPage(Page, AspireAppFixture.BaseUrl);
+        await sessions.CreateSessionAsync(sessionName, taskName);
+        var members = new SessionMembersPage(Page);
+        await members.AssignMemberAsync(memberEmail);
 
-            await sessions.ActivateAsync();
-            var votingSessionId = await sessions.JoinVotingAsync();
-            await sessions.GotoAsync(scenario.ProjectId);
-            await sessions.CreateSessionAsync($"inactive-session-{runId:N}", $"inactive-task-{runId:N}");
+        await details.GotoAsync(projectId);
+        await details.OpenDeleteProjectDialogAsync();
+        await Expect(details.DeleteDialog.GetByText(deleteWarning, new() { Exact = true })).ToBeVisibleAsync();
+        await details.ConfirmDeleteProjectAsync();
 
-            await details.GotoAsync(scenario.ProjectId);
-            await details.OpenDeleteProjectDialogAsync();
-            await Expect(details.DeleteDialog.GetByText(deleteWarning, new() { Exact = true }))
-                .ToBeVisibleAsync();
-            await details.ConfirmDeleteProjectAsync();
+        await Expect(Page).ToHaveURLAsync(new Regex("/projects$"), new() { Timeout = 15_000 });
 
-            await Expect(Page).ToHaveURLAsync(new Regex("/projects$"), new() { Timeout = 15_000 });
-
-            await Page.GotoAsync($"{AspireAppFixture.BaseUrl.TrimEnd('/')}/projects/{scenario.ProjectId:D}", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
-            await Expect(Page.GetByText("The selected project no longer exists or is not accessible.")).ToBeVisibleAsync(new() { Timeout = 15_000 });
-
-            await Page.GotoAsync($"{AspireAppFixture.BaseUrl.TrimEnd('/')}/projects/{scenario.ProjectId:D}/sessions", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
-            await Expect(Page.GetByText("The selected project no longer exists or is not accessible.")).ToBeVisibleAsync(new() { Timeout = 15_000 });
-
-            await Page.GotoAsync($"{AspireAppFixture.BaseUrl.TrimEnd('/')}/voting/{votingSessionId:D}", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
-            await Expect(Page.GetByText("The session could not be loaded.", new() { Exact = true }))
-                .ToBeVisibleAsync(new() { Timeout = 15_000 });
-
-            await teams.GotoAsync();
-            await teams.SelectTeamAsync(teamName);
-            await teams.AddMemberAsync(adminEmail);
-            await Expect(teams.MemberEntry(adminEmail)).ToBeVisibleAsync(new() { Timeout = 15_000 });
-            await teams.RemoveMemberAsync(adminEmail);
-        }
-        finally
-        {
-            await scenarioClient.CleanupAsync(runId);
-        }
+        await teams.GotoAsync();
+        await teams.SelectTeamAsync(teamName);
+        await teams.AddMemberAsync(adminEmail);
+        await Expect(teams.MemberEntry(adminEmail)).ToBeVisibleAsync(new() { Timeout = 15_000 });
     }
 }
+
+

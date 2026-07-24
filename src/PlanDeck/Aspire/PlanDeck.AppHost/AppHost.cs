@@ -15,11 +15,6 @@ var publishTarget = ResolvePublishTarget(
     Environment.GetEnvironmentVariable("PLANDECK_PUBLISH_TARGET"));
 var azureEnvironmentName = builder.Configuration["AZURE_ENV_NAME"];
 
-var useLocalE2eTestAuth = !builder.ExecutionContext.IsPublishMode
-    && string.Equals(
-        Environment.GetEnvironmentVariable("PLANDECK_E2E_TESTAUTH"),
-        "true",
-        StringComparison.OrdinalIgnoreCase);
 
 var isNamedTestingEnvironment = !string.IsNullOrWhiteSpace(azureEnvironmentName)
     && (string.Equals(azureEnvironmentName, "test", StringComparison.OrdinalIgnoreCase)
@@ -32,7 +27,7 @@ var usePublishedTestAuth = builder.ExecutionContext.IsPublishMode
             StringComparison.OrdinalIgnoreCase)
         || isNamedTestingEnvironment);
 
-var useTestAuth = useLocalE2eTestAuth || usePublishedTestAuth;
+var useTestAuth = usePublishedTestAuth;
 
 var planDeckServer = builder
     .AddProject<Projects.PlanDeck_Server>("plandeck-server")
@@ -88,29 +83,20 @@ if (builder.ExecutionContext.IsPublishMode)
         .WithEnvironment("EmailSettings__SenderAddress", builder.Configuration["EmailSettings:SenderAddress"] ?? "noreply@plandeck.app")
         .WithEnvironment("EmailSettings__PublicBaseUrl", planDeckServer.GetEndpoint("https").Url);
 
-    if (usePublishedTestAuth)
-    {
-        planDeckServer
-            .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing")
-            .WithEnvironment("Authentication__UseTestScheme", "true");
-    }
-    else
-    {
-        var entraTenantId = builder.Configuration["AZURE_ENTRA_TENANT_ID"]
-            ?? builder.Configuration["Authentication:Microsoft:TenantId"]
-            ?? string.Empty;
-        var entraClientId = builder.Configuration["AZURE_ENTRA_CLIENT_ID"]
-            ?? builder.Configuration["Authentication:Microsoft:ClientId"]
-            ?? string.Empty;
-        var entraClientSecret = builder.Configuration["AZURE_ENTRA_CLIENT_SECRET"]
-            ?? builder.Configuration["Authentication:Microsoft:ClientSecret"]
-            ?? string.Empty;
+    var entraTenantId = builder.Configuration["AZURE_ENTRA_TENANT_ID"]
+        ?? builder.Configuration["Authentication:Microsoft:TenantId"]
+        ?? string.Empty;
+    var entraClientId = builder.Configuration["AZURE_ENTRA_CLIENT_ID"]
+        ?? builder.Configuration["Authentication:Microsoft:ClientId"]
+        ?? string.Empty;
+    var entraClientSecret = builder.Configuration["AZURE_ENTRA_CLIENT_SECRET"]
+        ?? builder.Configuration["Authentication:Microsoft:ClientSecret"]
+        ?? string.Empty;
 
-        planDeckServer
-            .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
-            .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
-            .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret);
-    }
+    planDeckServer
+        .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
+        .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
+        .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret);
 
     planDeckServer
         .WaitFor(sqlDatabase)
@@ -146,7 +132,7 @@ else
         // Local runs should use developer credentials instead of probing managed identity,
         // because stale MSI certs on a workstation can break DefaultAzureCredential.
         .WithEnvironment("AZURE_TOKEN_CREDENTIALS", "AzureCliCredential")
-        .WithEnvironment("EmailSettings__Host", "localhost")
+        .WithEnvironment("EmailSettings__Host", "smtp")
         .WithEnvironment("EmailSettings__Port", "1025")
         .WithEnvironment("EmailSettings__SenderAddress", "noreply@plandeck.local")
         .WithEnvironment("EmailSettings__PublicBaseUrl", "https://localhost:7443")
@@ -154,24 +140,7 @@ else
         .WaitFor(mailSmtp);
 }
 
-// The E2E fixture sets this environment variable to drive the UI with a deterministic
-// test-auth scheme instead of interactive Entra sign-in. No effect on normal `dotnet run`.
-if (!builder.ExecutionContext.IsPublishMode
-    && string.Equals(
-        Environment.GetEnvironmentVariable("PLANDECK_E2E_TESTAUTH"),
-        "true",
-        StringComparison.OrdinalIgnoreCase))
-{
-    planDeckServer.WithEnvironment("Authentication__UseTestScheme", "true");
-}
 
-var scenarioToken = builder.ExecutionContext.IsPublishMode
-    ? null
-    : Environment.GetEnvironmentVariable("PLANDECK_E2E_SCENARIO_TOKEN");
-if (!string.IsNullOrWhiteSpace(scenarioToken))
-{
-    planDeckServer.WithEnvironment("Testing__E2eScenario__AuthorizationToken", scenarioToken);
-}
 
 builder.Build().Run();
 
@@ -207,3 +176,5 @@ static string ResolvePublishTarget(
 
     return PublishTargetProduction;
 }
+
+

@@ -12,12 +12,12 @@ public sealed class LogoutTests : PageTest
     };
 
     [Test]
-    public async Task TestingLogout_RemainsAnonymousAfterReload_AndLoginRestoresTestOwner()
+    public async Task LocalAccountLogout_EndsSessionUntilNextLogin()
     {
-        var layout = new MainLayoutPage(Page, AspireAppFixture.BaseUrl);
+        var credentials = await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
 
+        var layout = new MainLayoutPage(Page, AspireAppFixture.BaseUrl);
         await layout.OpenAuthenticatedApplicationAsync();
-        await Expect(layout.TestOwner).ToBeVisibleAsync();
 
         await layout.LogOutAsync();
         await Expect(layout.LogInButton).ToBeVisibleAsync();
@@ -25,7 +25,7 @@ public sealed class LogoutTests : PageTest
         await layout.ReloadAnonymousApplicationAsync();
         await Expect(layout.LogInButton).ToBeVisibleAsync();
 
-        await layout.LogInAsync();
-        await Expect(layout.TestOwner).ToBeVisibleAsync();
+        await LocalAccountFlow.LoginAsync(Page, AspireAppFixture.BaseUrl, credentials);
+        await Expect(layout.LogOutButton).ToBeVisibleAsync();
     }
 }

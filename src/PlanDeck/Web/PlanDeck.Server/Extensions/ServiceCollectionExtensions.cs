@@ -2,7 +2,6 @@ using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +17,6 @@ using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Identity;
 using PlanDeck.Server.Realtime;
-using PlanDeck.Server.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace PlanDeck.Server.Extensions;
@@ -67,30 +65,6 @@ public static class ServiceCollectionExtensions
 
             ConfigureIdentity(services);
             ConfigureEmailServices(services, configuration, environment);
-
-            var useTestScheme = configuration.GetValue<bool>("Authentication:UseTestScheme");
-            if (useTestScheme && !environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
-            {
-                throw new InvalidOperationException(
-                    "Authentication:UseTestScheme is only permitted in the Development or Testing environments.");
-            }
-
-            if (useTestScheme)
-            {
-                services
-                    .AddAuthentication(TestAuthenticationHandler.SchemeName)
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
-                        TestAuthenticationHandler.SchemeName, null)
-                    .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
-
-                AddPlanDeckAuthorization(services);
-                services.RemoveAll<IProjectSecretStore>();
-                services.AddSingleton<IProjectSecretStore, InMemoryProjectSecretStore>();
-                services.AddScoped<IAzureDevOpsWorkItemClient, FakeAzureDevOpsWorkItemClient>();
-                services.AddScoped<IAdoConnectionContextResolver, FakeAdoConnectionContextResolver>();
-
-                return services;
-            }
 
             var microsoftAuth = configuration.GetSection("Authentication:Microsoft");
             var tenantId = microsoftAuth["TenantId"];
@@ -231,8 +205,6 @@ public static class ServiceCollectionExtensions
             services.AddScoped<EntraCallbackHandler>();
             services.AddScoped<ICookieSessionValidator, CookieSessionValidator>();
             services.AddScoped<IAppUserRepository, AppUserRepository>();
-            services.AddScoped<TestAppUserSeeder>();
-            services.AddScoped<E2eScenarioService>();
             services.AddSingleton<IPlanningRoomService, PlanningRoomService>();
             services.AddHostedService<PlanningRoomCleanupService>();
             services.AddScoped<IPlanningRoomNotifier, SignalRPlanningRoomNotifier>();
@@ -369,6 +341,10 @@ public static class ServiceCollectionExtensions
     }
 
 }
+
+
+
+
 
 
 

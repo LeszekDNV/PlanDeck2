@@ -3,7 +3,6 @@ using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Services;
 using PlanDeck.Server.Hubs;
 using PlanDeck.Server.Identity;
-using PlanDeck.Server.Testing;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -12,13 +11,8 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var useTestSchemeBootstrap = builder.Configuration.GetValue<bool>("Authentication:UseTestScheme");
-
 builder.AddServiceDefaults();
-if (!useTestSchemeBootstrap)
-{
-    builder.AddAzureKeyVaultClient("key-vault");
-}
+builder.AddAzureKeyVaultClient("key-vault");
 
 // Add services to the container.
 builder.Services.AddLocalization();
@@ -49,14 +43,6 @@ else
     app.UseHsts();
 }
 
-if (TestAppUserSeeder.ShouldRun(app.Environment, app.Configuration))
-{
-    await using var scope = app.Services.CreateAsyncScope();
-    await scope.ServiceProvider
-        .GetRequiredService<TestAppUserSeeder>()
-        .SeedAsync();
-}
-
 app.UseHttpsRedirection();
 // Configure localization middleware
 var supportedCultures = new[] {
@@ -70,55 +56,11 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     ApplyCurrentCultureToResponseHeaders = true
 });
 
-app.UseStaticFiles();
-
-app.UseRateLimiter();
-
-app.UseAuthentication();
-
-// The member (Cookies/OIDC) scheme is the default, so UseAuthentication only populates
-// HttpContext.User for signed-in members. Guests authenticate via a separate Guest cookie that is
-// never the default scheme; surface that identity here so ordinary gRPC/HTTP requests (e.g.
-// AuthGrpcService.GetCurrentUser) see an authenticated guest instead of an anonymous user and the
-// client stops redirecting guests to the member login.
-app.Use(async (context, next) =>
-{
-    if (context.User?.Identity?.IsAuthenticated != true)
-    {
-        var guest = await context.AuthenticateAsync(GuestAuthentication.SchemeName);
-        if (guest.Succeeded)
-        {
-            context.User = guest.Principal;
-        }
-    }
-
-    await next();
-});
-
 app.UseAuthorization();
 
-var useTestScheme = app.Configuration.GetValue<bool>("Authentication:UseTestScheme");
-var microsoftAuth = app.Configuration.GetSection("Authentication:Microsoft");
-var isOidcConfigured = !useTestScheme
-    && !string.IsNullOrWhiteSpace(microsoftAuth["TenantId"])
-    && !string.IsNullOrWhiteSpace(microsoftAuth["ClientId"]);
-
-app.MapGet("/auth/login", async (string? returnUrl, HttpContext httpContext) =>
+app.MapGet("/auth/login", (string? returnUrl, HttpContext httpContext) =>
 {
     var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
-    if (useTestScheme)
-    {
-        var cookieOptions = CreateTestCookieOptions(httpContext.Request);
-        httpContext.Response.Cookies.Delete(
-            TestAuthenticationHandler.UserSelectionCookie,
-            cookieOptions);
-        httpContext.Response.Cookies.Delete(
-            TestAuthenticationHandler.GuestSessionCookie,
-            cookieOptions);
-        await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
-        return Results.LocalRedirect(target);
-    }
-
     return Results.Challenge(new AuthenticationProperties { RedirectUri = target });
 });
 
@@ -126,22 +68,6 @@ app.MapGet("/auth/login", async (string? returnUrl, HttpContext httpContext) =>
 // scheme). Authenticated members must use POST /account/logout with antiforgery.
 app.MapGet("/auth/logout", async (HttpContext httpContext) =>
 {
-    var authType = httpContext.User.Identity?.AuthenticationType;
-    var cookieOptions = CreateTestCookieOptions(httpContext.Request);
-
-    if (useTestScheme)
-    {
-        httpContext.Response.Cookies.Delete(
-            TestAuthenticationHandler.GuestSessionCookie,
-            cookieOptions);
-        httpContext.Response.Cookies.Append(
-            TestAuthenticationHandler.UserSelectionCookie,
-            TestAuthenticationHandler.AnonymousSelection,
-            cookieOptions);
-        await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
-        return Results.LocalRedirect("/");
-    }
-
     if (PlanDeckIdentity.IsGuest(httpContext.User))
     {
         await httpContext.SignOutAsync(GuestAuthentication.SchemeName);
@@ -190,11 +116,6 @@ app.MapPost("/guest/join", async (
     return Results.Ok(new GuestJoinResponse(session.SessionId));
 }).AllowAnonymous();
 
-if (E2eScenarioEndpoints.ShouldMap(app.Environment, app.Configuration))
-{
-    app.MapE2eScenarioEndpoints();
-}
-
 
 // Configure the HTTP request pipeline.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
@@ -220,16 +141,6 @@ app.MapFallbackToFile("index.html");
 //app.MapGrpcService<GreeterService>();
 
 app.Run();
-
-static CookieOptions CreateTestCookieOptions(HttpRequest request) =>
-    new()
-    {
-        HttpOnly = true,
-        IsEssential = true,
-        Path = "/",
-        SameSite = SameSiteMode.Lax,
-        Secure = request.IsHttps
-    };
 
 static string ResolveLocalReturnUrl(HttpRequest request, string? returnUrl)
 {
@@ -261,3 +172,6 @@ namespace PlanDeck.Server
 
     public partial class Program;
 }
+
+
+

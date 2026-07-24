@@ -13,9 +13,9 @@ public class HomePageTests : PageTest
     [Test]
     public async Task Home_RedirectsAuthenticatedUserToProjects()
     {
+        await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
+
         await Page.GotoAsync(AspireAppFixture.BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
         await Expect(Page).ToHaveURLAsync(new Regex("/projects$"), new() { Timeout = 15_000 });
     }
 }
-
-

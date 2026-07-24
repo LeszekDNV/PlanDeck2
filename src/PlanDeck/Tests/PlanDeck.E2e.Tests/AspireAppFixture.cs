@@ -9,18 +9,15 @@ namespace PlanDeck.E2e.Tests;
 [SetUpFixture]
 public class AspireAppFixture
 {
-    private const string LocalScenarioToken = "local-e2e-scenario-token";
-
     private DistributedApplication? _app;
 
     public static string BaseUrl { get; private set; } = string.Empty;
-    public static string E2eScenarioToken { get; private set; } = string.Empty;
+    public static string MailpitBaseUrl { get; private set; } = string.Empty;
 
     [OneTimeSetUp]
     public async Task StartAsync()
     {
-        Environment.SetEnvironmentVariable("PLANDECK_E2E_TESTAUTH", "true");
-        Environment.SetEnvironmentVariable("PLANDECK_E2E_SCENARIO_TOKEN", LocalScenarioToken);
+        Environment.SetEnvironmentVariable("Testing__E2e__AutoConfirmEmail", "true");
 
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.PlanDeck_AppHost>();
         EnsureAzureProvisioningConfigured(builder.Configuration);
@@ -32,7 +29,7 @@ public class AspireAppFixture
         await notifications.WaitForResourceAsync("plandeck-server", KnownResourceStates.Running).WaitAsync(TimeSpan.FromMinutes(5));
 
         BaseUrl = await ResolveBaseUrlFromAspireClientAsync(_app);
-        E2eScenarioToken = LocalScenarioToken;
+        MailpitBaseUrl = ResolveBaseUrlFromAspireClient(_app, "smtp");
     }
 
     private static async Task<string> ResolveBaseUrlFromAspireClientAsync(DistributedApplication app)
@@ -66,6 +63,17 @@ public class AspireAppFixture
             $"Aspire plandeck-server endpoint stayed unreachable at '{baseAddress}'.", lastError);
     }
 
+    private static string ResolveBaseUrlFromAspireClient(DistributedApplication app, string resourceName)
+    {
+        using var client = app.CreateHttpClient(resourceName);
+        if (client.BaseAddress is not { } baseAddress)
+        {
+            throw new InvalidOperationException($"Aspire HttpClient for '{resourceName}' has no BaseAddress.");
+        }
+
+        return baseAddress.ToString().TrimEnd('/');
+    }
+
     private static void EnsureAzureProvisioningConfigured(IConfiguration configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration["Azure:SubscriptionId"]) || string.IsNullOrWhiteSpace(configuration["Azure:Location"]))
@@ -84,3 +92,6 @@ public class AspireAppFixture
         }
     }
 }
+
+
+

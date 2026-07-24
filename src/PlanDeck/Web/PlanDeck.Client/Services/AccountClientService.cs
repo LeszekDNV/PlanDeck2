@@ -10,6 +10,7 @@ public sealed class AccountClientService(
     NavigationManager navigation) : IAccountClientService
 {
     private const string AntiforgeryHeader = "RequestVerificationToken";
+    private static readonly JsonSerializerOptions ResponseJsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<AccountActionResponse> RegisterAsync(
         LocalRegisterModel model,
@@ -250,7 +251,7 @@ public sealed class AccountClientService(
 
         try
         {
-            var result = JsonSerializer.Deserialize<AccountActionResponse>(content);
+            var result = JsonSerializer.Deserialize<AccountActionResponse>(content, ResponseJsonOptions);
             if (result is not null)
             {
                 return result;
@@ -269,3 +270,6 @@ public sealed class AccountClientService(
 
     private sealed record AntiforgeryTokenResponse(string Token);
 }
+
+
+
