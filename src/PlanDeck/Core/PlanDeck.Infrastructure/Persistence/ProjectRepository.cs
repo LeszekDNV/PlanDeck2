@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using PlanDeck.Application.Abstractions;
@@ -100,7 +103,7 @@ public sealed class ProjectRepository(
             .OrderBy(assignment => assignment.TeamId)
             .ToListAsync(cancellationToken);
 
-    public async Task<ProjectMember> InviteMemberAsync(
+    public async Task<MemberInvitationResult<ProjectMember>> InviteMemberAsync(
         Guid projectId,
         string email,
         ProjectRole role,
@@ -112,12 +115,27 @@ public sealed class ProjectRepository(
             cancellationToken);
 
         Guid? appUserId = null;
-        if (identityAccount is not null)
+        DateTimeOffset? acceptedAtUtc = null;
+        string? invitationToken = null;
+
+        if (identityAccount is { EmailConfirmed: true })
         {
-            var appUser = await db.AppUsers.AsNoTracking().SingleOrDefaultAsync(
-                user => user.Id == identityAccount.Id && user.IsActive,
-                cancellationToken);
-            appUserId = appUser?.Id;
+            var appUser = await db.AppUsers.AsNoTracking()
+                .IgnoreQueryFilters()
+                .SingleOrDefaultAsync(
+                    user => user.Id == identityAccount.Id && user.IsActive,
+                    cancellationToken);
+
+            if (appUser is not null)
+            {
+                if (appUser.TenantId != currentUser.TenantId)
+                {
+                    throw new AccountTenantConflictException(email);
+                }
+
+                appUserId = appUser.Id;
+                acceptedAtUtc = DateTimeOffset.UtcNow;
+            }
         }
 
         var member = new ProjectMember
@@ -128,11 +146,37 @@ public sealed class ProjectRepository(
             Role = role,
             Status = appUserId is null ? InvitationStatus.Pending : InvitationStatus.Accepted,
             InvitedByUserId = currentUser.UserId,
-            AcceptedAtUtc = appUserId is null ? null : DateTimeOffset.UtcNow
+            AcceptedAtUtc = acceptedAtUtc
         };
         db.ProjectMembers.Add(member);
-        await db.SaveChangesAsync(cancellationToken);
-        return member;
+
+        if (appUserId is null)
+        {
+            invitationToken = GenerateInvitationToken();
+            db.TenantInvitations.Add(new TenantInvitation
+            {
+                TokenHash = HashToken(invitationToken),
+                NormalizedEmail = normalizedEmail,
+                Role = TenantRole.Member,
+                ExpiresAtUtc = DateTimeOffset.UtcNow.AddDays(7)
+            });
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception)
+            when (exception.InnerException is SqlException { Number: 2601 or 2627 })
+        {
+            throw new DuplicateProjectMemberException(projectId, email);
+        }
+
+        return new MemberInvitationResult<ProjectMember>
+        {
+            Member = member,
+            InvitationToken = invitationToken
+        };
     }
 
     public async Task RemoveMemberAsync(
@@ -299,6 +343,12 @@ public sealed class ProjectRepository(
             member => member.ProjectId == projectId && member.Id == memberId,
             cancellationToken)
         ?? throw new InvalidOperationException("The project member was not found.");
+
+    private static string GenerateInvitationToken() =>
+        Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+
+    private static byte[] HashToken(string token) =>
+        SHA256.HashData(Encoding.UTF8.GetBytes(token));
 
     private async Task<IDbContextTransaction?> BeginTransactionAsync(
         CancellationToken cancellationToken) =>

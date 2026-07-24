@@ -140,7 +140,7 @@ public sealed class ProjectPersistenceTests
         var tenantId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
         var owner = CreateUser(ownerId, "owner@example.com");
-        var invited = CreateUser(Guid.NewGuid(), $"invite-{Guid.NewGuid():N}@example.com");
+        var invited = CreateUser(Guid.NewGuid(), $"invite-{Guid.NewGuid():N}@example.com", emailConfirmed: true);
 
         await using var db = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
         AddUsers(db, owner, invited);
@@ -161,8 +161,8 @@ public sealed class ProjectPersistenceTests
             ProjectRole.Member,
             CancellationToken.None);
 
-        Assert.That(invitation.Status, Is.EqualTo(InvitationStatus.Accepted));
-        Assert.That(invitation.AppUserId, Is.EqualTo(invited.Id));
+        Assert.That(invitation.Member.Status, Is.EqualTo(InvitationStatus.Accepted));
+        Assert.That(invitation.Member.AppUserId, Is.EqualTo(invited.Id));
 
         var access = new ProjectAccessResolver(
             db,
@@ -173,7 +173,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Test]
-    public async Task UnknownUser_IsLeftPending_WhenInvited()
+    public async Task UnknownUser_IsLeftPending_AndCreatesInvitation_WhenInvited()
     {
         var tenantId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
@@ -183,6 +183,7 @@ public sealed class ProjectPersistenceTests
         await using var db = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
         AddUsers(db, owner);
         await db.SaveChangesAsync();
+        await EnsureTenantAsync(db, tenantId);
 
         var projects = new ProjectRepository(
             db,
@@ -199,8 +200,89 @@ public sealed class ProjectPersistenceTests
             ProjectRole.Member,
             CancellationToken.None);
 
-        Assert.That(invitation.Status, Is.EqualTo(InvitationStatus.Pending));
-        Assert.That(invitation.AppUserId, Is.Null);
+        Assert.That(invitation.Member.Status, Is.EqualTo(InvitationStatus.Pending));
+        Assert.That(invitation.Member.AppUserId, Is.Null);
+        Assert.That(invitation.InvitationToken, Is.Not.Null.And.Not.Empty);
+
+        var normalizedEmail = invitedEmail.ToUpperInvariant();
+        var tenantInvitation = await db.TenantInvitations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(i => i.NormalizedEmail == normalizedEmail);
+        Assert.That(tenantInvitation, Is.Not.Null);
+        Assert.That(tenantInvitation!.Status, Is.EqualTo(InvitationStatus.Pending));
+    }
+
+    [Test]
+    public async Task ExistingSameTenantUnconfirmedUser_IsLeftPending_AndCreatesInvitation_WhenInvited()
+    {
+        var tenantId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        var invitedId = Guid.NewGuid();
+        var owner = CreateUser(ownerId, "owner@example.com");
+        var invited = CreateUser(invitedId, $"invite-{Guid.NewGuid():N}@example.com", emailConfirmed: false);
+
+        await using var db = CreateContext(CurrentUser(tenantId, ownerId, owner.Email));
+        AddUsers(db, owner, invited);
+        await EnsureTenantAsync(db, tenantId);
+        await db.SaveChangesAsync();
+
+        var projects = new ProjectRepository(
+            db,
+            CurrentUser(tenantId, ownerId, owner.Email),
+            IdentityRepo(db));
+        var project = await projects.CreateAsync(
+            "Invitations project",
+            null,
+            owner.Email,
+            CancellationToken.None);
+        var invitation = await projects.InviteMemberAsync(
+            project.Id,
+            invited.Email,
+            ProjectRole.Member,
+            CancellationToken.None);
+
+        Assert.That(invitation.Member.Status, Is.EqualTo(InvitationStatus.Pending));
+        Assert.That(invitation.InvitationToken, Is.Not.Null.And.Not.Empty);
+    }
+
+    [Test]
+    public async Task ExistingDifferentTenantConfirmedUser_ThrowsAccountTenantConflict_WhenInvited()
+    {
+        var tenantA = Guid.NewGuid();
+        var tenantB = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        var invitedId = Guid.NewGuid();
+        var owner = CreateUser(ownerId, "owner@example.com");
+        var invited = CreateUser(invitedId, $"invite-{Guid.NewGuid():N}@example.com", emailConfirmed: true);
+
+        await using (var dbB = CreateContext(CurrentUser(tenantB, invitedId, invited.Email)))
+        {
+            AddUsers(dbB, invited);
+            await dbB.SaveChangesAsync();
+        }
+
+        await using var dbA = CreateContext(CurrentUser(tenantA, ownerId, owner.Email));
+        AddUsers(dbA, owner);
+        await EnsureTenantAsync(dbA, tenantA);
+        await dbA.SaveChangesAsync();
+
+        var projects = new ProjectRepository(
+            dbA,
+            CurrentUser(tenantA, ownerId, owner.Email),
+            IdentityRepo(dbA));
+        var project = await projects.CreateAsync(
+            "Invitations project",
+            null,
+            owner.Email,
+            CancellationToken.None);
+
+        Assert.That(
+            async () => await projects.InviteMemberAsync(
+                project.Id,
+                invited.Email,
+                ProjectRole.Member,
+                CancellationToken.None),
+            Throws.TypeOf<AccountTenantConflictException>());
     }
 
     [Test]
@@ -481,7 +563,7 @@ public sealed class ProjectPersistenceTests
 
     private sealed record TestUser(Guid Id, string Email, AppUser AppUser, ApplicationUser IdentityUser);
 
-    private static TestUser CreateUser(Guid id, string email)
+    private static TestUser CreateUser(Guid id, string email, bool emailConfirmed = false)
     {
         var uniqueEmail = MakeUniqueEmail(id, email);
         return new(
@@ -502,6 +584,7 @@ public sealed class ProjectPersistenceTests
                 Email = uniqueEmail,
                 NormalizedEmail = uniqueEmail.ToUpperInvariant(),
                 NormalizedUserName = uniqueEmail.ToUpperInvariant(),
+                EmailConfirmed = emailConfirmed
             });
     }
 
@@ -523,6 +606,21 @@ public sealed class ProjectPersistenceTests
     }
 
     private static IdentityAccountRepository IdentityRepo(PlanDeckDbContext db) => new(db);
+
+    private static async Task EnsureTenantAsync(PlanDeckDbContext db, Guid tenantId)
+    {
+        var exists = await db.Tenants.AnyAsync(t => t.Id == tenantId);
+        if (!exists)
+        {
+            db.Tenants.Add(new PlanDeckTenant
+            {
+                Id = tenantId,
+                Name = $"Test tenant {tenantId:N}",
+                CreatedAtUtc = DateTimeOffset.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+    }
 
     private static ProjectAzureDevOpsConnection Connection(Guid projectId) => new()
     {

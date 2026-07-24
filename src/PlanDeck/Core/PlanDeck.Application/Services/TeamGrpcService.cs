@@ -51,13 +51,13 @@ public sealed class TeamGrpcService(ITeamRepository repository, ICurrentUserCont
 
         try
         {
-            var member = await repository.AddMemberAsync(
+            var result = await repository.AddMemberAsync(
                 request.TeamId,
                 email,
                 string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim(),
                 context.CancellationToken);
 
-            return new AddMemberReply { Member = ToDto(member) };
+            return new AddMemberReply { Member = ToDto(result.Member, result.InvitationToken) };
         }
         catch (TeamNotFoundException ex)
         {
@@ -66,6 +66,10 @@ public sealed class TeamGrpcService(ITeamRepository repository, ICurrentUserCont
         catch (DuplicateTeamMemberException ex)
         {
             throw new RpcException(new Status(StatusCode.AlreadyExists, ex.Message));
+        }
+        catch (AccountTenantConflictException ex)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
         }
     }
 
@@ -92,7 +96,26 @@ public sealed class TeamGrpcService(ITeamRepository repository, ICurrentUserCont
         }
 
         var members = await repository.GetMembersAsync(request.TeamId, context.CancellationToken);
-        return new ListMembersReply { Members = members.Select(ToDto).ToList() };
+        return new ListMembersReply { Members = members.Select(member => ToDto(member)).ToList() };
+    }
+
+    public async Task<DeleteTeamReply> DeleteTeamAsync(DeleteTeamRequest request, CallContext context = default)
+    {
+        GuestAccessGuard.RejectGuests(currentUser);
+
+        if (request.TeamId == Guid.Empty)
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "TeamId is required."));
+        }
+
+        var result = await repository.DeleteTeamAsync(request.TeamId, context.CancellationToken);
+        return result switch
+        {
+            DeleteTeamResult.Deleted => new DeleteTeamReply { Deleted = true },
+            DeleteTeamResult.NotFound => throw new RpcException(new Status(StatusCode.NotFound, "Team was not found.")),
+            DeleteTeamResult.Forbidden => throw new RpcException(new Status(StatusCode.PermissionDenied, "Only the team creator can delete the team.")),
+            _ => throw new RpcException(new Status(StatusCode.Internal, "The team deletion operation could not be completed."))
+        };
     }
 
     private static TeamDto ToDto(Team team) => new()
@@ -103,11 +126,12 @@ public sealed class TeamGrpcService(ITeamRepository repository, ICurrentUserCont
         CreatedAtUtc = team.CreatedAtUtc.UtcDateTime
     };
 
-    private static TeamMemberDto ToDto(TeamMember member) => new()
+    private static TeamMemberDto ToDto(TeamMember member, string? invitationToken = null) => new()
     {
         Id = member.Id,
         TeamId = member.TeamId,
         Email = member.Email,
-        DisplayName = member.DisplayName
+        DisplayName = member.DisplayName,
+        InvitationToken = invitationToken
     };
 }

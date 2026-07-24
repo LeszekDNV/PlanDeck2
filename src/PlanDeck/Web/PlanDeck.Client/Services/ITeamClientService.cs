@@ -13,4 +13,6 @@ public interface ITeamClientService
     Task<TeamMemberDto> AddMemberAsync(Guid teamId, string email, string? displayName);
 
     Task<bool> RemoveMemberAsync(Guid teamId, Guid memberId);
+
+    Task<bool> DeleteTeamAsync(Guid teamId);
 }

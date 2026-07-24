@@ -23,7 +23,7 @@ public interface IProjectRepository
         Guid projectId,
         CancellationToken cancellationToken);
 
-    Task<ProjectMember> InviteMemberAsync(
+    Task<MemberInvitationResult<ProjectMember>> InviteMemberAsync(
         Guid projectId,
         string email,
         ProjectRole role,

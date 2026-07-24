@@ -221,14 +221,17 @@ public sealed class ProjectGrpcServiceTests
             CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<ProjectTeam>>([]);
 
-        public Task<ProjectMember> InviteMemberAsync(
+        public Task<MemberInvitationResult<ProjectMember>> InviteMemberAsync(
             Guid projectId,
             string email,
             ProjectRole role,
             CancellationToken cancellationToken)
         {
             InviteCalls++;
-            return Task.FromResult(Member(email, role));
+            return Task.FromResult(new MemberInvitationResult<ProjectMember>
+            {
+                Member = Member(email, role)
+            });
         }
 
         public Task RemoveMemberAsync(

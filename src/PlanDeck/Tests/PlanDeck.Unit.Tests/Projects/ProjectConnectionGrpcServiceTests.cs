@@ -588,7 +588,7 @@ public sealed class ProjectConnectionGrpcServiceTests
             CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<ProjectTeam>>([]);
 
-        public Task<ProjectMember> InviteMemberAsync(
+        public Task<MemberInvitationResult<ProjectMember>> InviteMemberAsync(
             Guid projectId,
             string email,
             ProjectRole role,

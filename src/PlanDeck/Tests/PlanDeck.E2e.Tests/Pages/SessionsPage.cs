@@ -219,6 +219,29 @@ public class SessionsPage
     public ILocator SessionEntry(string name) =>
         _page.GetByTestId("session-entry").Filter(new() { HasText = name });
 
+    public async Task DeleteSessionAsync(string name)
+    {
+        await SessionEntry(name)
+            .GetByRole(AriaRole.Button, new()
+            {
+                NameRegex = new Regex("^(Delete session|Usuń sesję)$")
+            })
+            .ClickAsync();
+
+        await _page.GetByRole(AriaRole.Dialog)
+            .GetByRole(AriaRole.Button, new()
+            {
+                NameRegex = new Regex("^(Delete session|Usuń sesję)$")
+            })
+            .ClickAsync();
+
+        await SessionEntry(name).WaitForAsync(new()
+        {
+            State = WaitForSelectorState.Hidden,
+            Timeout = 15_000
+        });
+    }
+
     public async Task ImportAdoWorkItemAsync(int workItemId)
     {
         await _page.GetByTestId("config-ado-import").ClickAsync();

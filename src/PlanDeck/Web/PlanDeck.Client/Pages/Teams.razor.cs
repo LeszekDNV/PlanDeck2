@@ -207,6 +207,47 @@ public partial class Teams
         }
     }
 
+    private async Task DeleteTeamAsync()
+    {
+        if (_selectedTeam is null)
+        {
+            return;
+        }
+
+        var confirmed = await Dialog.ShowMessageBoxAsync(
+            L["Teams_DeleteConfirmTitle"],
+            string.Format(L["Teams_DeleteConfirmText"], _selectedTeam.Name),
+            yesText: L["Teams_Delete"],
+            cancelText: L["Teams_Cancel"]);
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var deleted = await TeamService.DeleteTeamAsync(_selectedTeam.Id);
+            if (deleted)
+            {
+                _teams.Remove(_selectedTeam);
+                _selectedTeam = null;
+                _members = [];
+                _assignedProjectNames = [];
+            }
+        }
+        catch (RpcException ex)
+        {
+            var message = ex.StatusCode switch
+            {
+                StatusCode.PermissionDenied => L["Teams_DeleteForbidden"],
+                _ => L["Teams_DeleteError"]
+            };
+
+            Snackbar.Add(message, Severity.Error);
+        }
+    }
+
     private void Login() =>
         Navigation.NavigateTo(
             $"/auth/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}",

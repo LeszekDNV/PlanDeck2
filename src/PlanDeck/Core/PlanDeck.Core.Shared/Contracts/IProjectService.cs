@@ -146,6 +146,9 @@ public sealed class ProjectMemberDto
 
     [DataMember(Order = 4)]
     public InvitationStatusDto Status { get; set; }
+
+    [DataMember(Order = 5)]
+    public string? InvitationToken { get; set; }
 }
 
 [DataContract]

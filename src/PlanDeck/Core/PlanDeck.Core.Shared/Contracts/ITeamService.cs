@@ -21,6 +21,9 @@ public interface ITeamService
 
     [Operation]
     Task<ListMembersReply> ListMembersAsync(ListMembersRequest request, CallContext context = default);
+
+    [Operation]
+    Task<DeleteTeamReply> DeleteTeamAsync(DeleteTeamRequest request, CallContext context = default);
 }
 
 [DataContract]
@@ -53,6 +56,9 @@ public sealed class TeamMemberDto
 
     [DataMember(Order = 4)]
     public string? DisplayName { get; set; }
+
+    [DataMember(Order = 5)]
+    public string? InvitationToken { get; set; }
 }
 
 [DataContract]
@@ -133,4 +139,18 @@ public sealed class ListMembersReply
 {
     [DataMember(Order = 1)]
     public List<TeamMemberDto> Members { get; set; } = [];
+}
+
+[DataContract]
+public sealed class DeleteTeamRequest
+{
+    [DataMember(Order = 1)]
+    public Guid TeamId { get; set; }
+}
+
+[DataContract]
+public sealed class DeleteTeamReply
+{
+    [DataMember(Order = 1)]
+    public bool Deleted { get; set; }
 }

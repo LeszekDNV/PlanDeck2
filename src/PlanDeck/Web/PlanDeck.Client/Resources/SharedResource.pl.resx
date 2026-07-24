@@ -244,6 +244,18 @@
   <data name="Sessions_Cancel" xml:space="preserve">
     <value>Anuluj</value>
   </data>
+  <data name="Sessions_Delete" xml:space="preserve">
+    <value>Usuń sesję</value>
+  </data>
+  <data name="Sessions_DeleteConfirmTitle" xml:space="preserve">
+    <value>Usunąć sesję?</value>
+  </data>
+  <data name="Sessions_DeleteConfirmText" xml:space="preserve">
+    <value>Usunąć sesję „{0}”? Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Sessions_DeleteError" xml:space="preserve">
+    <value>Nie udało się usunąć sesji.</value>
+  </data>
   <data name="Sessions_Members" xml:space="preserve">
     <value>Członkowie</value>
   </data>
@@ -635,6 +647,27 @@ Pulpit | Widżety przeglądu</value>
   </data>
   <data name="Teams_AssignmentManagedInProjects" xml:space="preserve">
     <value>Przypisanie do projektów jest zarządzane w administracji projektu.</value>
+  </data>
+  <data name="Teams_Delete" xml:space="preserve">
+    <value>Usuń zespół</value>
+  </data>
+  <data name="Teams_DeleteConfirmTitle" xml:space="preserve">
+    <value>Usunąć zespół?</value>
+  </data>
+  <data name="Teams_DeleteConfirmText" xml:space="preserve">
+    <value>Usunąć zespół „{0}”? Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Teams_DeleteError" xml:space="preserve">
+    <value>Nie udało się usunąć zespołu.</value>
+  </data>
+  <data name="Teams_DeleteForbidden" xml:space="preserve">
+    <value>Tylko twórca zespołu może go usunąć.</value>
+  </data>
+  <data name="Members_InvitePending" xml:space="preserve">
+    <value>Zaproszenie wysłane. Członek zostanie dodany po rejestracji i potwierdzeniu adresu e-mail.</value>
+  </data>
+  <data name="Members_AccountTenantConflict" xml:space="preserve">
+    <value>Ten adres e-mail należy do użytkownika innej organizacji.</value>
   </data>
   <data name="Sessions_NoProjectsForCreate" xml:space="preserve">
     <value>Utwórz projekt przed utworzeniem sesji.</value>

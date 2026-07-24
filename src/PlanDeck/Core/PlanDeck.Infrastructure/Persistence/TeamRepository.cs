@@ -1,11 +1,17 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Domain;
 
 namespace PlanDeck.Infrastructure.Persistence;
 
-public sealed class TeamRepository(PlanDeckDbContext db, ICurrentUserContext currentUser) : ITeamRepository
+public sealed class TeamRepository(
+    PlanDeckDbContext db,
+    ICurrentUserContext currentUser,
+    IIdentityAccountRepository identityAccountRepository) : ITeamRepository
 {
     public async Task<Team> CreateTeamAsync(string name, string? description, CancellationToken cancellationToken)
     {
@@ -38,7 +44,11 @@ public sealed class TeamRepository(PlanDeckDbContext db, ICurrentUserContext cur
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<TeamMember> AddMemberAsync(Guid teamId, string email, string? displayName, CancellationToken cancellationToken)
+    public async Task<MemberInvitationResult<TeamMember>> AddMemberAsync(
+        Guid teamId,
+        string email,
+        string? displayName,
+        CancellationToken cancellationToken)
     {
         var teamExists = await db.Teams.AnyAsync(t => t.Id == teamId, cancellationToken);
         if (!teamExists)
@@ -46,15 +56,59 @@ public sealed class TeamRepository(PlanDeckDbContext db, ICurrentUserContext cur
             throw new TeamNotFoundException(teamId);
         }
 
+        var normalizedEmail = email.Trim().ToUpperInvariant();
+        var identityAccount = await identityAccountRepository.FindByNormalizedEmailAsync(
+            normalizedEmail,
+            cancellationToken);
+
+        Guid? appUserId = null;
+        DateTimeOffset? acceptedAtUtc = null;
+        string? invitationToken = null;
+
+        if (identityAccount is { EmailConfirmed: true })
+        {
+            var appUser = await db.AppUsers.AsNoTracking()
+                .IgnoreQueryFilters()
+                .SingleOrDefaultAsync(
+                    user => user.Id == identityAccount.Id && user.IsActive,
+                    cancellationToken);
+
+            if (appUser is not null)
+            {
+                if (appUser.TenantId != currentUser.TenantId)
+                {
+                    throw new AccountTenantConflictException(email);
+                }
+
+                appUserId = appUser.Id;
+                acceptedAtUtc = DateTimeOffset.UtcNow;
+            }
+        }
+
         var member = new TeamMember
         {
             TeamId = teamId,
             Email = email,
             DisplayName = displayName,
-            InvitedByUserId = currentUser.UserId
+            AppUserId = appUserId,
+            Status = appUserId is null ? InvitationStatus.Pending : InvitationStatus.Accepted,
+            InvitedByUserId = currentUser.UserId,
+            AcceptedAtUtc = acceptedAtUtc
         };
 
         db.TeamMembers.Add(member);
+
+        if (appUserId is null)
+        {
+            invitationToken = GenerateInvitationToken();
+            db.TenantInvitations.Add(new TenantInvitation
+            {
+                TokenHash = HashToken(invitationToken),
+                NormalizedEmail = normalizedEmail,
+                Role = TenantRole.Member,
+                ExpiresAtUtc = DateTimeOffset.UtcNow.AddDays(7)
+            });
+        }
 
         try
         {
@@ -65,7 +119,11 @@ public sealed class TeamRepository(PlanDeckDbContext db, ICurrentUserContext cur
             throw new DuplicateTeamMemberException(teamId, email);
         }
 
-        return member;
+        return new MemberInvitationResult<TeamMember>
+        {
+            Member = member,
+            InvitationToken = invitationToken
+        };
     }
 
     public async Task<bool> RemoveMemberAsync(Guid teamId, Guid memberId, CancellationToken cancellationToken)
@@ -112,4 +170,56 @@ public sealed class TeamRepository(PlanDeckDbContext db, ICurrentUserContext cur
 
         return pending.Count;
     }
+
+    public async Task<DeleteTeamResult> DeleteTeamAsync(
+        Guid teamId,
+        CancellationToken cancellationToken)
+    {
+        return await db.Database.CreateExecutionStrategy().ExecuteAsync(
+            async (token) =>
+            {
+                await using var transaction = await BeginTransactionAsync(token);
+
+                var team = await db.Teams
+                    .FirstOrDefaultAsync(t => t.Id == teamId, token);
+
+                if (team is null)
+                {
+                    return DeleteTeamResult.NotFound;
+                }
+
+                if (team.CreatedByUserId != currentUser.UserId)
+                {
+                    return DeleteTeamResult.Forbidden;
+                }
+
+                var members = await db.TeamMembers
+                    .Where(m => m.TeamId == teamId)
+                    .ToListAsync(token);
+                db.TeamMembers.RemoveRange(members);
+
+                db.Teams.Remove(team);
+                await db.SaveChangesAsync(token);
+
+                if (transaction is not null)
+                {
+                    await transaction.CommitAsync(token);
+                }
+
+                return DeleteTeamResult.Deleted;
+            },
+            cancellationToken);
+    }
+
+    private static string GenerateInvitationToken() =>
+        Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+
+    private static byte[] HashToken(string token) =>
+        SHA256.HashData(Encoding.UTF8.GetBytes(token));
+
+    private async Task<IDbContextTransaction?> BeginTransactionAsync(
+        CancellationToken cancellationToken) =>
+        db.Database.IsRelational()
+            ? await db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
 }

@@ -244,6 +244,18 @@
   <data name="Sessions_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Sessions_Delete" xml:space="preserve">
+    <value>Delete session</value>
+  </data>
+  <data name="Sessions_DeleteConfirmTitle" xml:space="preserve">
+    <value>Delete session?</value>
+  </data>
+  <data name="Sessions_DeleteConfirmText" xml:space="preserve">
+    <value>Delete session "{0}"? This cannot be undone.</value>
+  </data>
+  <data name="Sessions_DeleteError" xml:space="preserve">
+    <value>Could not delete the session.</value>
+  </data>
   <data name="Sessions_Members" xml:space="preserve">
     <value>Members</value>
   </data>
@@ -635,6 +647,27 @@ Dashboard | Overview widgets</value>
   </data>
   <data name="Teams_AssignmentManagedInProjects" xml:space="preserve">
     <value>Project assignment is managed from project administration.</value>
+  </data>
+  <data name="Teams_Delete" xml:space="preserve">
+    <value>Delete team</value>
+  </data>
+  <data name="Teams_DeleteConfirmTitle" xml:space="preserve">
+    <value>Delete team?</value>
+  </data>
+  <data name="Teams_DeleteConfirmText" xml:space="preserve">
+    <value>Delete team "{0}"? This cannot be undone.</value>
+  </data>
+  <data name="Teams_DeleteError" xml:space="preserve">
+    <value>Could not delete the team.</value>
+  </data>
+  <data name="Teams_DeleteForbidden" xml:space="preserve">
+    <value>Only the team creator can delete the team.</value>
+  </data>
+  <data name="Members_InvitePending" xml:space="preserve">
+    <value>Invitation sent. The member will be added after they register and confirm their email.</value>
+  </data>
+  <data name="Members_AccountTenantConflict" xml:space="preserve">
+    <value>This email belongs to a user in another organization.</value>
   </data>
   <data name="Sessions_NoProjectsForCreate" xml:space="preserve">
     <value>Create a project before creating sessions.</value>

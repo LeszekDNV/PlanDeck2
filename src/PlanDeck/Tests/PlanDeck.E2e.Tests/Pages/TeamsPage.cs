@@ -81,4 +81,32 @@ public class TeamsPage
 
     private ILocator MemberRow(string email) =>
         _page.GetByTestId("team-member").Filter(new() { HasText = email });
+
+    private ILocator TeamRow(string name) =>
+        _page.GetByRole(AriaRole.Button, new() { Name = name, Exact = true });
+
+    private ILocator DeleteTeamButton =>
+        _page.GetByRole(AriaRole.Button, new()
+        {
+            NameRegex = new Regex("^(Delete team|Usuń zespół)$")
+        });
+
+    public async Task DeleteTeamAsync(string name)
+    {
+        await SelectTeamAsync(name);
+        await DeleteTeamButton.ClickAsync();
+
+        await _page.GetByRole(AriaRole.Dialog)
+            .GetByRole(AriaRole.Button, new()
+            {
+                NameRegex = new Regex("^(Delete team|Usuń zespół)$")
+            })
+            .ClickAsync();
+
+        await TeamRow(name).WaitForAsync(new()
+        {
+            State = WaitForSelectorState.Hidden,
+            Timeout = 15_000
+        });
+    }
 }

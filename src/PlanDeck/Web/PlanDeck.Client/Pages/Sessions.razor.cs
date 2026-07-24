@@ -355,6 +355,39 @@ public partial class Sessions
         }
     }
 
+    private async Task DeleteSessionAsync(SessionDto session)
+    {
+        var confirmed = await Dialog.ShowMessageBoxAsync(
+            L["Sessions_DeleteConfirmTitle"],
+            string.Format(L["Sessions_DeleteConfirmText"], session.Name),
+            yesText: L["Sessions_Delete"],
+            cancelText: L["Sessions_Cancel"]);
+
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        _operationError = null;
+        try
+        {
+            var deleted = await SessionService.DeleteSessionAsync(session.Id);
+            if (deleted)
+            {
+                _sessions.Remove(session);
+                if (_selected?.Id == session.Id)
+                {
+                    _selected = null;
+                    _members = [];
+                }
+            }
+        }
+        catch (RpcException ex)
+        {
+            ShowError(ex);
+        }
+    }
+
     private async Task SaveConfigAsync()
     {
         if (_selected is null)

@@ -90,6 +90,9 @@
                                                         Color="@(session.Status == SessionStatusDto.Active ? Color.Success : Color.Default)">
                                                    @StatusLabel(session.Status)
                                                 </MudChip>
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                               Size="Size.Small" aria-label="@L["Sessions_Delete"]"
+                                                               OnClick="@(() => DeleteSessionAsync(session))" />
                                             </MudStack>
                                         </MudListItem>
                                     }

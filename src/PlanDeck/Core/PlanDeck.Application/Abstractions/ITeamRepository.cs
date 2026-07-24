@@ -10,7 +10,7 @@ public interface ITeamRepository
 
     Task<IReadOnlyList<TeamMember>> GetMembersAsync(Guid teamId, CancellationToken cancellationToken);
 
-    Task<TeamMember> AddMemberAsync(Guid teamId, string email, string? displayName, CancellationToken cancellationToken);
+    Task<MemberInvitationResult<TeamMember>> AddMemberAsync(Guid teamId, string email, string? displayName, CancellationToken cancellationToken);
 
     Task<bool> RemoveMemberAsync(Guid teamId, Guid memberId, CancellationToken cancellationToken);
 
@@ -20,6 +20,15 @@ public interface ITeamRepository
         string normalizedEmail,
         DateTimeOffset acceptedAtUtc,
         CancellationToken cancellationToken);
+
+    Task<DeleteTeamResult> DeleteTeamAsync(Guid teamId, CancellationToken cancellationToken);
+}
+
+public enum DeleteTeamResult
+{
+    Deleted,
+    NotFound,
+    Forbidden
 }
 
 public sealed class TeamNotFoundException(Guid teamId)

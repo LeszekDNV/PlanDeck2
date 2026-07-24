@@ -53,4 +53,11 @@ public sealed class TeamClientService(GrpcChannel channel) : ITeamClientService
         });
         return reply.Removed;
     }
+
+    public async Task<bool> DeleteTeamAsync(Guid teamId)
+    {
+        var service = channel.CreateGrpcService<ITeamService>();
+        var reply = await service.DeleteTeamAsync(new DeleteTeamRequest { TeamId = teamId });
+        return reply.Deleted;
+    }
 }

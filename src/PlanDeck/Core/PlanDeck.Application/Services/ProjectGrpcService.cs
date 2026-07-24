@@ -106,7 +106,7 @@ public sealed class ProjectGrpcService(
                 direct
                     ? ProjectMembershipSourceDto.Direct
                     : ProjectMembershipSourceDto.Team),
-            Members = members.Select(ToDto).ToList(),
+            Members = members.Select(member => ToDto(member)).ToList(),
             Teams = teams.Select(ToDto).ToList(),
             Connection = connection is null ? null : ToDto(connection)
         };
@@ -123,12 +123,23 @@ public sealed class ProjectGrpcService(
             throw InvalidArgument("Only Member or Admin invitations with a valid email are allowed.");
         }
 
-        var member = await repository.InviteMemberAsync(
-            request.ProjectId,
-            request.Email.Trim(),
-            role,
-            context.CancellationToken);
-        return new ProjectMemberReply { Member = ToDto(member) };
+        try
+        {
+            var result = await repository.InviteMemberAsync(
+                request.ProjectId,
+                request.Email.Trim(),
+                role,
+                context.CancellationToken);
+            return new ProjectMemberReply { Member = ToDto(result.Member, result.InvitationToken) };
+        }
+        catch (AccountTenantConflictException ex)
+        {
+            throw new RpcException(new Status(StatusCode.FailedPrecondition, ex.Message));
+        }
+        catch (DuplicateProjectMemberException ex)
+        {
+            throw new RpcException(new Status(StatusCode.AlreadyExists, ex.Message));
+        }
     }
 
     public async Task<ProjectMemberReply> ChangeMemberRoleAsync(
@@ -466,12 +477,13 @@ public sealed class ProjectGrpcService(
         MembershipSource = source
     };
 
-    private static ProjectMemberDto ToDto(ProjectMember member) => new()
+    private static ProjectMemberDto ToDto(ProjectMember member, string? invitationToken = null) => new()
     {
         Id = member.Id,
         Email = member.Email,
         Role = (ProjectRoleDto)(int)member.Role,
-        Status = (InvitationStatusDto)(int)member.Status
+        Status = (InvitationStatusDto)(int)member.Status,
+        InvitationToken = invitationToken
     };
 
     private static ProjectTeamDto ToDto(ProjectTeam team) => new()

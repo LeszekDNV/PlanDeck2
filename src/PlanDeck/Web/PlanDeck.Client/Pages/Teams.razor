@@ -51,7 +51,12 @@
                 <MudCard Class="mt-4">
                     <MudCardHeader>
                         <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@L["Members_Title"] — @_selectedTeam.Name</MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.h6">@L["Members_Title"] — @_selectedTeam.Name</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteForever" Color="Color.Error"
+                                               Size="Size.Small" aria-label="@L["Teams_Delete"]"
+                                               OnClick="DeleteTeamAsync" />
+                            </MudStack>
                         </CardHeaderContent>
                     </MudCardHeader>
                     <MudCardContent>
