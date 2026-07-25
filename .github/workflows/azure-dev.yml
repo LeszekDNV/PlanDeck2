@@ -19,7 +19,13 @@ name: Deploy PlanDeck pilot (ACA)
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      reset_database:
+        description: "Delete all application tables before applying migrations"
+        required: false
+        default: false
+        type: boolean
 
 # OIDC federated auth needs id-token: write.
 permissions:
@@ -88,6 +94,35 @@ jobs:
             --start-ip-address $ip --end-ip-address $ip -o none
           "RUNNER_FW_SERVER=$server"  | Out-File $env:GITHUB_ENV -Append
           "RUNNER_FW_RG=$rg"          | Out-File $env:GITHUB_ENV -Append
+
+      - name: Reset database schema
+        if: ${{ inputs.reset_database == true }}
+        shell: pwsh
+        env:
+          SQL_SERVER_FQDN: ${{ vars.SQL_SERVER_FQDN }}
+          SQL_DATABASE_NAME: PlanDeckDb
+        run: |
+          $ErrorActionPreference = "Stop"
+          $token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
+          Install-Module SqlServer -Force -Scope CurrentUser -AllowClobber
+          $query = @'
+          DECLARE @sql nvarchar(max) = N'';
+          SELECT @sql += N'ALTER TABLE '
+              + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + N'.'
+              + QUOTENAME(OBJECT_NAME(parent_object_id)) + N' DROP CONSTRAINT '
+              + QUOTENAME(name) + N';'
+          FROM sys.foreign_keys;
+          IF LEN(@sql) > 0 EXEC sys.sp_executesql @sql;
+
+          SET @sql = N'';
+          SELECT @sql += N'DROP TABLE '
+              + QUOTENAME(SCHEMA_NAME(schema_id)) + N'.'
+              + QUOTENAME(name) + N';'
+          FROM sys.tables
+          WHERE is_ms_shipped = 0;
+          IF LEN(@sql) > 0 EXEC sys.sp_executesql @sql;
+          '@
+          Invoke-Sqlcmd -ServerInstance $env:SQL_SERVER_FQDN -Database $env:SQL_DATABASE_NAME -AccessToken $token -Query $query
 
       # Apply EF Core migrations as an explicit, idempotent gate BEFORE the app is deployed.
       # `dotnet ef migrations script` builds SQL from the model offline (no DB connection), so the

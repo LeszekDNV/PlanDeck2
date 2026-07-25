@@ -81,3 +81,15 @@ OIDC, uprawnień Azure ani migracji.
 - Previous successful deployment commit: `8d527384`
 - Investigation tasks: `deploy-apphost-hypothesis`,
   `deploy-workflow-hypothesis`
+
+## Follow-up Deployment
+
+Run `30135191412` potwierdził naprawę pierwotnej przyczyny: provisioning
+zakończył się sukcesem. Następny krok zatrzymał się na migracji, ponieważ baza
+`rg-test` zawierała tabele ze starej historii migracji, a bieżący kod rozpoczyna
+historię od nowego `20260724073135_InitialCreate`.
+
+Decyzja operacyjna: środowisko testowe rozpoczyna od zera. Ręczne uruchomienie
+workflow z `reset_database=true` usuwa wszystkie tabele użytkownika przed
+zastosowaniem bieżącego `InitialCreate`; reset nie wykonuje się przy zwykłym
+pushu.
