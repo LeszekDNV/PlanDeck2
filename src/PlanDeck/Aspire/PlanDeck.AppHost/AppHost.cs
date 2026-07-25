@@ -81,6 +81,11 @@ if (builder.ExecutionContext.IsPublishMode)
         .WithEnvironment("EmailSettings__SenderAddress", builder.Configuration["EmailSettings:SenderAddress"] ?? "noreply@plandeck.app")
         .WithEnvironment("EmailSettings__PublicBaseUrl", planDeckServer.GetEndpoint("https"));
 
+    if (isTestingPublishTarget)
+    {
+        planDeckServer.WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing");
+    }
+
     var entraTenantId = builder.Configuration["AZURE_ENTRA_TENANT_ID"]
         ?? builder.Configuration["Authentication:Microsoft:TenantId"]
         ?? string.Empty;

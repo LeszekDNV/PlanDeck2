@@ -55,6 +55,7 @@ app.UseRequestLocalization(new RequestLocalizationOptions
     ApplyCurrentCultureToResponseHeaders = true
 });
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Keep the removed mutating route as an explicit tombstone so the SPA fallback cannot return 200.
