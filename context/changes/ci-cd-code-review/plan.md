@@ -507,16 +507,16 @@ Both branch deployment workflows target Testing initially. The future Production
 
 #### Automated
 
-- [x] 4.1 All valid/invalid fixtures still produce their expected validator exit states
-- [x] 4.2 Both deployment workflows retain the same Testing steps and use the same non-cancelling deployment concurrency group
-- [x] 4.3 Repository whitespace and patch integrity checks pass
-- [x] 4.4 The full solution builds successfully
+- [x] 4.1 All valid/invalid fixtures still produce their expected validator exit states — 9a4a2ab
+- [x] 4.2 Both deployment workflows retain the same Testing steps and use the same non-cancelling deployment concurrency group — 9a4a2ab
+- [x] 4.3 Repository whitespace and patch integrity checks pass — 9a4a2ab
+- [x] 4.4 The full solution builds successfully — 9a4a2ab
 
 #### Manual
 
-- [x] 4.5 GitHub recognizes the workflow after the trusted files land on `main`
-- [x] 4.6 The complete smoke-test checklist passes on test PRs targeting remote `develop`
-- [x] 4.7 A push to `develop` authenticates through its branch-specific OIDC credential and completes the Testing deployment
-- [x] 4.8 `main` remains bound to its existing Testing deployment and does not share an active deployment window with `develop`
-- [x] 4.9 Workflow logs and comments contain no token, full diff, full prompt, or raw model response
-- [x] 4.10 Maintainers confirm that free-tier incompleteness and the paid-usage production path are clearly documented
+- [x] 4.5 GitHub recognizes the workflow after the trusted files land on `main` — 9a4a2ab
+- [x] 4.6 The complete smoke-test checklist passes on test PRs targeting remote `develop` — 9a4a2ab
+- [x] 4.7 A push to `develop` authenticates through its branch-specific OIDC credential and completes the Testing deployment — 9a4a2ab
+- [x] 4.8 `main` remains bound to its existing Testing deployment and does not share an active deployment window with `develop` — 9a4a2ab
+- [x] 4.9 Workflow logs and comments contain no token, full diff, full prompt, or raw model response — 9a4a2ab
+- [x] 4.10 Maintainers confirm that free-tier incompleteness and the paid-usage production path are clearly documented — 9a4a2ab
