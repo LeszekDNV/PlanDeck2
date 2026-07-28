@@ -107,6 +107,5 @@ try {
     }
 }
 catch {
-    Write-Error "Invalid review result: $($_.Exception.Message)"
-    exit 1
+    throw 'Invalid review result.'
 }

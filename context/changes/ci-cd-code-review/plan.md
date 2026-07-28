@@ -475,33 +475,33 @@ Both branch deployment workflows target Testing initially. The future Production
 
 #### Automated
 
-- [x] 2.1 Composite metadata references only repository-local scripts and declares the expected inputs/output
-- [x] 2.2 The result written by the review script passes the Phase 1 validator before upload
-- [x] 2.3 Repository whitespace and patch integrity checks pass
-- [x] 2.4 The full solution builds successfully
+- [x] 2.1 Composite metadata references only repository-local scripts and declares the expected inputs/output — 10245f6
+- [x] 2.2 The result written by the review script passes the Phase 1 validator before upload — 10245f6
+- [x] 2.3 Repository whitespace and patch integrity checks pass — 10245f6
+- [x] 2.4 The full solution builds successfully — 10245f6
 
 #### Manual
 
-- [x] 2.5 Security inspection confirms that the action never checks out, sources, imports, or executes content from the pull request head
-- [x] 2.6 A small test request stays within the free-tier budget and returns all 15 structured criteria
-- [x] 2.7 An oversized fixture diff is truncated at a stable boundary and cannot produce `passed`
+- [x] 2.5 Security inspection confirms that the action never checks out, sources, imports, or executes content from the pull request head — 10245f6
+- [x] 2.6 A small test request stays within the free-tier budget and returns all 15 structured criteria — 10245f6
+- [x] 2.7 An oversized fixture diff is truncated at a stable boundary and cannot produce `passed` — 10245f6
 
 ### Phase 3: Orchestrate Review, Publishing, Labels, and Retry
 
 #### Automated
 
-- [ ] 3.1 Workflow job permissions match the review/publish separation and no job combines model access with PR mutation permissions
-- [ ] 3.2 Publisher accepts both valid fixtures and rejects both invalid fixtures through the shared validator
-- [ ] 3.3 Repository whitespace and patch integrity checks pass
-- [ ] 3.4 The full solution builds successfully
+- [x] 3.1 Workflow job permissions match the review/publish separation and no job combines model access with PR mutation permissions
+- [x] 3.2 Publisher accepts both valid fixtures and rejects both invalid fixtures through the shared validator
+- [x] 3.3 Repository whitespace and patch integrity checks pass
+- [x] 3.4 The full solution builds successfully
 
 #### Manual
 
-- [ ] 3.5 A non-draft PR to `develop` receives exactly one updated marker comment and the correct pass/fail label
-- [ ] 3.6 Adding `ai-cr:review` starts a new review, updates the same comment, and removes the retry label
-- [ ] 3.7 A simulated model/schema failure adds `ai-cr:error`, preserves the previous pass/fail label, updates diagnostics, and leaves the run failed
-- [ ] 3.8 Draft PRs and PRs targeting branches other than `develop` do not invoke the model
-- [ ] 3.9 Existing unrelated labels remain unchanged
+- [x] 3.5 A non-draft PR to `develop` receives exactly one updated marker comment and the correct pass/fail label
+- [x] 3.6 Adding `ai-cr:review` starts a new review, updates the same comment, and removes the retry label
+- [x] 3.7 A simulated model/schema failure adds `ai-cr:error`, preserves the previous pass/fail label, updates diagnostics, and leaves the run failed
+- [x] 3.8 Draft PRs and PRs targeting branches other than `develop` do not invoke the model
+- [x] 3.9 Existing unrelated labels remain unchanged
 
 ### Phase 4: Add Develop Deployment and Validate the Rollout
 

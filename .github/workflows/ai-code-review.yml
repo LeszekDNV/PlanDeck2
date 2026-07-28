@@ -1,0 +1,95 @@
+name: Advisory AI code review
+
+on:
+  pull_request_target:
+    branches: [develop]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+
+permissions: {}
+
+concurrency:
+  group: ai-code-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: >-
+      github.event.pull_request.draft == false &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      models: read
+    outputs:
+      artifact-name: ${{ steps.artifact.outputs.name }}
+    steps:
+      - name: Checkout trusted base revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - id: review
+        name: Review static pull request diff
+        uses: ./.github/actions/ai-code-review
+        with:
+          model: openai/gpt-4.1-mini
+          expected-base-branch: develop
+          input-token-budget: "8000"
+          output-token-budget: "4000"
+
+      - id: artifact
+        name: Name review artifact
+        shell: pwsh
+        run: |
+          "name=ai-code-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}" |
+            Add-Content -LiteralPath $env:GITHUB_OUTPUT -Encoding utf8NoBOM
+
+      - name: Upload validated review result
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ${{ steps.review.outputs.result-path }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    if: >-
+      !cancelled() &&
+      github.event.pull_request.draft == false &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review')
+    needs: review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout trusted base revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - id: download
+        name: Download review result
+        if: needs.review.result == 'success'
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ needs.review.outputs.artifact-name }}
+          path: ${{ runner.temp }}/ai-code-review-result
+
+      - name: Publish review state
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REVIEW_JOB_RESULT: ${{ needs.review.result }}
+          RESULT_PATH: ${{ runner.temp }}/ai-code-review-result/ai-code-review-${{ github.event.pull_request.head.sha }}.json
+        run: >-
+          & './.github/actions/ai-code-review/publish-review.ps1'
+          -ResultPath $env:RESULT_PATH
+          -ReviewJobResult $env:REVIEW_JOB_RESULT
+          -Model 'openai/gpt-4.1-mini'
