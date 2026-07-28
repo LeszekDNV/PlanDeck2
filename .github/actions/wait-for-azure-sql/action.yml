@@ -1,0 +1,29 @@
+name: Wait for Azure SQL readiness
+description: Waits for Azure SQL Database to accept queries before deployment SQL operations.
+
+inputs:
+  server-instance:
+    description: Fully qualified Azure SQL server name.
+    required: true
+  database-name:
+    description: Azure SQL database name.
+    required: true
+  max-wait-seconds:
+    description: Maximum time to wait for database readiness.
+    required: false
+    default: "300"
+
+runs:
+  using: composite
+  steps:
+    - name: Probe Azure SQL readiness
+      shell: pwsh
+      env:
+        AZURE_SQL_SERVER_INSTANCE: ${{ inputs.server-instance }}
+        AZURE_SQL_DATABASE_NAME: ${{ inputs.database-name }}
+        AZURE_SQL_MAX_WAIT_SECONDS: ${{ inputs.max-wait-seconds }}
+      run: >-
+        & (Join-Path $env:GITHUB_ACTION_PATH 'wait-for-azure-sql.ps1')
+        -ServerInstance $env:AZURE_SQL_SERVER_INSTANCE
+        -DatabaseName $env:AZURE_SQL_DATABASE_NAME
+        -MaxWaitSeconds $env:AZURE_SQL_MAX_WAIT_SECONDS
