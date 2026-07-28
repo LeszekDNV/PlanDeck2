@@ -216,13 +216,13 @@ Rollback consists of removing the readiness step/action and restoring per-step `
 
 #### Automated
 
-- [x] 2.1 Both workflows reference the shared readiness action at the required boundary
-- [x] 2.2 Both workflows retain identical readiness, fail-closed, and timeout contracts
-- [x] 2.3 Repository whitespace and patch integrity checks pass
-- [x] 2.4 The full solution builds successfully
+- [x] 2.1 Both workflows reference the shared readiness action at the required boundary — dd1de1d
+- [x] 2.2 Both workflows retain identical readiness, fail-closed, and timeout contracts — dd1de1d
+- [x] 2.3 Repository whitespace and patch integrity checks pass — dd1de1d
+- [x] 2.4 The full solution builds successfully — dd1de1d
 
 #### Manual
 
-- [x] 2.5 An auto-paused Testing database becomes ready and deployment completes
-- [x] 2.6 A readiness timeout fails closed and still runs firewall cleanup
-- [x] 2.7 Workflow logs contain bounded diagnostics and no access token
+- [x] 2.5 An auto-paused Testing database becomes ready and deployment completes — dd1de1d
+- [x] 2.6 A readiness timeout fails closed and still runs firewall cleanup — dd1de1d
+- [x] 2.7 Workflow logs contain bounded diagnostics and no access token — dd1de1d

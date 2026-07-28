@@ -1,7 +1,7 @@
 ---
 change_id: wait-for-azure-sql-readiness
 title: Wait for Azure SQL readiness before deployment migrations
-status: implementing
+status: implemented
 created: 2026-07-28
 updated: 2026-07-28
 archived_at: null
