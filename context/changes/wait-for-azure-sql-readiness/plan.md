@@ -203,26 +203,26 @@ Rollback consists of removing the readiness step/action and restoring per-step `
 
 #### Automated
 
-- [x] 1.1 The readiness script has no PowerShell parser errors
-- [x] 1.2 Repository whitespace and patch integrity checks pass
-- [x] 1.3 The full solution builds successfully
+- [x] 1.1 The readiness script has no PowerShell parser errors — b68ae41
+- [x] 1.2 Repository whitespace and patch integrity checks pass — b68ae41
+- [x] 1.3 The full solution builds successfully — b68ae41
 
 #### Manual
 
-- [x] 1.4 Setup errors fail immediately while SQL probe errors retry until success or deadline
-- [x] 1.5 All operations are finitely bounded and logs do not expose the access token
+- [x] 1.4 Setup errors fail immediately while SQL probe errors retry until success or deadline — b68ae41
+- [x] 1.5 All operations are finitely bounded and logs do not expose the access token — b68ae41
 
 ### Phase 2: Integrate and Harden Both Testing Workflows
 
 #### Automated
 
-- [ ] 2.1 Both workflows reference the shared readiness action at the required boundary
-- [ ] 2.2 Both workflows retain identical readiness, fail-closed, and timeout contracts
-- [ ] 2.3 Repository whitespace and patch integrity checks pass
-- [ ] 2.4 The full solution builds successfully
+- [x] 2.1 Both workflows reference the shared readiness action at the required boundary
+- [x] 2.2 Both workflows retain identical readiness, fail-closed, and timeout contracts
+- [x] 2.3 Repository whitespace and patch integrity checks pass
+- [x] 2.4 The full solution builds successfully
 
 #### Manual
 
-- [ ] 2.5 An auto-paused Testing database becomes ready and deployment completes
-- [ ] 2.6 A readiness timeout fails closed and still runs firewall cleanup
-- [ ] 2.7 Workflow logs contain bounded diagnostics and no access token
+- [x] 2.5 An auto-paused Testing database becomes ready and deployment completes
+- [x] 2.6 A readiness timeout fails closed and still runs firewall cleanup
+- [x] 2.7 Workflow logs contain bounded diagnostics and no access token

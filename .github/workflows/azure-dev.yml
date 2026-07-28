@@ -102,6 +102,13 @@ jobs:
           "RUNNER_FW_SERVER=$server"  | Out-File $env:GITHUB_ENV -Append
           "RUNNER_FW_RG=$rg"          | Out-File $env:GITHUB_ENV -Append
 
+      - name: Wait for Azure SQL readiness
+        uses: ./.github/actions/wait-for-azure-sql
+        with:
+          server-instance: ${{ vars.SQL_SERVER_FQDN }}
+          database-name: PlanDeckDb
+          max-wait-seconds: "300"
+
       - name: Reset database schema
         if: ${{ inputs.reset_database == true }}
         shell: pwsh
@@ -110,8 +117,8 @@ jobs:
           SQL_DATABASE_NAME: PlanDeckDb
         run: |
           $ErrorActionPreference = "Stop"
+          Import-Module SqlServer -ErrorAction Stop
           $token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
-          Install-Module SqlServer -Force -Scope CurrentUser -AllowClobber
           $query = @'
           DECLARE @sql nvarchar(max) = N'';
           SELECT @sql += N'ALTER TABLE '
@@ -129,7 +136,8 @@ jobs:
           WHERE is_ms_shipped = 0;
           IF LEN(@sql) > 0 EXEC sys.sp_executesql @sql;
           '@
-          Invoke-Sqlcmd -ServerInstance $env:SQL_SERVER_FQDN -Database $env:SQL_DATABASE_NAME -AccessToken $token -Query $query
+          Invoke-Sqlcmd -ServerInstance $env:SQL_SERVER_FQDN -Database $env:SQL_DATABASE_NAME `
+            -AccessToken $token -Query $query -AbortOnError -ConnectionTimeout 30 -QueryTimeout 120
 
       # Apply EF Core migrations as an explicit, idempotent gate BEFORE the app is deployed.
       # `dotnet ef migrations script` builds SQL from the model offline (no DB connection), so the
@@ -142,6 +150,8 @@ jobs:
           SQL_SERVER_FQDN: ${{ vars.SQL_SERVER_FQDN }}
           SQL_DATABASE_NAME: PlanDeckDb
         run: |
+          $ErrorActionPreference = "Stop"
+          Import-Module SqlServer -ErrorAction Stop
           dotnet tool install --global dotnet-ef
           $env:PATH += [IO.Path]::PathSeparator + (Join-Path $HOME ".dotnet/tools")
           dotnet ef migrations script --idempotent `
@@ -149,8 +159,8 @@ jobs:
             --startup-project Web/PlanDeck.Server/PlanDeck.Server.csproj `
             --output migrate.sql
           $token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
-          Install-Module SqlServer -Force -Scope CurrentUser -AllowClobber
-          Invoke-Sqlcmd -ServerInstance $env:SQL_SERVER_FQDN -Database $env:SQL_DATABASE_NAME -AccessToken $token -InputFile migrate.sql
+          Invoke-Sqlcmd -ServerInstance $env:SQL_SERVER_FQDN -Database $env:SQL_DATABASE_NAME `
+            -AccessToken $token -InputFile migrate.sql -AbortOnError -ConnectionTimeout 30 -QueryTimeout 600
 
       - name: Close SQL firewall for runner
         if: always()
