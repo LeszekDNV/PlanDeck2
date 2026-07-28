@@ -461,30 +461,30 @@ Both branch deployment workflows target Testing initially. The future Production
 
 #### Automated
 
-- [x] 1.1 The passed fixture validates and produces `passed`
-- [x] 1.2 The failed fixture validates and produces `failed`
-- [x] 1.3 Both invalid fixtures are rejected with non-zero exit codes
-- [x] 1.4 The full solution builds successfully
+- [x] 1.1 The passed fixture validates and produces `passed` — 80d72a5
+- [x] 1.2 The failed fixture validates and produces `failed` — 80d72a5
+- [x] 1.3 Both invalid fixtures are rejected with non-zero exit codes — 80d72a5
+- [x] 1.4 The full solution builds successfully — 80d72a5
 
 #### Manual
 
-- [x] 1.5 The compact policy still covers all 15 requirement headings and the critical PlanDeck conventions
-- [x] 1.6 The schema and validator contain no path that trusts a model-authored verdict or silently defaults malformed data
+- [x] 1.5 The compact policy still covers all 15 requirement headings and the critical PlanDeck conventions — 80d72a5
+- [x] 1.6 The schema and validator contain no path that trusts a model-authored verdict or silently defaults malformed data — 80d72a5
 
 ### Phase 2: Build the Fork-Safe Composite Review Action
 
 #### Automated
 
-- [ ] 2.1 Composite metadata references only repository-local scripts and declares the expected inputs/output
-- [ ] 2.2 The result written by the review script passes the Phase 1 validator before upload
-- [ ] 2.3 Repository whitespace and patch integrity checks pass
-- [ ] 2.4 The full solution builds successfully
+- [x] 2.1 Composite metadata references only repository-local scripts and declares the expected inputs/output
+- [x] 2.2 The result written by the review script passes the Phase 1 validator before upload
+- [x] 2.3 Repository whitespace and patch integrity checks pass
+- [x] 2.4 The full solution builds successfully
 
 #### Manual
 
-- [ ] 2.5 Security inspection confirms that the action never checks out, sources, imports, or executes content from the pull request head
-- [ ] 2.6 A small test request stays within the free-tier budget and returns all 15 structured criteria
-- [ ] 2.7 An oversized fixture diff is truncated at a stable boundary and cannot produce `passed`
+- [x] 2.5 Security inspection confirms that the action never checks out, sources, imports, or executes content from the pull request head
+- [x] 2.6 A small test request stays within the free-tier budget and returns all 15 structured criteria
+- [x] 2.7 An oversized fixture diff is truncated at a stable boundary and cannot produce `passed`
 
 ### Phase 3: Orchestrate Review, Publishing, Labels, and Retry
 
