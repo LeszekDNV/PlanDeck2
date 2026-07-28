@@ -490,33 +490,33 @@ Both branch deployment workflows target Testing initially. The future Production
 
 #### Automated
 
-- [x] 3.1 Workflow job permissions match the review/publish separation and no job combines model access with PR mutation permissions
-- [x] 3.2 Publisher accepts both valid fixtures and rejects both invalid fixtures through the shared validator
-- [x] 3.3 Repository whitespace and patch integrity checks pass
-- [x] 3.4 The full solution builds successfully
+- [x] 3.1 Workflow job permissions match the review/publish separation and no job combines model access with PR mutation permissions — 142be3c
+- [x] 3.2 Publisher accepts both valid fixtures and rejects both invalid fixtures through the shared validator — 142be3c
+- [x] 3.3 Repository whitespace and patch integrity checks pass — 142be3c
+- [x] 3.4 The full solution builds successfully — 142be3c
 
 #### Manual
 
-- [x] 3.5 A non-draft PR to `develop` receives exactly one updated marker comment and the correct pass/fail label
-- [x] 3.6 Adding `ai-cr:review` starts a new review, updates the same comment, and removes the retry label
-- [x] 3.7 A simulated model/schema failure adds `ai-cr:error`, preserves the previous pass/fail label, updates diagnostics, and leaves the run failed
-- [x] 3.8 Draft PRs and PRs targeting branches other than `develop` do not invoke the model
-- [x] 3.9 Existing unrelated labels remain unchanged
+- [x] 3.5 A non-draft PR to `develop` receives exactly one updated marker comment and the correct pass/fail label — 142be3c
+- [x] 3.6 Adding `ai-cr:review` starts a new review, updates the same comment, and removes the retry label — 142be3c
+- [x] 3.7 A simulated model/schema failure adds `ai-cr:error`, preserves the previous pass/fail label, updates diagnostics, and leaves the run failed — 142be3c
+- [x] 3.8 Draft PRs and PRs targeting branches other than `develop` do not invoke the model — 142be3c
+- [x] 3.9 Existing unrelated labels remain unchanged — 142be3c
 
 ### Phase 4: Add Develop Deployment and Validate the Rollout
 
 #### Automated
 
-- [ ] 4.1 All valid/invalid fixtures still produce their expected validator exit states
-- [ ] 4.2 Both deployment workflows retain the same Testing steps and use the same non-cancelling deployment concurrency group
-- [ ] 4.3 Repository whitespace and patch integrity checks pass
-- [ ] 4.4 The full solution builds successfully
+- [x] 4.1 All valid/invalid fixtures still produce their expected validator exit states
+- [x] 4.2 Both deployment workflows retain the same Testing steps and use the same non-cancelling deployment concurrency group
+- [x] 4.3 Repository whitespace and patch integrity checks pass
+- [x] 4.4 The full solution builds successfully
 
 #### Manual
 
-- [ ] 4.5 GitHub recognizes the workflow after the trusted files land on `main`
-- [ ] 4.6 The complete smoke-test checklist passes on test PRs targeting remote `develop`
-- [ ] 4.7 A push to `develop` authenticates through its branch-specific OIDC credential and completes the Testing deployment
-- [ ] 4.8 `main` remains bound to its existing Testing deployment and does not share an active deployment window with `develop`
-- [ ] 4.9 Workflow logs and comments contain no token, full diff, full prompt, or raw model response
-- [ ] 4.10 Maintainers confirm that free-tier incompleteness and the paid-usage production path are clearly documented
+- [x] 4.5 GitHub recognizes the workflow after the trusted files land on `main`
+- [x] 4.6 The complete smoke-test checklist passes on test PRs targeting remote `develop`
+- [x] 4.7 A push to `develop` authenticates through its branch-specific OIDC credential and completes the Testing deployment
+- [x] 4.8 `main` remains bound to its existing Testing deployment and does not share an active deployment window with `develop`
+- [x] 4.9 Workflow logs and comments contain no token, full diff, full prompt, or raw model response
+- [x] 4.10 Maintainers confirm that free-tier incompleteness and the paid-usage production path are clearly documented

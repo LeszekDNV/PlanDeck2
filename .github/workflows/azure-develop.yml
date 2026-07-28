@@ -1,27 +1,23 @@
-# Deploys the PlanDeck pilot to Azure Container Apps + Azure SQL via `azd`.
+# Deploys the PlanDeck develop branch to Azure Container Apps + Azure SQL via `azd`.
 #
-# One-time setup (human, requires an Azure subscription) — already provisioned for the `test`
-# environment in `rg-test` (Poland Central):
-#   1. Entra app registration `plandeck-pipeline-oidc` with a GitHub OIDC federated credential
-#      (subject `repo:LeszekDNV/PlanDeck2:ref:refs/heads/main`); RBAC: Owner on `rg-test` +
+# One-time setup (human, requires an Azure subscription):
+#   1. Add a federated credential to the existing `plandeck-pipeline-oidc` Entra application with
+#      subject `repo:LeszekDNV/PlanDeck2:ref:refs/heads/develop`; keep Owner on `rg-test` and
 #      AcrPush on the container registry.
-#   2. The pipeline service principal is a contained `db_owner` user in `PlanDeckDb` so the
-#      migration step can apply the schema (created once via the SQL Entra admin).
-#   3. The repo variables below are set; SQL_SERVER_FQDN points at the provisioned server.
+#   2. The pipeline service principal remains a contained `db_owner` user in `PlanDeckDb` so the
+#      migration step can apply the schema.
+#   3. Reuse the repository variables below for the shared Testing environment.
 #
 # Required repo variables (Settings -> Secrets and variables -> Actions -> Variables):
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_ENV_NAME (= test),
 #   AZURE_LOCATION (= polandcentral), SQL_SERVER_FQDN
 # No long-lived secrets are stored: auth to Azure is OIDC federated.
-#
-# `main` intentionally still deploys Testing. Moving it to Production is a separate change that
-# must also update the publish target, environment/resource scope, OIDC trust, and concurrency group.
 
-name: Deploy PlanDeck pilot (ACA)
+name: Deploy PlanDeck develop (Testing)
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
   workflow_dispatch:
     inputs:
       reset_database:

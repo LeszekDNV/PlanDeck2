@@ -277,3 +277,27 @@ Relevant operational context is in:
 7. How much trusted base-revision context beyond the diff may the model receive?
 8. Who provisions labels and protects workflow, action, and prompt files with
    CODEOWNERS or repository rules?
+
+## Planning Addendum — 2026-07-28
+
+The approved implementation plan resolves the open decisions and supersedes the
+original recommendation where noted:
+
+- Reviews target non-draft pull requests to `develop`, not `main` or `master`.
+- GitHub Models is the provider; no Azure AI Foundry resource or model secret is
+  introduced.
+- The MVP model is `openai/gpt-4.1-mini`, using one bounded free-tier request.
+- Oversized, binary, redacted, or otherwise incomplete input fails closed and
+  cannot receive a passing verdict.
+- The review remains advisory and uses a compact trusted 15-criterion policy.
+- Automation failures use `ai-cr:error` and preserve the previous pass/fail
+  label.
+- CI results are unavailable, so the verdict is explicitly static-analysis
+  only.
+- The four `ai-cr:*` labels are provisioned idempotently during each publishing
+  run.
+- CODEOWNERS and branch protection remain out of scope; normal maintainer review
+  protects trusted workflow and action changes.
+- `develop` receives a separate copy of the current Testing deployment workflow.
+  It shares a non-cancelling deployment concurrency group with `main` while both
+  mutate the same Testing environment.
