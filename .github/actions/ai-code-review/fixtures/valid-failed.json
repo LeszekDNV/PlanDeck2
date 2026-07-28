@@ -1,0 +1,26 @@
+{
+  "reviewedHeadSha": "2222222222222222222222222222222222222222",
+  "analysis": {
+    "complete": true,
+    "limitations": []
+  },
+  "criteria": [
+    { "id": "solid-design", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Responsibilities remain cohesive." }] },
+    { "id": "clean-architecture", "score": 5, "evidence": [{ "changedPath": "src/PlanDeck/Web/PlanDeck.Server/Example.cs", "finding": "Business logic was placed in the web host." }] },
+    { "id": "dry-kiss-yagni", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "The implementation avoids speculative abstractions." }] },
+    { "id": "blazor-mudblazor", "score": "N/A", "naReason": "The pull request does not change UI code.", "evidence": [] },
+    { "id": "correctness-maintainability", "score": 7, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "The main behavior is explicit." }] },
+    { "id": "dependency-configuration", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Web/PlanDeck.Server/Extensions/ServiceCollectionExtensions.cs", "finding": "Registration follows the repository convention." }] },
+    { "id": "data-persistence", "score": "N/A", "naReason": "The pull request does not change persistence.", "evidence": [] },
+    { "id": "async-concurrency", "score": "N/A", "naReason": "The pull request does not change asynchronous code.", "evidence": [] },
+    { "id": "security-authorization", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "External input is validated." }] },
+    { "id": "errors-observability", "score": 7, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Failures remain explicit." }] },
+    { "id": "performance-resources", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "No unnecessary work is introduced." }] },
+    { "id": "accessibility-ux", "score": "N/A", "naReason": "The pull request does not change user experience.", "evidence": [] },
+    { "id": "testing-verification", "score": 7, "evidence": [{ "changedPath": "src/PlanDeck/Tests/ExampleTests.cs", "finding": "Tests cover the main behavior." }] },
+    { "id": "api-contracts", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Public contracts remain compatible." }] },
+    { "id": "pr-quality-scope", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "The change remains focused." }] }
+  ],
+  "blockers": [],
+  "summary": "The review fails because one applicable criterion is below the advisory threshold."
+}

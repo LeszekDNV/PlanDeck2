@@ -1,0 +1,25 @@
+{
+  "reviewedHeadSha": "3333333333333333333333333333333333333333",
+  "analysis": {
+    "complete": true,
+    "limitations": []
+  },
+  "criteria": [
+    { "id": "solid-design", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] },
+    { "id": "clean-architecture", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] },
+    { "id": "dry-kiss-yagni", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] },
+    { "id": "blazor-mudblazor", "score": "N/A", "naReason": "No UI changes.", "evidence": [] },
+    { "id": "correctness-maintainability", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] },
+    { "id": "dependency-configuration", "score": "N/A", "naReason": "No DI changes.", "evidence": [] },
+    { "id": "data-persistence", "score": "N/A", "naReason": "No persistence changes.", "evidence": [] },
+    { "id": "async-concurrency", "score": "N/A", "naReason": "No async changes.", "evidence": [] },
+    { "id": "security-authorization", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] },
+    { "id": "errors-observability", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] },
+    { "id": "performance-resources", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] },
+    { "id": "accessibility-ux", "score": "N/A", "naReason": "No UX changes.", "evidence": [] },
+    { "id": "testing-verification", "score": 8, "evidence": [{ "changedPath": "tests/ExampleTests.cs", "finding": "Valid evidence." }] },
+    { "id": "api-contracts", "score": 8, "evidence": [{ "changedPath": "src/Example.cs", "finding": "Valid evidence." }] }
+  ],
+  "blockers": [],
+  "summary": "This fixture intentionally omits the PR quality criterion."
+}
