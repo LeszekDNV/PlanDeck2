@@ -480,28 +480,28 @@ Application rollback does not reverse EF Core migrations.
 
 #### Automated
 
-- [x] 1.1 Documentation diff passes repository whitespace validation
+- [x] 1.1 Documentation diff passes repository whitespace validation — 99d9aca
 
 #### Manual
 
-- [x] 1.2 Dedicated PlanDeck Testing registration has the exact public callback and audience
-- [x] 1.3 GitHub Environment Testing contains the required branch policy, variables, and secret
-- [x] 1.4 Client-secret expiry and rotation ownership are recorded securely
-- [x] 1.5 Repository diff contains no actual Entra IDs or credential values
+- [x] 1.2 Dedicated PlanDeck Testing registration has the exact public callback and audience — 99d9aca
+- [x] 1.3 GitHub Environment Testing contains the required branch policy, variables, and secret — 99d9aca
+- [x] 1.4 Client-secret expiry and rotation ownership are recorded securely — 99d9aca
+- [x] 1.5 Repository diff contains no actual Entra IDs or credential values — 99d9aca
 
 ### Phase 2: Add a Shared Fail-Fast Entra Preflight
 
 #### Automated
 
-- [ ] 2.1 PowerShell parses the validation script without syntax errors
-- [ ] 2.2 Validation succeeds with complete placeholder inputs
-- [ ] 2.3 Validation rejects every missing required input without exposing values
-- [ ] 2.4 Whole solution builds after preflight integration
+- [x] 2.1 PowerShell parses the validation script without syntax errors
+- [x] 2.2 Validation succeeds with complete placeholder inputs
+- [x] 2.3 Validation rejects every missing required input without exposing values
+- [x] 2.4 Whole solution builds after preflight integration
 
 #### Manual
 
-- [ ] 2.5 Testing workflow preflight passes without exposing credentials
-- [ ] 2.6 Controlled missing-input check stops before Azure provisioning
+- [x] 2.5 Testing workflow preflight passes without exposing credentials
+- [x] 2.6 Controlled missing-input check stops before Azure provisioning
 
 ### Phase 3: Gate Deployment on the Final ACA Revision and Public Readiness
 

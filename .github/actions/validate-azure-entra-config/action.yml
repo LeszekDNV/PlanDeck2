@@ -1,0 +1,33 @@
+name: Validate Azure Entra configuration
+description: Validates required Microsoft Entra application settings before Azure provisioning.
+
+inputs:
+  tenant-id:
+    description: Microsoft Entra tenant ID for application sign-in.
+    required: true
+  client-id:
+    description: Microsoft Entra client ID for application sign-in.
+    required: true
+  client-secret:
+    description: Microsoft Entra client secret for application sign-in.
+    required: true
+  publish-target:
+    description: PlanDeck publish target.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate required Entra settings
+      shell: pwsh
+      env:
+        PLANDECK_ENTRA_TENANT_ID: ${{ inputs.tenant-id }}
+        PLANDECK_ENTRA_CLIENT_ID: ${{ inputs.client-id }}
+        PLANDECK_ENTRA_CLIENT_SECRET: ${{ inputs.client-secret }}
+        PLANDECK_PUBLISH_TARGET: ${{ inputs.publish-target }}
+      run: >-
+        & (Join-Path $env:GITHUB_ACTION_PATH 'validate-azure-entra-config.ps1')
+        -TenantId $env:PLANDECK_ENTRA_TENANT_ID
+        -ClientId $env:PLANDECK_ENTRA_CLIENT_ID
+        -ClientSecret $env:PLANDECK_ENTRA_CLIENT_SECRET
+        -PublishTarget $env:PLANDECK_PUBLISH_TARGET

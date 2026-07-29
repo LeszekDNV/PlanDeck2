@@ -12,6 +12,9 @@
 # Required repo variables (Settings -> Secrets and variables -> Actions -> Variables):
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_ENV_NAME (= test),
 #   AZURE_LOCATION (= polandcentral), SQL_SERVER_FQDN
+# Required Testing environment values:
+#   Variables: AZURE_ENTRA_TENANT_ID, AZURE_ENTRA_CLIENT_ID
+#   Secret: AZURE_ENTRA_CLIENT_SECRET
 # No long-lived secrets are stored: auth to Azure is OIDC federated.
 #
 # `main` intentionally still deploys Testing. Moving it to Production is a separate change that
@@ -42,12 +45,16 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: Testing
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      AZURE_ENTRA_TENANT_ID: ${{ vars.AZURE_ENTRA_TENANT_ID }}
+      AZURE_ENTRA_CLIENT_ID: ${{ vars.AZURE_ENTRA_CLIENT_ID }}
+      AZURE_ENTRA_CLIENT_SECRET: ${{ secrets.AZURE_ENTRA_CLIENT_SECRET }}
       PLANDECK_PUBLISH_TARGET: "Testing"
       # Deploy into the existing resource group (RG-scoped deployment) so the
       # pipeline SP only needs Owner on rg-test, not subscription-level rights.
@@ -81,6 +88,14 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate Microsoft Entra configuration
+        uses: ./.github/actions/validate-azure-entra-config
+        with:
+          tenant-id: ${{ env.AZURE_ENTRA_TENANT_ID }}
+          client-id: ${{ env.AZURE_ENTRA_CLIENT_ID }}
+          client-secret: ${{ env.AZURE_ENTRA_CLIENT_SECRET }}
+          publish-target: ${{ env.PLANDECK_PUBLISH_TARGET }}
 
       - name: Provision infrastructure
         working-directory: src/PlanDeck
