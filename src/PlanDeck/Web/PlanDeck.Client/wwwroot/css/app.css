@@ -509,6 +509,110 @@ html, body {
     font-size: 1.1rem;
 }
 
+.pd-home-dashboard {
+    min-height: calc(100vh - 64px);
+}
+
+.pd-home-dashboard-container {
+    padding-top: clamp(3rem, 7vw, 6rem);
+    padding-bottom: clamp(3rem, 7vw, 6rem);
+}
+
+.pd-home-dashboard-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.pd-home-dashboard-header h1 {
+    margin: 0.55rem 0 0.85rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+
+.pd-home-dashboard-header h6 {
+    max-width: 38rem;
+    color: var(--pd-home-muted);
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+.pd-home-dashboard-status {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.7rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--mud-palette-success) 42%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--mud-palette-success) 9%, var(--pd-home-panel));
+    color: var(--mud-palette-success);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.pd-home-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.pd-home-dashboard-card {
+    display: flex;
+    min-width: 0;
+    min-height: 19rem;
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    border: 1px solid var(--pd-home-border);
+    border-radius: 1.5rem;
+    background: color-mix(in srgb, var(--pd-home-panel) 94%, transparent);
+    box-shadow: 0 1rem 3rem color-mix(in srgb, var(--mud-palette-black) 7%, transparent);
+    flex-direction: column;
+    align-items: flex-start;
+    transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.pd-home-dashboard-card-primary {
+    grid-row: span 2;
+    min-height: 39.25rem;
+    background:
+        radial-gradient(circle at 85% 15%, var(--pd-home-glow), transparent 32%),
+        color-mix(in srgb, var(--mud-palette-primary) 7%, var(--pd-home-panel));
+}
+
+.pd-home-dashboard-card:hover {
+    border-color: color-mix(in srgb, var(--mud-palette-primary) 55%, var(--pd-home-border));
+    transform: translateY(-0.2rem);
+}
+
+.pd-home-dashboard-icon {
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin-bottom: auto;
+    border: 1px solid color-mix(in srgb, var(--mud-palette-primary) 40%, transparent);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--mud-palette-primary) 10%, transparent);
+    color: var(--mud-palette-primary);
+}
+
+.pd-home-dashboard-card h2 {
+    margin: 1.5rem 0 0.65rem;
+    font-weight: 750;
+}
+
+.pd-home-dashboard-card p {
+    max-width: 32rem;
+    color: var(--pd-home-muted);
+    line-height: 1.6;
+}
+
+.pd-home-dashboard-card .mud-button-root {
+    margin-top: 1.75rem;
+}
+
 .pd-home :is(a, button):focus-visible {
     outline: 3px solid var(--mud-palette-primary);
     outline-offset: 3px;
@@ -554,6 +658,20 @@ html, body {
         height: 1.1rem;
         border-top: 0;
         border-left: 1px dashed var(--mud-palette-primary);
+    }
+
+    .pd-home-dashboard-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .pd-home-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pd-home-dashboard-card-primary {
+        grid-row: auto;
+        min-height: 22rem;
     }
 }
 
@@ -611,6 +729,18 @@ html, body {
     .pd-home-trust {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .pd-home-dashboard-container {
+        padding: 2.5rem 1rem;
+    }
+
+    .pd-home-dashboard-card {
+        min-height: 18rem;
+    }
+
+    .pd-home-dashboard-card .mud-button-root {
+        width: 100%;
     }
 }
 

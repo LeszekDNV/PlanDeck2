@@ -493,7 +493,22 @@ Dashboard | Overview widgets</value>
     <value>Continue planning</value>
   </data>
   <data name="Home_RegisteredIntro" xml:space="preserve">
-    <value>Open your projects, create a new one, or manage teams.</value>
+    <value>Choose where to begin and keep your next planning session moving.</value>
+  </data>
+  <data name="Home_RegisteredEyebrow" xml:space="preserve">
+    <value>Your planning workspace</value>
+  </data>
+  <data name="Home_RegisteredStatus" xml:space="preserve">
+    <value>Ready for the next round</value>
+  </data>
+  <data name="Home_CreateProjectDetail" xml:space="preserve">
+    <value>Set up a workspace for a new product or initiative.</value>
+  </data>
+  <data name="Home_OpenProjectsDetail" xml:space="preserve">
+    <value>Return to your projects, sessions, and planning backlog.</value>
+  </data>
+  <data name="Home_ManageTeamsDetail" xml:space="preserve">
+    <value>Organize the people who estimate and deliver together.</value>
   </data>
   <data name="Home_GuestHeading" xml:space="preserve">
     <value>Join a planning session</value>

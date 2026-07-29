@@ -62,6 +62,19 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 });
 
 app.UseAuthentication();
+app.Use(async (httpContext, next) =>
+{
+    if (httpContext.User.Identity?.IsAuthenticated != true)
+    {
+        var guestAuthentication = await httpContext.AuthenticateAsync(GuestAuthentication.SchemeName);
+        if (guestAuthentication.Succeeded && guestAuthentication.Principal is not null)
+        {
+            httpContext.User = guestAuthentication.Principal;
+        }
+    }
+
+    await next(httpContext);
+});
 app.UseAuthorization();
 
 // Keep the removed mutating route as an explicit tombstone so the SPA fallback cannot return 200.

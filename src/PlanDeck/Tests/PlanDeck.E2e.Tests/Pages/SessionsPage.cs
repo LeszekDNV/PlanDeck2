@@ -64,6 +64,8 @@ public class SessionsPage
     private ILocator JoinVotingButton =>
         _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Join voting|Dołącz do głosowania)$") });
 
+    private ILocator ShareLink => _page.GetByTestId("share-link");
+
     private ILocator AdoImportButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Import from Azure DevOps", Exact = true });
 
@@ -146,6 +148,13 @@ public class SessionsPage
     {
         await ActivateButton.ClickAsync();
         await JoinVotingButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+    }
+
+    public async Task<string> GetActiveShareCodeAsync()
+    {
+        await ShareLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 15_000 });
+        var shareUri = new Uri((await ShareLink.InnerTextAsync()).Trim(), UriKind.Absolute);
+        return shareUri.Segments.Last().Trim('/');
     }
 
     public async Task<Guid> JoinVotingAsync()

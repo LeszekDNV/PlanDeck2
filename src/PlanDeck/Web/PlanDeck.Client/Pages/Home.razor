@@ -168,25 +168,77 @@
         break;
 
     case HomePageView.Registered:
-        <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-12">
-            <section aria-labelledby="home-registered-heading">
-                <MudText HtmlTag="h1" id="home-registered-heading" Typo="Typo.h3" GutterBottom="true">
-                    @L["Home_RegisteredHeading"]
-                </MudText>
-                <MudText Typo="Typo.body1" Class="mb-6">@L["Home_RegisteredIntro"]</MudText>
-                <MudStack Row="true" Spacing="2">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenProjects">
-                        @L["Home_OpenProjects"]
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="CreateProject">
-                        @L["Home_CreateProject"]
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="OpenTeams">
-                        @L["Home_ManageTeams"]
-                    </MudButton>
-                </MudStack>
-            </section>
-        </MudContainer>
+        <main class="pd-home pd-home-dashboard">
+            <MudContainer MaxWidth="MaxWidth.Large" Class="pd-home-dashboard-container">
+                <section aria-labelledby="home-registered-heading">
+                    <header class="pd-home-dashboard-header">
+                        <div>
+                            <MudText Typo="Typo.overline" Class="pd-home-eyebrow">
+                                @L["Home_RegisteredEyebrow"]
+                            </MudText>
+                            <MudText HtmlTag="h1" id="home-registered-heading" Typo="Typo.h2">
+                                @L["Home_RegisteredHeading"]
+                            </MudText>
+                            <MudText Typo="Typo.h6">@L["Home_RegisteredIntro"]</MudText>
+                        </div>
+                        <div class="pd-home-dashboard-status">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" />
+                            <span>@L["Home_RegisteredStatus"]</span>
+                        </div>
+                    </header>
+
+                    <div class="pd-home-dashboard-grid">
+                        <article class="pd-home-dashboard-card pd-home-dashboard-card-primary">
+                            <span class="pd-home-dashboard-icon">
+                                <MudIcon Icon="@Icons.Material.Filled.AddCircle" />
+                            </span>
+                            <div>
+                                <MudText HtmlTag="h2" Typo="Typo.h4">@L["Home_CreateProject"]</MudText>
+                                <MudText Typo="Typo.body1">@L["Home_CreateProjectDetail"]</MudText>
+                            </div>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                       OnClick="CreateProject">
+                                @L["Home_CreateProject"]
+                            </MudButton>
+                        </article>
+
+                        <article class="pd-home-dashboard-card">
+                            <span class="pd-home-dashboard-icon">
+                                <MudIcon Icon="@Icons.Material.Filled.FolderOpen" />
+                            </span>
+                            <div>
+                                <MudText HtmlTag="h2" Typo="Typo.h5">@L["Home_OpenProjects"]</MudText>
+                                <MudText Typo="Typo.body1">@L["Home_OpenProjectsDetail"]</MudText>
+                            </div>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                       OnClick="OpenProjects">
+                                @L["Home_OpenProjects"]
+                            </MudButton>
+                        </article>
+
+                        <article class="pd-home-dashboard-card">
+                            <span class="pd-home-dashboard-icon">
+                                <MudIcon Icon="@Icons.Material.Filled.Groups" />
+                            </span>
+                            <div>
+                                <MudText HtmlTag="h2" Typo="Typo.h5">@L["Home_ManageTeams"]</MudText>
+                                <MudText Typo="Typo.body1">@L["Home_ManageTeamsDetail"]</MudText>
+                            </div>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                       OnClick="OpenTeams">
+                                @L["Home_ManageTeams"]
+                            </MudButton>
+                        </article>
+                    </div>
+                </section>
+            </MudContainer>
+        </main>
         break;
 
     case HomePageView.Guest:

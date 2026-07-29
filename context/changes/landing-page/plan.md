@@ -290,25 +290,25 @@ Brak migracji danych i backendu. Zmienia się kontrakt UX: zalogowany użytkowni
 
 #### Automated
 
-- [x] 2.1 Parytet zasobów EN/PL przechodzi
-- [x] 2.2 Całe rozwiązanie kompiluje się
+- [x] 2.1 Parytet zasobów EN/PL przechodzi — 3d5caad
+- [x] 2.2 Całe rozwiązanie kompiluje się — 3d5caad
 
 #### Manual
 
-- [x] 2.3 Landing jest czytelny w jasnym i ciemnym motywie
-- [x] 2.4 Układ 375 px nie powoduje poziomego przewijania
-- [x] 2.5 Focus, semantyka i reduced motion są poprawne
-- [x] 2.6 Teksty EN/PL są kompletne i zgodne z zakresem produktu
+- [x] 2.3 Landing jest czytelny w jasnym i ciemnym motywie — 3d5caad
+- [x] 2.4 Układ 375 px nie powoduje poziomego przewijania — 3d5caad
+- [x] 2.5 Focus, semantyka i reduced motion są poprawne — 3d5caad
+- [x] 2.6 Teksty EN/PL są kompletne i zgodne z zakresem produktu — 3d5caad
 
 ### Phase 3: Weryfikacja adaptacyjnego doświadczenia
 
 #### Automated
 
-- [ ] 3.1 Testy E2E Home przechodzą lokalnie przez Aspire
-- [ ] 3.2 Wszystkie testy jednostkowe przechodzą
-- [ ] 3.3 Całe rozwiązanie kompiluje się
+- [x] 3.1 Testy E2E Home przechodzą lokalnie przez Aspire
+- [x] 3.2 Wszystkie testy jednostkowe przechodzą
+- [x] 3.3 Całe rozwiązanie kompiluje się
 
 #### Manual
 
-- [ ] 3.4 Krytyczne ścieżki działają w aplikacji uruchomionej przez AppHost
-- [ ] 3.5 Zmiana języka i motywu zachowuje poprawny układ
+- [x] 3.4 Krytyczne ścieżki działają w aplikacji uruchomionej przez AppHost
+- [x] 3.5 Zmiana języka i motywu zachowuje poprawny układ

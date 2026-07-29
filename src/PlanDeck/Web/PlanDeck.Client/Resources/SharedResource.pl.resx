@@ -493,7 +493,22 @@ Pulpit | Widżety przeglądu</value>
     <value>Kontynuuj planowanie</value>
   </data>
   <data name="Home_RegisteredIntro" xml:space="preserve">
-    <value>Otwórz projekty, utwórz nowy lub zarządzaj zespołami.</value>
+    <value>Wybierz, od czego zacząć, i sprawnie przejdź do kolejnej sesji planowania.</value>
+  </data>
+  <data name="Home_RegisteredEyebrow" xml:space="preserve">
+    <value>Twoja przestrzeń planowania</value>
+  </data>
+  <data name="Home_RegisteredStatus" xml:space="preserve">
+    <value>Gotowe na kolejną rundę</value>
+  </data>
+  <data name="Home_CreateProjectDetail" xml:space="preserve">
+    <value>Przygotuj przestrzeń dla nowego produktu lub inicjatywy.</value>
+  </data>
+  <data name="Home_OpenProjectsDetail" xml:space="preserve">
+    <value>Wróć do projektów, sesji i backlogu planowania.</value>
+  </data>
+  <data name="Home_ManageTeamsDetail" xml:space="preserve">
+    <value>Uporządkuj osoby, które wspólnie estymują i realizują pracę.</value>
   </data>
   <data name="Home_GuestHeading" xml:space="preserve">
     <value>Dołącz do sesji planowania</value>
