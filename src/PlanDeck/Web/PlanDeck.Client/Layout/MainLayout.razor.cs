@@ -68,9 +68,9 @@ public partial class MainLayout
         Login();
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
+        await base.OnInitializedAsync();
 
         _theme = new()
         {
@@ -78,6 +78,9 @@ public partial class MainLayout
             PaletteDark = _darkPalette,
             LayoutProperties = new LayoutProperties()
         };
+
+        var theme = await JS.InvokeAsync<string>("getPlanDeckThemePreference");
+        _isDarkMode = theme != "light";
     }
 
     private void DrawerToggle()
@@ -85,9 +88,11 @@ public partial class MainLayout
         _drawerOpen = !_drawerOpen;
     }
 
-    private void DarkModeToggle()
+    private async Task DarkModeToggleAsync()
     {
         _isDarkMode = !_isDarkMode;
+        var theme = _isDarkMode ? "dark" : "light";
+        await JS.InvokeVoidAsync("setPlanDeckThemePreference", theme);
     }
 
     private readonly PaletteLight _lightPalette = new()
@@ -131,7 +136,13 @@ public partial class MainLayout
 
     public string DarkLightModeButtonIcon => _isDarkMode switch
     {
-        true => Icons.Material.Rounded.AutoMode,
-        false => Icons.Material.Outlined.DarkMode,
+        true => Icons.Material.Rounded.LightMode,
+        false => Icons.Material.Rounded.DarkMode,
+    };
+
+    public string ThemeToggleLabel => _isDarkMode switch
+    {
+        true => Localizer["Theme_EnableLight"],
+        false => Localizer["Theme_EnableDark"],
     };
 }

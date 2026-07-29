@@ -31,6 +31,12 @@
             </AuthorizeView>
         </MudHidden>
         <MudSpacer />
+        <MudIconButton Icon="@DarkLightModeButtonIcon"
+                       Color="Color.Inherit"
+                       OnClick="DarkModeToggleAsync"
+                       aria-label="@ThemeToggleLabel"
+                       aria-pressed="@_isDarkMode"
+                       Title="@ThemeToggleLabel" />
         <MudHidden Breakpoint="Breakpoint.SmAndDown">
             <MudMenu Icon="@Icons.Material.Filled.Translate" Color="Color.Inherit" AriaLabel="@Localizer["Language"]">
                 <MudMenuItem OnClick="@(() => SetCultureAsync("en"))">English</MudMenuItem>

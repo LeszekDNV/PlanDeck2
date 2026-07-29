@@ -5,83 +5,74 @@
 
 ## Reported Observation
 
-Na środowisku Test po kliknięciu "Sigh In with a Microsoft account" na ekranie
-logowania przekierowuje na stronę
-`https://plandeck-server.wittymeadow-96369440.polandcentral.azurecontainerapps.io/account/entra/login?returnUrl=https%3A%2F%2Fplandeck-server.wittymeadow-96369440.polandcentral.azurecontainerapps.io%2F`
-i wyświetla:
-
-```
-404 - Page Not Found
-Sorry, the content you are looking for does not exist.
-```
-
-Logowanie za pomocą konta SSO nie działa.
+Na środowisku testowym akcje "Sign in with a Microsoft account" oraz
+"Create account with Microsoft" zwracaja blad aplikacji 4xx/5xx. Lokalnie w
+srodowisku Development oba przeplywy dzialaja poprawnie.
 
 ## Initial Framing (preserved)
 
-- **User's stated cause or approach**: Nie wskazano; zgłoszenie było oparte na obserwacji.
-- **User's proposed direction**: Przywrócić działające logowanie kontem Microsoft bez narzucania sposobu naprawy.
-- **Pre-dispatch narrowing**: Żądanie do `/account/entra/login` zwraca 404 w środowisku Test.
+- **User's stated cause or approach**: W konfiguracji srodowiska testowego moze brakowac wartosci wymaganych przez Microsoft Entra.
+- **User's proposed direction**: Zbadac konfiguracje srodowiska testowego i ustalic, czego brakuje.
+- **Pre-dispatch narrowing**: Po kliknieciu aplikacja zwraca blad 4xx/5xx, a nie blad wyswietlany przez Microsoft.
 
 ## Dimension Map
 
 The observation could originate at any of these dimensions:
 
-1. **Client navigation** — the login action could generate the wrong URL.
-2. **Server route registration** — the deployed server could omit `/account/entra/login`.
-3. **Testing Entra configuration** — the route could exist while its required OIDC scheme is unavailable.
-4. **Deployed ACA revision** — Testing could run an artifact older than the route.
+1. **Client and server routing** — akcja moglaby kierowac do nieistniejacej lub niewlasciwej trasy.
+2. **Deployment inputs** — workflow moglby nie dostarczac wartosci aplikacji Entra oczekiwanych przez AppHost. <- initial framing
+3. **ACA revision activation** — nowa rewizja moglaby uruchamiac sie bez wymaganej konfiguracji i mimo to otrzymac ruch.
+4. **Entra app registration** — aplikacja moglaby nie miec redirect URI odpowiadajacego publicznemu hostowi testowemu.
 
 ## Hypothesis Investigation
 
 | Hypothesis | Evidence | Verdict |
 | --- | --- | --- |
-| Client generates the wrong URL | The client navigates to `account/entra/login` in `AccountClientService.cs:123-130`, and the observed browser URL is the expected root route rather than a duplicated path. | NONE |
-| Server does not map the route | The route is defined in `AccountEndpointExtensions.cs:223-233`, registered in `Program.cs:65`, and mapped before the SPA fallback at `Program.cs:147-149`. | NONE |
-| Testing lacks the OIDC scheme required by the route | OIDC is registered only with complete credentials (`ServiceCollectionExtensions.cs:69-76,95-130`), while Testing permits missing credentials (`ProductionAuthenticationConfigurationTests.cs:48-61`). The route always challenges OIDC (`AccountEndpointExtensions.cs:223-230`). Runtime returns HTTP 500. | STRONG |
-| Testing runs an old ACA revision | The route was introduced in commit `a7ba02b`; later deployment failures could explain an earlier transient 404, but successful run `30403243585` deployed commit `8a5da3f`, which contains the route. | WEAK |
+| Client or server route is wrong | Endpointy sa mapowane warunkowo w `AccountEndpointExtensions.cs:225-293`; lokalny Development wykonuje challenge poprawnie. | NONE |
+| Deployment lacks Entra application inputs | Oba workflowy przekazuja tylko `AZURE_CLIENT_ID` i `AZURE_TENANT_ID` tozsamosci pipeline'u (`.github/workflows/azure-dev.yml:45-54`, `.github/workflows/azure-develop.yml:41-50`). AppHost oczekuje osobnych `AZURE_ENTRA_TENANT_ID`, `AZURE_ENTRA_CLIENT_ID`, `AZURE_ENTRA_CLIENT_SECRET`, po czym zamienia brak na puste wartosci (`AppHost.cs:89-103`). Repozytorium nie ma zmiennych `AZURE_ENTRA_*`. | STRONG |
+| Active ACA revision starts with invalid configuration | Rewizja `plandeck-server--0000027` ma 100% ruchu i stan Unhealthy. Jej TenantId, ClientId i ClientSecret sa puste, a Required ma wartosc true. Log startowy konczy proces w `MicrosoftAuthenticationOptions.Validate()` komunikatem o brakujacej konfiguracji. | STRONG |
+| Test Entra registration or redirect URI is missing | W dostepnym tenantcie nie znaleziono rejestracji z `https://plandeck-server.wittymeadow-96369440.polandcentral.azurecontainerapps.io/signin-oidc`. `PlanDeck (dev)` zawiera tylko `https://localhost:7443/signin-oidc`; `plandeck-pipeline-oidc` nie ma web redirect URI. | STRONG |
 
 ## Narrowing Signals
 
-- The user confirmed the browser reaches exactly `/account/entra/login`, ruling out an incorrect client destination.
-- A current request has HTTP status 500 even though the rendered body says "404 - Page Not Found".
-- A configured OIDC handler would produce a 302 redirect to Microsoft; a missing route would produce HTTP 404, not HTTP 500.
-- The current source and latest successful deployment both contain the endpoint.
+- HTTP 500 pojawia sie przed przekierowaniem do `login.microsoftonline.com`, wiec blad nie pochodzi z interakcji uzytkownika z Microsoftem.
+- Aktywna rewizja nie przechodzi startu aplikacji, poniewaz `Required=true` poprawnie odrzuca trzy puste wartosci.
+- GitHub Actions zakonczyl sie sukcesem, ale workflow konczy sie po `azd deploy` i nie sprawdza zdrowia nowej rewizji (`azure-develop.yml:170-172`).
+- Zdrowa rewizja `0000026` pozostaje aktywna, lecz ma 0% ruchu; rewizja `0000027` jest Unhealthy i otrzymuje 100% ruchu.
 
 ## Cross-System Convention
 
-An external-login endpoint normally challenges a registered authentication
-scheme and returns a 302 redirect to the identity provider. An exception should
-be rendered by a real server error endpoint while retaining an accurate error
-message. Here, `UseExceptionHandler("/Error")` (`Program.cs:39-42`) targets no
-server endpoint, so `/Error` falls through to the SPA (`Program.cs:147-149`);
-the client router (`App.razor:2`) then displays the generic 404 component
-(`Pages/NotFound.razor:6-7`).
+Tozsamosc deploymentu GitHub OIDC i aplikacja logowania uzytkownikow to dwa
+odrebne obiekty Entra. Dane `AZURE_CLIENT_ID`/`AZURE_TENANT_ID` pipeline'u nie
+powinny byc traktowane jako konfiguracja OIDC aplikacji. Aplikacja webowa
+potrzebuje osobnej rejestracji, sekretu oraz jawnego redirect URI dla kazdego
+publicznego hosta. Deployment powinien rowniez odrzucic rewizje, ktora nie
+osiagnela gotowosci.
 
 ## Reframed Problem Statement
 
-> **The actual problem to plan around is**: Testing exposes the Microsoft login endpoint without a configured OpenID Connect handler, causing HTTP 500, while the exception pipeline masks that server failure as a 404 page.
+> **The actual problem to plan around is**: Testing nie ma kompletnej, odrebnej konfiguracji aplikacji Microsoft Entra ani testowego redirect URI, a pipeline publikuje puste wartosci jako wymagane i nie wykrywa, ze nowa rewizja ACA nie uruchomila sie.
 
-The initial observation was accurate, but the visible 404 was not the HTTP
-failure or its root cause. The SSO failure originates before any redirect to
-Microsoft: the endpoint challenges a scheme that Testing did not register.
-The missing `/Error` handler independently makes diagnosis misleading.
+Pierwotna hipoteza o brakujacej konfiguracji byla poprawna, ale zakres jest
+szerszy niz jedna zmienna. Brakuje calego kontraktu deploymentowego dla
+aplikacji Entra oraz bramki gotowosci po wdrozeniu. Kod aplikacji zachowuje sie
+zgodnie z zalozeniem fail-fast i ujawnia ten brak podczas startu.
 
 ## Confidence
 
-- **HIGH** — source configuration predicts the observed HTTP 500, the runtime
-  status confirms it, and an independent investigation reconstructed both the
-  authentication failure and the misleading 404 body.
+- **HIGH** — log startowy, szablon aktywnej rewizji, konfiguracja workflow oraz
+  niezalezne sprawdzenie rejestracji Entra wskazuja ten sam lancuch przyczynowy.
 
 ## What Changes for /10x-plan
 
-The plan should cover the Testing authentication contract end to end: Microsoft
-login must never be exposed with an unavailable OIDC handler, and server
-exceptions must not be represented as client-side 404 pages. It should not plan
-around adding the already-existing `/account/entra/login` route.
+Plan powinien dotyczyc kompletnego kontraktu Entra dla Testing: osobnej
+rejestracji aplikacji webowej, bezpiecznego dostarczenia trzech wartosci do
+AppHost oraz kontroli gotowosci rewizji po deploymentcie. Nie nalezy planowac
+zmian w przyciskach ani trasach, ktore sa juz poprawne.
 
 ## References
 
-- Source files: `AccountClientService.cs:123-130`, `AccountEndpointExtensions.cs:223-233`, `ServiceCollectionExtensions.cs:69-130`, `Program.cs:39-65,147-149`, `AppHost.cs:84-102`, `App.razor:2`, `Pages/NotFound.razor:6-7`
-- Related research: none
-- Investigation tasks: `client-route-check`, `server-route-check`, `entra-config-check`, `deployment-check`, `independent-error-check`
+- Source files: `.github/workflows/azure-dev.yml:45-54,174-176`, `.github/workflows/azure-develop.yml:41-50,170-172`, `src/PlanDeck/Aspire/PlanDeck.AppHost/AppHost.cs:89-103`, `src/PlanDeck/Web/PlanDeck.Server/Identity/MicrosoftAuthenticationOptions.cs:19-33`, `src/PlanDeck/Web/PlanDeck.Server/Extensions/ServiceCollectionExtensions.cs:70-99`
+- Runtime: ACA revisions `plandeck-server--0000026` and `plandeck-server--0000027`
+- Entra registration: `PlanDeck (dev)` has only `https://localhost:7443/signin-oidc`
+- Investigation tasks: `deployment-config-check`, `entra-registration-check`

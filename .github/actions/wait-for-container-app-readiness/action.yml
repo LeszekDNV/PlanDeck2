@@ -1,0 +1,41 @@
+name: Wait for Container App readiness
+description: Verifies the final Azure Container Apps revision and public readiness endpoint.
+
+inputs:
+  resource-group:
+    description: Resource group containing the Container App.
+    required: true
+  container-app-name:
+    description: Container App name.
+    required: true
+  revision-timeout-seconds:
+    description: Maximum time to wait for the captured revision.
+    required: false
+    default: "600"
+  public-health-timeout-seconds:
+    description: Maximum time to wait for the public health endpoint.
+    required: false
+    default: "300"
+  health-path:
+    description: Public readiness path.
+    required: false
+    default: "/health"
+
+runs:
+  using: composite
+  steps:
+    - name: Verify final revision and public health
+      shell: pwsh
+      env:
+        ACA_RESOURCE_GROUP: ${{ inputs.resource-group }}
+        ACA_CONTAINER_APP_NAME: ${{ inputs.container-app-name }}
+        ACA_REVISION_TIMEOUT_SECONDS: ${{ inputs.revision-timeout-seconds }}
+        ACA_PUBLIC_HEALTH_TIMEOUT_SECONDS: ${{ inputs.public-health-timeout-seconds }}
+        ACA_HEALTH_PATH: ${{ inputs.health-path }}
+      run: >-
+        & (Join-Path $env:GITHUB_ACTION_PATH 'wait-for-container-app-readiness.ps1')
+        -ResourceGroup $env:ACA_RESOURCE_GROUP
+        -ContainerAppName $env:ACA_CONTAINER_APP_NAME
+        -RevisionTimeoutSeconds $env:ACA_REVISION_TIMEOUT_SECONDS
+        -PublicHealthTimeoutSeconds $env:ACA_PUBLIC_HEALTH_TIMEOUT_SECONDS
+        -HealthPath $env:ACA_HEALTH_PATH

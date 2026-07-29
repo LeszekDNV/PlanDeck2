@@ -11,7 +11,12 @@ using System.Globalization;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddAzureKeyVaultClient("key-vault");
+if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("key-vault"))
+    || !string.IsNullOrWhiteSpace(
+        builder.Configuration["Aspire:Azure:Security:KeyVault:VaultUri"]))
+{
+    builder.AddAzureKeyVaultClient("key-vault");
+}
 
 // Add services to the container.
 builder.Services.AddLocalization();
