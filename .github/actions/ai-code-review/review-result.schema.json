@@ -36,35 +36,7 @@
             "maxLength": 300
           }
         }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "complete": {
-                "const": true
-              }
-            },
-            "required": [
-              "complete"
-            ]
-          },
-          "then": {
-            "properties": {
-              "limitations": {
-                "maxItems": 0
-              }
-            }
-          },
-          "else": {
-            "properties": {
-              "limitations": {
-                "minItems": 1
-              }
-            }
-          }
-        }
-      ]
+      }
     },
     "criteria": {
       "type": "array",
@@ -76,6 +48,7 @@
         "required": [
           "id",
           "score",
+          "naReason",
           "evidence"
         ],
         "properties": {
@@ -100,20 +73,13 @@
             ]
           },
           "score": {
-            "oneOf": [
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 10
-              },
-              {
-                "const": "N/A"
-              }
+            "type": [
+              "integer",
+              "string"
             ]
           },
           "naReason": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 300
           },
           "evidence": {
@@ -140,26 +106,7 @@
               }
             }
           }
-        },
-        "allOf": [
-          {
-            "if": {
-              "properties": {
-                "score": {
-                  "const": "N/A"
-                }
-              },
-              "required": [
-                "score"
-              ]
-            },
-            "then": {
-              "required": [
-                "naReason"
-              ]
-            }
-          }
-        ]
+        }
       }
     },
     "blockers": {
