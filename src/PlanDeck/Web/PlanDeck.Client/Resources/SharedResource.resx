@@ -405,6 +405,147 @@ Dashboard | Overview widgets</value>
   <data name="Voting_Description" xml:space="preserve">
     <value>Description</value>
   </data>
+  <data name="Home_Title" xml:space="preserve">
+    <value>PlanDeck</value>
+  </data>
+  <data name="Home_Loading" xml:space="preserve">
+    <value>Loading your workspace...</value>
+  </data>
+  <data name="Home_Eyebrow" xml:space="preserve">
+    <value>PLANDECK · PLANNING POKER FOR AZURE DEVOPS</value>
+  </data>
+  <data name="Home_HeroHeading" xml:space="preserve">
+    <value>From backlog to shared estimate. In one deal.</value>
+  </data>
+  <data name="Home_HeroLead" xml:space="preserve">
+    <value>Import work items, vote live, and write the agreed result directly to Azure DevOps.</value>
+  </data>
+  <data name="Home_PrimaryCta" xml:space="preserve">
+    <value>Start planning</value>
+  </data>
+  <data name="Home_SecondaryCta" xml:space="preserve">
+    <value>I have a session code</value>
+  </data>
+  <data name="Home_LoginCta" xml:space="preserve">
+    <value>Already have an account? Sign in</value>
+  </data>
+  <data name="Home_MicrosoftCta" xml:space="preserve">
+    <value>Sign in with Microsoft</value>
+  </data>
+  <data name="Home_TableTaskLabel" xml:space="preserve">
+    <value>ACTIVE WORK ITEM</value>
+  </data>
+  <data name="Home_TableTaskTitle" xml:space="preserve">
+    <value>Checkout flow for enterprise accounts</value>
+  </data>
+  <data name="Home_TableResultLabel" xml:space="preserve">
+    <value>AGREED ESTIMATE</value>
+  </data>
+  <data name="Home_FlowEyebrow" xml:space="preserve">
+    <value>ONE CONTINUOUS FLOW</value>
+  </data>
+  <data name="Home_FlowHeading" xml:space="preserve">
+    <value>Import. Vote. Sync.</value>
+  </data>
+  <data name="Home_FlowImport" xml:space="preserve">
+    <value>Bring in the backlog</value>
+  </data>
+  <data name="Home_FlowImportDetail" xml:space="preserve">
+    <value>Select real Azure DevOps work items or add tasks manually.</value>
+  </data>
+  <data name="Home_FlowVote" xml:space="preserve">
+    <value>Reveal together</value>
+  </data>
+  <data name="Home_FlowVoteDetail" xml:space="preserve">
+    <value>Everyone votes independently before the facilitator reveals the table.</value>
+  </data>
+  <data name="Home_FlowSync" xml:space="preserve">
+    <value>Write back the decision</value>
+  </data>
+  <data name="Home_FlowSyncDetail" xml:space="preserve">
+    <value>Choose the agreed estimate and save it to the original work item.</value>
+  </data>
+  <data name="Home_RolesHeading" xml:space="preserve">
+    <value>One table. Two clear roles.</value>
+  </data>
+  <data name="Home_RolesLead" xml:space="preserve">
+    <value>The facilitator controls the round. Participants only need a link or code.</value>
+  </data>
+  <data name="Home_FacilitatorTitle" xml:space="preserve">
+    <value>For the facilitator</value>
+  </data>
+  <data name="Home_FacilitatorDetail" xml:space="preserve">
+    <value>Import tasks, start rounds, reveal votes, and sync the agreed estimate.</value>
+  </data>
+  <data name="Home_ParticipantTitle" xml:space="preserve">
+    <value>For participants</value>
+  </data>
+  <data name="Home_ParticipantDetail" xml:space="preserve">
+    <value>Join without a full account, choose a card, and discuss after the reveal.</value>
+  </data>
+  <data name="Home_JoinHeading" xml:space="preserve">
+    <value>Already invited to a session?</value>
+  </data>
+  <data name="Home_JoinLead" xml:space="preserve">
+    <value>Enter the code from your facilitator. You will provide your name on the next screen.</value>
+  </data>
+  <data name="Home_RegisteredHeading" xml:space="preserve">
+    <value>Continue planning</value>
+  </data>
+  <data name="Home_RegisteredIntro" xml:space="preserve">
+    <value>Choose where to begin and keep your next planning session moving.</value>
+  </data>
+  <data name="Home_RegisteredEyebrow" xml:space="preserve">
+    <value>Your planning workspace</value>
+  </data>
+  <data name="Home_RegisteredStatus" xml:space="preserve">
+    <value>Ready for the next round</value>
+  </data>
+  <data name="Home_CreateProjectDetail" xml:space="preserve">
+    <value>Set up a workspace for a new product or initiative.</value>
+  </data>
+  <data name="Home_OpenProjectsDetail" xml:space="preserve">
+    <value>Return to your projects, sessions, and planning backlog.</value>
+  </data>
+  <data name="Home_ManageTeamsDetail" xml:space="preserve">
+    <value>Organize the people who estimate and deliver together.</value>
+  </data>
+  <data name="Home_GuestHeading" xml:space="preserve">
+    <value>Join a planning session</value>
+  </data>
+  <data name="Home_GuestIntro" xml:space="preserve">
+    <value>Enter the session code provided by the facilitator.</value>
+  </data>
+  <data name="Home_SessionCode" xml:space="preserve">
+    <value>Session code</value>
+  </data>
+  <data name="Home_JoinButton" xml:space="preserve">
+    <value>Join session</value>
+  </data>
+  <data name="Home_OpenProjects" xml:space="preserve">
+    <value>Open projects</value>
+  </data>
+  <data name="Home_CreateProject" xml:space="preserve">
+    <value>Create project</value>
+  </data>
+  <data name="Home_ManageTeams" xml:space="preserve">
+    <value>Manage teams</value>
+  </data>
+  <data name="Home_TrustLabel" xml:space="preserve">
+    <value>PlanDeck platform capabilities</value>
+  </data>
+  <data name="Home_TrustIdentity" xml:space="preserve">
+    <value>Local or Microsoft sign-in</value>
+  </data>
+  <data name="Home_TrustIsolation" xml:space="preserve">
+    <value>Organization isolation</value>
+  </data>
+  <data name="Home_TrustLanguages" xml:space="preserve">
+    <value>English and Polish</value>
+  </data>
+  <data name="Home_TrustThemes" xml:space="preserve">
+    <value>Light and dark themes</value>
+  </data>
   <data name="Join_Title" xml:space="preserve">
     <value>Join the session</value>
   </data>

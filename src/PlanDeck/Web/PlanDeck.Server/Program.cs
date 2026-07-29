@@ -11,9 +11,12 @@ using System.Globalization;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("key-vault"))
+var keyVaultConfigured =
+    !string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("key-vault"))
     || !string.IsNullOrWhiteSpace(
-        builder.Configuration["Aspire:Azure:Security:KeyVault:VaultUri"]))
+        builder.Configuration["Aspire:Azure:Security:KeyVault:VaultUri"]);
+
+if (keyVaultConfigured)
 {
     builder.AddAzureKeyVaultClient("key-vault");
 }
@@ -25,7 +28,7 @@ builder.Services.AddSignalR();
 
 builder.Services
     .AddSqlDatabase(builder.Configuration)
-    .AddLocalServices()
+    .AddLocalServices(keyVaultConfigured)
     .AddExternalServices(builder.Configuration, builder.Environment)
     .AddAccountRateLimiting(builder.Configuration);
 
@@ -61,6 +64,19 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 });
 
 app.UseAuthentication();
+app.Use(async (httpContext, next) =>
+{
+    if (httpContext.User.Identity?.IsAuthenticated != true)
+    {
+        var guestAuthentication = await httpContext.AuthenticateAsync(GuestAuthentication.SchemeName);
+        if (guestAuthentication.Succeeded && guestAuthentication.Principal is not null)
+        {
+            httpContext.User = guestAuthentication.Principal;
+        }
+    }
+
+    await next(httpContext);
+});
 app.UseAuthorization();
 
 // Keep the removed mutating route as an explicit tombstone so the SPA fallback cannot return 200.

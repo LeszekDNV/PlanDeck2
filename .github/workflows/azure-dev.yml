@@ -3,8 +3,8 @@
 # One-time setup (human, requires an Azure subscription) — already provisioned for the `test`
 # environment in `rg-test` (Poland Central):
 #   1. Entra app registration `plandeck-pipeline-oidc` with a GitHub OIDC federated credential
-#      (subject `repo:LeszekDNV/PlanDeck2:ref:refs/heads/main`); RBAC: Owner on `rg-test` +
-#      AcrPush on the container registry.
+#      (subject `repo:LeszekDNV/PlanDeck2:environment:Testing`); RBAC: Owner on `rg-test` +
+#      AcrPush on the container registry. The Testing environment branch policy limits deployments.
 #   2. The pipeline service principal is a contained `db_owner` user in `PlanDeckDb` so the
 #      migration step can apply the schema (created once via the SQL Entra admin).
 #   3. The repo variables below are set; SQL_SERVER_FQDN points at the provisioned server.

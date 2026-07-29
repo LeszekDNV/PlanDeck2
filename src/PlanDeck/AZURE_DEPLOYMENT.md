@@ -74,26 +74,37 @@ secret values, or copies of the credential to this repository.
 
 ## CI/CD direction
 
-Use Azure Pipelines for automatic deployment after push to `master`; do not add GitHub Actions for this deployment path.
+The active Testing deployments are:
 
-Pipeline source: `.azuredevops\pipelines\azure-dev.yml`.
+- `.github\workflows\azure-dev.yml` for `main`.
+- `.github\workflows\azure-develop.yml` for `develop`.
 
-Required Azure Pipelines variables:
+Both jobs use the GitHub Environment `Testing` and concurrency group
+`plandeck-testing-deployment`, so only one deployment updates `rg-test` at a
+time. The legacy `.azuredevops\pipelines\azure-dev.yml` pipeline is not an
+active deployment source and is outside this workflow.
 
-- `AZURE_SERVICE_CONNECTION` - Azure Resource Manager service connection authorized for the target subscription/resource group.
-- `AZURE_ENV_NAME` - `azd` environment name, for example `plandeck-dev`.
-- `AZURE_RESOURCE_GROUP` - target resource group, for example `rg-plandeck-dev`.
-- `Authentication__Microsoft__TenantId` - Entra tenant containing the application registration.
-- `Authentication__Microsoft__ClientId` - Entra application client ID.
-- `Authentication__Microsoft__ClientSecret` - Entra application credential supplied as a secret.
+The `plandeck-pipeline-oidc` application must contain a federated identity
+credential with subject
+`repo:LeszekDNV/PlanDeck2:environment:Testing`. Assigning a GitHub Environment
+to the job changes its OIDC subject from a branch ref to this environment
+subject; the environment deployment-branch policy remains responsible for
+limiting use to `main` and `develop`.
 
-The AppHost publish model exposes these as the `entra-tenant-id`, `entra-client-id`, and secret
-`entra-client-secret` parameters and maps them to the server container environment.
+Each GitHub workflow:
 
-Production startup fails when any required Entra value is absent. Test authentication is restricted to
-explicit Development/Testing runs and must never be set on a published Container App.
+1. Authenticates the pipeline identity through federated OIDC.
+2. Validates the dedicated application Entra settings before provisioning.
+3. Provisions infrastructure and applies database migrations.
+4. Deploys the application.
+5. Captures the final Container App revision once and waits for that immutable
+   revision to become provisioned, healthy, and running.
+6. Requires the public HTTPS `/health` endpoint to return HTTP 200 without
+   following redirects.
 
-Store application secrets such as `Authentication__Microsoft__ClientSecret` in Key Vault or secure pipeline variables only. Azure DevOps credentials are project-scoped and resolved from the configured project Key Vault secret URI.
+Deployment failure stops the workflow but does not automatically alter traffic,
+activate or deactivate revisions, or roll back database migrations. Preserve
+the workflow URL and verified revision name before performing manual recovery.
 
 Real Key Vault integration verification is opt-in by default (`PLANDECK_RUN_REAL_KEYVAULT_TESTS=true`). In CI security gates, also set `PLANDECK_REQUIRE_REAL_KEYVAULT_TESTS=true` to fail fast instead of silently skipping the test.
 
@@ -102,7 +113,7 @@ Real Key Vault integration verification is opt-in by default (`PLANDECK_RUN_REAL
 Set these variables before running support commands:
 
 ```powershell
-$ResourceGroup = "rg-plandeck-dev"
+$ResourceGroup = "rg-test"
 $ContainerApp = "plandeck-server"
 ```
 
@@ -111,26 +122,43 @@ Inspect revisions and replica state:
 ```powershell
 az containerapp revision list --resource-group $ResourceGroup --name $ContainerApp --output table
 az containerapp replica list --resource-group $ResourceGroup --name $ContainerApp --revision <revision-name> --output table
+az containerapp revision show --resource-group $ResourceGroup --name $ContainerApp `
+  --revision <revision-name> `
+  --query "{provisioning:properties.provisioningState,health:properties.healthState,running:properties.runningState}" `
+  --output table
 ```
 
-Follow application logs:
+Inspect system and application logs:
 
 ```powershell
-az containerapp logs show --resource-group $ResourceGroup --name $ContainerApp --follow
+az containerapp logs show --resource-group $ResourceGroup --name $ContainerApp `
+  --type system --tail 100
+az containerapp logs show --resource-group $ResourceGroup --name $ContainerApp `
+  --revision <revision-name> --type console --tail 100
 ```
 
-Rollback a bad revision by shifting traffic back to the previous known-good revision:
+Confirm public readiness without following redirects:
+
+```powershell
+curl.exe --max-redirs 0 --fail-with-body `
+  "https://plandeck-server.wittymeadow-96369440.polandcentral.azurecontainerapps.io/health"
+```
+
+After human review, restore traffic to a known-good active revision:
 
 ```powershell
 az containerapp ingress traffic set --resource-group $ResourceGroup --name $ContainerApp --revision-weight <good-revision>=100
 ```
 
-After rollback, do not assume database state rolled back. Identify whether EF Core migrations ran, preserve logs, and use a reviewed migration rollback script or database point-in-time restore only after human approval.
+Do not run the traffic command until an operator confirms the selected revision
+is healthy and understands whether migrations ran. Traffic rollback does not
+roll back the database. Preserve logs, then use a reviewed migration rollback
+script or database point-in-time restore only after separate human approval.
 
 Common incident checks:
 
 - ACA provisioning failure: capture `azd` logs, generated Bicep, resource group deployment operation ID, and Azure activity-log correlation ID before editing resources.
-- Managed identity or Key Vault failure: verify identity assignment, RBAC/access policy, secret names, and whether a new ACA revision/restart is needed.
+- Managed identity or Key Vault failure: verify identity assignment, RBAC/access policy, secret names, and whether a new ACA revision/restart is needed. Testing does not provision Key Vault, so its readiness checks only configured dependencies.
 - SQL failure: check `DefaultConnection` binding, Azure SQL firewall/private access, managed identity user mapping, migration state, and `/health` output.
 - Entra ID callback failure: verify redirect URI, forwarded HTTPS headers, cookie settings, tenant ID, and client ID.
 - Azure DevOps import/write-back failure: surface 401/403/404/409/429 separately, honor `Retry-After`, retain the PlanDeck estimate, and retry only after correcting permission, field, or revision conflicts.

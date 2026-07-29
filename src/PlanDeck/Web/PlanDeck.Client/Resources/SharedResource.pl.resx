@@ -405,6 +405,147 @@ Pulpit | Widżety przeglądu</value>
   <data name="Voting_Description" xml:space="preserve">
     <value>Opis</value>
   </data>
+  <data name="Home_Title" xml:space="preserve">
+    <value>PlanDeck</value>
+  </data>
+  <data name="Home_Loading" xml:space="preserve">
+    <value>Ładowanie przestrzeni roboczej...</value>
+  </data>
+  <data name="Home_Eyebrow" xml:space="preserve">
+    <value>PLANDECK · PLANNING POKER DLA AZURE DEVOPS</value>
+  </data>
+  <data name="Home_HeroHeading" xml:space="preserve">
+    <value>Od backlogu do wspólnej estymaty. W jednym rozdaniu.</value>
+  </data>
+  <data name="Home_HeroLead" xml:space="preserve">
+    <value>Importuj zadania, głosujcie na żywo i zapisz uzgodniony wynik bezpośrednio w Azure DevOps.</value>
+  </data>
+  <data name="Home_PrimaryCta" xml:space="preserve">
+    <value>Rozpocznij planowanie</value>
+  </data>
+  <data name="Home_SecondaryCta" xml:space="preserve">
+    <value>Mam kod sesji</value>
+  </data>
+  <data name="Home_LoginCta" xml:space="preserve">
+    <value>Masz już konto? Zaloguj się</value>
+  </data>
+  <data name="Home_MicrosoftCta" xml:space="preserve">
+    <value>Zaloguj się przez Microsoft</value>
+  </data>
+  <data name="Home_TableTaskLabel" xml:space="preserve">
+    <value>AKTYWNE ZADANIE</value>
+  </data>
+  <data name="Home_TableTaskTitle" xml:space="preserve">
+    <value>Proces zakupowy dla kont firmowych</value>
+  </data>
+  <data name="Home_TableResultLabel" xml:space="preserve">
+    <value>UZGODNIONA ESTYMATA</value>
+  </data>
+  <data name="Home_FlowEyebrow" xml:space="preserve">
+    <value>JEDEN CIĄGŁY PRZEPŁYW</value>
+  </data>
+  <data name="Home_FlowHeading" xml:space="preserve">
+    <value>Importuj. Głosuj. Synchronizuj.</value>
+  </data>
+  <data name="Home_FlowImport" xml:space="preserve">
+    <value>Przenieś backlog</value>
+  </data>
+  <data name="Home_FlowImportDetail" xml:space="preserve">
+    <value>Wybierz prawdziwe elementy pracy Azure DevOps lub dodaj zadania ręcznie.</value>
+  </data>
+  <data name="Home_FlowVote" xml:space="preserve">
+    <value>Odkryjcie głosy razem</value>
+  </data>
+  <data name="Home_FlowVoteDetail" xml:space="preserve">
+    <value>Każdy głosuje niezależnie, zanim prowadzący odsłoni cały stół.</value>
+  </data>
+  <data name="Home_FlowSync" xml:space="preserve">
+    <value>Zapisz decyzję</value>
+  </data>
+  <data name="Home_FlowSyncDetail" xml:space="preserve">
+    <value>Wybierz uzgodnioną estymatę i zapisz ją w źródłowym elemencie pracy.</value>
+  </data>
+  <data name="Home_RolesHeading" xml:space="preserve">
+    <value>Jeden stół. Dwie jasne role.</value>
+  </data>
+  <data name="Home_RolesLead" xml:space="preserve">
+    <value>Prowadzący kontroluje rundę. Uczestnikom wystarczy link lub kod.</value>
+  </data>
+  <data name="Home_FacilitatorTitle" xml:space="preserve">
+    <value>Dla prowadzącego</value>
+  </data>
+  <data name="Home_FacilitatorDetail" xml:space="preserve">
+    <value>Importuj zadania, rozpoczynaj rundy, odsłaniaj głosy i synchronizuj uzgodnioną estymatę.</value>
+  </data>
+  <data name="Home_ParticipantTitle" xml:space="preserve">
+    <value>Dla uczestników</value>
+  </data>
+  <data name="Home_ParticipantDetail" xml:space="preserve">
+    <value>Dołącz bez pełnego konta, wybierz kartę i rozpocznij dyskusję po odsłonięciu.</value>
+  </data>
+  <data name="Home_JoinHeading" xml:space="preserve">
+    <value>Masz już zaproszenie do sesji?</value>
+  </data>
+  <data name="Home_JoinLead" xml:space="preserve">
+    <value>Wpisz kod od prowadzącego. Imię podasz na następnym ekranie.</value>
+  </data>
+  <data name="Home_RegisteredHeading" xml:space="preserve">
+    <value>Kontynuuj planowanie</value>
+  </data>
+  <data name="Home_RegisteredIntro" xml:space="preserve">
+    <value>Wybierz, od czego zacząć, i sprawnie przejdź do kolejnej sesji planowania.</value>
+  </data>
+  <data name="Home_RegisteredEyebrow" xml:space="preserve">
+    <value>Twoja przestrzeń planowania</value>
+  </data>
+  <data name="Home_RegisteredStatus" xml:space="preserve">
+    <value>Gotowe na kolejną rundę</value>
+  </data>
+  <data name="Home_CreateProjectDetail" xml:space="preserve">
+    <value>Przygotuj przestrzeń dla nowego produktu lub inicjatywy.</value>
+  </data>
+  <data name="Home_OpenProjectsDetail" xml:space="preserve">
+    <value>Wróć do projektów, sesji i backlogu planowania.</value>
+  </data>
+  <data name="Home_ManageTeamsDetail" xml:space="preserve">
+    <value>Uporządkuj osoby, które wspólnie estymują i realizują pracę.</value>
+  </data>
+  <data name="Home_GuestHeading" xml:space="preserve">
+    <value>Dołącz do sesji planowania</value>
+  </data>
+  <data name="Home_GuestIntro" xml:space="preserve">
+    <value>Wpisz kod sesji otrzymany od prowadzącego.</value>
+  </data>
+  <data name="Home_SessionCode" xml:space="preserve">
+    <value>Kod sesji</value>
+  </data>
+  <data name="Home_JoinButton" xml:space="preserve">
+    <value>Dołącz do sesji</value>
+  </data>
+  <data name="Home_OpenProjects" xml:space="preserve">
+    <value>Otwórz projekty</value>
+  </data>
+  <data name="Home_CreateProject" xml:space="preserve">
+    <value>Utwórz projekt</value>
+  </data>
+  <data name="Home_ManageTeams" xml:space="preserve">
+    <value>Zarządzaj zespołami</value>
+  </data>
+  <data name="Home_TrustLabel" xml:space="preserve">
+    <value>Możliwości platformy PlanDeck</value>
+  </data>
+  <data name="Home_TrustIdentity" xml:space="preserve">
+    <value>Logowanie lokalne lub Microsoft</value>
+  </data>
+  <data name="Home_TrustIsolation" xml:space="preserve">
+    <value>Izolacja organizacji</value>
+  </data>
+  <data name="Home_TrustLanguages" xml:space="preserve">
+    <value>Język polski i angielski</value>
+  </data>
+  <data name="Home_TrustThemes" xml:space="preserve">
+    <value>Jasny i ciemny motyw</value>
+  </data>
   <data name="Join_Title" xml:space="preserve">
     <value>Dołącz do sesji</value>
   </data>

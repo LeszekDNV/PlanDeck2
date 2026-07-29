@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 
 namespace PlanDeck.E2e.Tests.Pages;
@@ -13,10 +14,11 @@ public class JoinSessionPage
         _baseUrl = baseUrl;
     }
 
-    public ILocator NameField => _page.GetByLabel("Your name", new() { Exact = true });
+    public ILocator NameField =>
+        _page.GetByLabel(new Regex("^(Your name|Twoje imię)$"));
 
     public ILocator SubmitButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = "Join", Exact = true });
+        _page.GetByRole(AriaRole.Button, new() { NameRegex = new Regex("^(Join|Dołącz)$") });
 
     public ILocator ErrorAlert => _page.GetByTestId("join-error");
 
@@ -41,5 +43,13 @@ public class JoinSessionPage
     {
         await NameField.FillAsync(name);
         await SubmitButton.ClickAsync();
+    }
+
+    public async Task JoinAsync(string name)
+    {
+        await SubmitNameAsync(name);
+        await _page.WaitForURLAsync(
+            new Regex("/voting/[0-9a-fA-F-]{36}$"),
+            new() { Timeout = 15_000 });
     }
 }

@@ -62,12 +62,14 @@ public class SessionsTests : PageTest
     }
 
     [Test]
-    public async Task RootRedirectsToProjects_AndLegacySessionsRouteIsNotFound()
+    public async Task RootShowsRegisteredHome_AndLegacySessionsRouteIsNotFound()
     {
         await LocalAccountFlow.RegisterConfirmAndLoginAsync(Page, AspireAppFixture.BaseUrl);
 
         await Page.GotoAsync(AspireAppFixture.BaseUrl, new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
-        await Expect(Page).ToHaveURLAsync(new Regex("/projects$"), new() { Timeout = 15_000 });
+        await Expect(Page).ToHaveURLAsync(new Regex("/$"), new() { Timeout = 15_000 });
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Continue planning", Exact = true }))
+            .ToBeVisibleAsync(new() { Timeout = 15_000 });
 
         await Page.GotoAsync($"{AspireAppFixture.BaseUrl.TrimEnd('/')}/sessions", new() { WaitUntil = WaitUntilState.DOMContentLoaded, Timeout = 120_000 });
         await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "404 - Page Not Found", Exact = true }))
@@ -119,5 +121,4 @@ public class SessionsTests : PageTest
         return Guid.Parse(segment);
     }
 }
-
 

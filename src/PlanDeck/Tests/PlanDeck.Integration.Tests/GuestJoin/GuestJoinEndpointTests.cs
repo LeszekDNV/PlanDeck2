@@ -105,6 +105,26 @@ public sealed class GuestJoinEndpointTests
     }
 
     [Test]
+    public async Task GuestJoin_CurrentUserGrpc_ReportsGuestIdentity()
+    {
+        SeedSession(SessionStatus.Active, "CURRENTUSER1");
+        using var browser = new AuthenticationTestClient(_factory);
+
+        var joinResponse = await browser.PostAsJsonAsync(
+            "/guest/join", new { code = "CURRENTUSER1", displayName = "Alice" });
+        var currentUser = await browser.GetCurrentUserAsync();
+
+        Assert.That(joinResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        Assert.Multiple(() =>
+        {
+            Assert.That(currentUser.IsAuthenticated, Is.True);
+            Assert.That(currentUser.IsGuest, Is.True);
+            Assert.That(currentUser.DisplayName, Is.EqualTo("Alice"));
+            Assert.That(currentUser.ParticipantId, Is.Not.Null.And.Not.Empty);
+        });
+    }
+
+    [Test]
     public async Task GuestJoin_TrimsPaddedName_AndSucceeds()
     {
         SeedSession(SessionStatus.Active, "ACTIVECODE2");
@@ -217,6 +237,5 @@ public sealed class GuestJoinEndpointTests
 
     private sealed record AntiforgeryTokenResponse(string Token);
 }
-
 
 
