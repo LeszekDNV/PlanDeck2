@@ -405,6 +405,33 @@ Pulpit | Widżety przeglądu</value>
   <data name="Voting_Description" xml:space="preserve">
     <value>Opis</value>
   </data>
+  <data name="Home_Title" xml:space="preserve">
+    <value>PlanDeck</value>
+  </data>
+  <data name="Home_Loading" xml:space="preserve">
+    <value>Ładowanie przestrzeni roboczej...</value>
+  </data>
+  <data name="Home_AnonymousHeading" xml:space="preserve">
+    <value>Estymujcie wspólnie z PlanDeck</value>
+  </data>
+  <data name="Home_AnonymousIntro" xml:space="preserve">
+    <value>Planuj pracę z zespołem lub dołącz do istniejącej sesji.</value>
+  </data>
+  <data name="Home_RegisteredHeading" xml:space="preserve">
+    <value>Kontynuuj planowanie</value>
+  </data>
+  <data name="Home_RegisteredIntro" xml:space="preserve">
+    <value>Otwórz projekty, utwórz nowy lub zarządzaj zespołami.</value>
+  </data>
+  <data name="Home_GuestHeading" xml:space="preserve">
+    <value>Dołącz do sesji planowania</value>
+  </data>
+  <data name="Home_GuestIntro" xml:space="preserve">
+    <value>Wpisz kod sesji otrzymany od prowadzącego.</value>
+  </data>
+  <data name="Home_SessionCode" xml:space="preserve">
+    <value>Kod sesji</value>
+  </data>
   <data name="Join_Title" xml:space="preserve">
     <value>Dołącz do sesji</value>
   </data>

@@ -405,6 +405,33 @@ Dashboard | Overview widgets</value>
   <data name="Voting_Description" xml:space="preserve">
     <value>Description</value>
   </data>
+  <data name="Home_Title" xml:space="preserve">
+    <value>PlanDeck</value>
+  </data>
+  <data name="Home_Loading" xml:space="preserve">
+    <value>Loading your workspace...</value>
+  </data>
+  <data name="Home_AnonymousHeading" xml:space="preserve">
+    <value>Estimate together with PlanDeck</value>
+  </data>
+  <data name="Home_AnonymousIntro" xml:space="preserve">
+    <value>Plan work with your team or join an existing session.</value>
+  </data>
+  <data name="Home_RegisteredHeading" xml:space="preserve">
+    <value>Continue planning</value>
+  </data>
+  <data name="Home_RegisteredIntro" xml:space="preserve">
+    <value>Open your projects, create a new one, or manage teams.</value>
+  </data>
+  <data name="Home_GuestHeading" xml:space="preserve">
+    <value>Join a planning session</value>
+  </data>
+  <data name="Home_GuestIntro" xml:space="preserve">
+    <value>Enter the session code provided by the facilitator.</value>
+  </data>
+  <data name="Home_SessionCode" xml:space="preserve">
+    <value>Session code</value>
+  </data>
   <data name="Join_Title" xml:space="preserve">
     <value>Join the session</value>
   </data>

@@ -1,26 +1,95 @@
 @page "/"
-@using PlanDeck.Client.Services
-@inject IHelloClientService HelloService
+@inject IStringLocalizer<SharedResource> L
 @inject AuthenticationStateProvider AuthState
 @inject NavigationManager Navigation
+@inject IAccountClientService AccountService
+@inject ILogger<Home> Logger
 
-<PageTitle>Home</PageTitle>
+<PageTitle>@L["Home_Title"]</PageTitle>
 
-<MudText Typo="Typo.h3" GutterBottom="true">Hello, world!</MudText>
-<MudText Class="mb-8">Welcome to your new app, powered by MudBlazor and the .NET 10 Template!</MudText>
-
-<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CallServerAsync">
-    Call server
-</MudButton>
-
-@if (!string.IsNullOrEmpty(_serverResponse))
+@switch (_view)
 {
-    <MudText Class="mt-4" Typo="Typo.h6">@_serverResponse</MudText>
-}
+    case HomePageView.Loading:
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-12" aria-live="polite">
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-2">@L["Home_Loading"]</MudText>
+        </MudContainer>
+        break;
 
-<MudAlert Severity="Severity.Normal" ContentAlignment="HorizontalAlignment.Start" Class="mt-8">
-    You can find documentation and examples on our website here:
-    <MudLink Href="https://mudblazor.com" Target="_blank" Typo="Typo.body2" Color="Color.Primary">
-        <b>www.mudblazor.com</b>
-    </MudLink>
-</MudAlert>
+    case HomePageView.Anonymous:
+        <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-12">
+            <section aria-labelledby="home-anonymous-heading">
+                <MudText HtmlTag="h1" id="home-anonymous-heading" Typo="Typo.h3" GutterBottom="true">
+                    @L["Home_AnonymousHeading"]
+                </MudText>
+                <MudText Typo="Typo.body1" Class="mb-6">@L["Home_AnonymousIntro"]</MudText>
+                <MudStack Row="true" Spacing="2" Class="mb-8">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Register">
+                        @L["Account_Register_Button"]
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="Login">
+                        @L["Auth_Login"]
+                    </MudButton>
+                    @if (_microsoftAuthenticationAvailable)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   StartIcon="@Icons.Custom.Brands.Microsoft"
+                                   OnClick="LoginWithMicrosoft">
+                            @L["Join_LoginMicrosoft"]
+                        </MudButton>
+                    }
+                </MudStack>
+                <MudText Typo="Typo.h5" GutterBottom="true">@L["Join_Title"]</MudText>
+                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
+                    <MudTextField @bind-Value="_sessionCode"
+                                  Label="@L["Home_SessionCode"]"
+                                  Variant="Variant.Outlined" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="JoinSession">
+                        @L["Join_Submit"]
+                    </MudButton>
+                </MudStack>
+            </section>
+        </MudContainer>
+        break;
+
+    case HomePageView.Registered:
+        <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-12">
+            <section aria-labelledby="home-registered-heading">
+                <MudText HtmlTag="h1" id="home-registered-heading" Typo="Typo.h3" GutterBottom="true">
+                    @L["Home_RegisteredHeading"]
+                </MudText>
+                <MudText Typo="Typo.body1" Class="mb-6">@L["Home_RegisteredIntro"]</MudText>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenProjects">
+                        @L["Nav_Projects"]
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="CreateProject">
+                        @L["Projects_Create"]
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="OpenTeams">
+                        @L["Nav_Teams"]
+                    </MudButton>
+                </MudStack>
+            </section>
+        </MudContainer>
+        break;
+
+    case HomePageView.Guest:
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-12">
+            <section aria-labelledby="home-guest-heading">
+                <MudText HtmlTag="h1" id="home-guest-heading" Typo="Typo.h3" GutterBottom="true">
+                    @L["Home_GuestHeading"]
+                </MudText>
+                <MudText Typo="Typo.body1" Class="mb-6">@L["Home_GuestIntro"]</MudText>
+                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
+                    <MudTextField @bind-Value="_sessionCode"
+                                  Label="@L["Home_SessionCode"]"
+                                  Variant="Variant.Outlined" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="JoinSession">
+                        @L["Join_Submit"]
+                    </MudButton>
+                </MudStack>
+            </section>
+        </MudContainer>
+        break;
+}

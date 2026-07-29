@@ -1,4 +1,5 @@
 using Grpc.Core;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using PlanDeck.Core.Shared.Contracts;
 
@@ -6,6 +7,9 @@ namespace PlanDeck.Client.Pages;
 
 public partial class Projects
 {
+    [SupplyParameterFromQuery(Name = "create")]
+    private bool OpenCreateRequested { get; set; }
+
     private bool _loading = true;
     private bool _busy;
     private bool _isGuest;
@@ -23,6 +27,10 @@ public partial class Projects
         if (state.User.Identity?.IsAuthenticated == true && !_isGuest)
         {
             await LoadProjectsAsync();
+            if (OpenCreateRequested)
+            {
+                OpenCreate();
+            }
         }
 
         _loading = false;
