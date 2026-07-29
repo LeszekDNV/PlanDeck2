@@ -107,5 +107,6 @@ try {
     }
 }
 catch {
-    throw 'Invalid review result.'
+    Write-Output "Validation failure: $($_.Exception.Message)"
+    throw "Invalid review result: $($_.Exception.Message)"
 }
