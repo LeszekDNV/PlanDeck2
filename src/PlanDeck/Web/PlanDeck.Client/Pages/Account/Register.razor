@@ -70,7 +70,7 @@
 
                 <AccountActionButtons PrimaryText="@Localizer["Account_Register_Button"]"
                                       EntraText="@Localizer["Account_Register_Entra_Button"]"
-                                      ShowEntra="true"
+                                      ShowEntra="@_microsoftAuthenticationAvailable"
                                       IsBusy="@_isBusy"
                                       OnEntraClick="RegisterWithEntraAsync" />
             </EditForm>

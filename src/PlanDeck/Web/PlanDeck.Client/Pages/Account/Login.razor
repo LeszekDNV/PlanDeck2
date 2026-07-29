@@ -12,7 +12,10 @@
 
             <AccountStatusMessage Status="@_statusMessage" Errors="@_errors" Severity="@_statusSeverity" />
 
-            <EditForm Model="@_model" OnValidSubmit="HandleSubmitAsync" FormName="login">
+            <EditForm Model="@_model"
+                      OnValidSubmit="HandleSubmitAsync"
+                      FormName="login"
+                      aria-label="@Localizer["Account_Login_Heading"]">
 
 
                 <MudTextField @bind-Value="_model.Login"
@@ -39,7 +42,7 @@
 
                 <AccountActionButtons PrimaryText="@Localizer["Auth_Login"]"
                                       EntraText="@Localizer["Join_LoginMicrosoft"]"
-                                      ShowEntra="true"
+                                      ShowEntra="@_microsoftAuthenticationAvailable"
                                       IsBusy="@_isBusy"
                                       OnEntraClick="LoginWithEntraAsync" />
             </EditForm>

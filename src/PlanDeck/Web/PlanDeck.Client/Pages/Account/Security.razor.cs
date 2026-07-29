@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Grpc.Core;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Localization;
@@ -15,6 +16,7 @@ public partial class Security
     private SecurityInfoModel? _info;
     private readonly LinkFormModel _linkModel = new();
     private bool _isBusy;
+    private bool _microsoftAuthenticationAvailable;
     private bool _showLinkForm;
     private string? _statusMessage;
     private IReadOnlyList<string> _errors = [];
@@ -31,6 +33,17 @@ public partial class Security
         try
         {
             _info = await AccountService.GetSecurityInfoAsync();
+            try
+            {
+                _microsoftAuthenticationAvailable =
+                    await AccountService.IsMicrosoftAuthenticationAvailableAsync();
+            }
+            catch (RpcException)
+            {
+                _microsoftAuthenticationAvailable = false;
+                _statusSeverity = Severity.Warning;
+                _errors = [Localizer["Error_Generic"]];
+            }
         }
         catch
         {

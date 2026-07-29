@@ -99,7 +99,8 @@ if (builder.ExecutionContext.IsPublishMode)
     planDeckServer
         .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
         .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
-        .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret);
+        .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret)
+        .WithEnvironment("Authentication__Microsoft__Required", bool.TrueString);
 
     planDeckServer
         .WaitFor(sqlDatabase)
@@ -141,6 +142,15 @@ else
         .WithEnvironment("EmailSettings__PublicBaseUrl", "https://localhost:7443")
         .WaitFor(sqlDatabase)
         .WaitFor(mailSmtp);
+
+    if (builder.Configuration.GetValue<bool>("Testing:E2e:EnableMicrosoftAuthentication"))
+    {
+        planDeckServer
+            .WithEnvironment("Authentication__Microsoft__TenantId", "e2e-tenant")
+            .WithEnvironment("Authentication__Microsoft__ClientId", "e2e-client")
+            .WithEnvironment("Authentication__Microsoft__ClientSecret", "e2e-secret")
+            .WithEnvironment("Authentication__Microsoft__Required", bool.FalseString);
+    }
 }
 
 

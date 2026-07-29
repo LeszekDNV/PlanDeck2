@@ -1,16 +1,22 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Grpc.Core;
+using Grpc.Net.Client;
 using Microsoft.AspNetCore.Components;
 using PlanDeck.Client.Models;
+using PlanDeck.Core.Shared.Contracts;
+using ProtoBuf.Grpc.Client;
 
 namespace PlanDeck.Client.Services;
 
 public sealed class AccountClientService(
     HttpClient httpClient,
+    GrpcChannel grpcChannel,
     NavigationManager navigation) : IAccountClientService
 {
     private const string AntiforgeryHeader = "RequestVerificationToken";
     private static readonly JsonSerializerOptions ResponseJsonOptions = new(JsonSerializerDefaults.Web);
+    private Task<bool>? _microsoftAuthenticationAvailability;
 
     public async Task<AccountActionResponse> RegisterAsync(
         LocalRegisterModel model,
@@ -120,6 +126,28 @@ public sealed class AccountClientService(
         return await ReadResponseAsync(response, cancellationToken);
     }
 
+    public async Task<bool> IsMicrosoftAuthenticationAvailableAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var request = _microsoftAuthenticationAvailability ??=
+            LoadMicrosoftAuthenticationAvailabilityAsync(cancellationToken);
+
+        try
+        {
+            return await request;
+        }
+        catch (RpcException)
+        {
+            ResetMicrosoftAuthenticationAvailability(request);
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            ResetMicrosoftAuthenticationAvailability(request);
+            throw;
+        }
+    }
+
     public void NavigateToEntraLogin(string? returnUrl = null)
     {
         var url = string.IsNullOrWhiteSpace(returnUrl)
@@ -192,6 +220,24 @@ public sealed class AccountClientService(
         return info ?? throw new InvalidOperationException("Failed to read security info.");
     }
 
+    private async Task<bool> LoadMicrosoftAuthenticationAvailabilityAsync(
+        CancellationToken cancellationToken)
+    {
+        var service = grpcChannel.CreateGrpcService<IAuthService>();
+        var reply = await service.GetAuthenticationCapabilitiesAsync(
+            new AuthenticationCapabilitiesRequest(),
+            cancellationToken);
+        return reply.MicrosoftAuthenticationAvailable;
+    }
+
+    private void ResetMicrosoftAuthenticationAvailability(Task<bool> request)
+    {
+        if (ReferenceEquals(_microsoftAuthenticationAvailability, request))
+        {
+            _microsoftAuthenticationAvailability = null;
+        }
+    }
+
     private async Task EnsureAntiforgeryTokenAsync(CancellationToken cancellationToken)
     {
         if (httpClient.DefaultRequestHeaders.Contains(AntiforgeryHeader))
@@ -247,5 +293,3 @@ public sealed class AccountClientService(
 
     private sealed record AntiforgeryTokenResponse(string Token);
 }
-
-

@@ -27,12 +27,13 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
-          persist-credentials: false
           fetch-depth: 1
 
       - id: review
         name: Review static pull request diff
         uses: ./.github/actions/ai-code-review
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           model: openai/gpt-4.1-mini
           expected-base-branch: develop

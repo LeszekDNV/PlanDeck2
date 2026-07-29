@@ -18,6 +18,7 @@ public class AspireAppFixture
     public async Task StartAsync()
     {
         Environment.SetEnvironmentVariable("Testing__E2e__AutoConfirmEmail", "true");
+        Environment.SetEnvironmentVariable("Testing__E2e__EnableMicrosoftAuthentication", "true");
 
         var builder = await DistributedApplicationTestingBuilder.CreateAsync<Projects.PlanDeck_AppHost>();
         EnsureAzureProvisioningConfigured(builder.Configuration);
@@ -92,6 +93,5 @@ public class AspireAppFixture
         }
     }
 }
-
 
 
