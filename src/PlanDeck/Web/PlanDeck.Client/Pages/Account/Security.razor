@@ -57,7 +57,7 @@
                     }
                 }
 
-                @if (!_showLinkForm)
+                @if (_microsoftAuthenticationAvailable && !_showLinkForm)
                 {
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Primary"
@@ -69,7 +69,7 @@
                         @Localizer["Account_LinkMicrosoft"]
                     </MudButton>
                 }
-                else
+                else if (_microsoftAuthenticationAvailable)
                 {
                     <EditForm Model="@_linkModel" OnValidSubmit="HandleLinkAsync" FormName="link-entra" Class="mt-4">
                         <DataAnnotationsValidator />

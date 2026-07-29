@@ -72,6 +72,7 @@ public static class ServiceCollectionExtensions
                 ?? new MicrosoftAuthenticationOptions();
             microsoftAuthentication.Validate();
             services.AddSingleton(microsoftAuthentication);
+            services.AddSingleton<IAuthenticationCapabilities>(microsoftAuthentication);
 
             var authenticationBuilder = services
                 .AddAuthentication(options =>
@@ -333,7 +334,6 @@ public static class ServiceCollectionExtensions
     }
 
 }
-
 
 
 

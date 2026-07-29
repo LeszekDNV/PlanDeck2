@@ -1,6 +1,8 @@
+using PlanDeck.Application.Abstractions;
+
 namespace PlanDeck.Server.Identity;
 
-public sealed class MicrosoftAuthenticationOptions
+public sealed class MicrosoftAuthenticationOptions : IAuthenticationCapabilities
 {
     public const string SectionName = "Authentication:Microsoft";
 
@@ -18,6 +20,8 @@ public sealed class MicrosoftAuthenticationOptions
         !string.IsNullOrWhiteSpace(TenantId)
         && !string.IsNullOrWhiteSpace(ClientId)
         && !string.IsNullOrWhiteSpace(ClientSecret);
+
+    public bool MicrosoftAuthenticationAvailable => IsAvailable;
 
     public void Validate()
     {

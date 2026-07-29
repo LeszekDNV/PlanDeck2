@@ -39,7 +39,7 @@
 
                 <AccountActionButtons PrimaryText="@Localizer["Auth_Login"]"
                                       EntraText="@Localizer["Join_LoginMicrosoft"]"
-                                      ShowEntra="true"
+                                      ShowEntra="@_microsoftAuthenticationAvailable"
                                       IsBusy="@_isBusy"
                                       OnEntraClick="LoginWithEntraAsync" />
             </EditForm>

@@ -16,7 +16,7 @@ public partial class AccountActionButtons
     public string EntraText { get; set; } = string.Empty;
 
     [Parameter]
-    public bool ShowEntra { get; set; } = true;
+    public bool ShowEntra { get; set; }
 
     [Parameter]
     public bool IsBusy { get; set; }

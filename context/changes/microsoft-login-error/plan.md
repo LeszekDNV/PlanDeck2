@@ -465,27 +465,27 @@ compatible, but the prior misleading `/Error` behavior also returns.
 
 #### Automated
 
-- [x] 1.1 Entra configuration tests pass
-- [x] 1.2 Entra route availability tests pass
-- [x] 1.3 Server builds
+- [x] 1.1 Entra configuration tests pass — efa5da1
+- [x] 1.2 Entra route availability tests pass — efa5da1
+- [x] 1.3 Server builds — efa5da1
 
 #### Manual
 
-- [x] 1.4 Optional local host omits Entra routes without HTTP 500
-- [x] 1.5 Published target fails startup with incomplete Entra configuration
+- [x] 1.4 Optional local host omits Entra routes without HTTP 500 — efa5da1
+- [x] 1.5 Published target fails startup with incomplete Entra configuration — efa5da1
 
 ### Phase 2: Align Client Provider Availability
 
 #### Automated
 
-- [ ] 2.1 Authentication capability tests pass
-- [ ] 2.2 Existing Entra and local account tests pass
-- [ ] 2.3 Client and shared contracts build
+- [x] 2.1 Authentication capability tests pass
+- [x] 2.2 Existing Entra and local account tests pass
+- [x] 2.3 Client and shared contracts build
 
 #### Manual
 
-- [ ] 2.4 Optional host hides all Microsoft actions without render flicker
-- [ ] 2.5 Configured host shows all Microsoft actions with unchanged local forms
+- [x] 2.4 Optional host hides all Microsoft actions without render flicker
+- [x] 2.5 Configured host shows all Microsoft actions with unchanged local forms
 
 ### Phase 3: Preserve Accurate Server Errors and Verify Deployment
 
