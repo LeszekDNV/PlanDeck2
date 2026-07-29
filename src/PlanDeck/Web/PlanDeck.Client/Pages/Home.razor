@@ -17,39 +17,154 @@
         break;
 
     case HomePageView.Anonymous:
-        <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-12">
-            <section aria-labelledby="home-anonymous-heading">
-                <MudText HtmlTag="h1" id="home-anonymous-heading" Typo="Typo.h3" GutterBottom="true">
-                    @L["Home_AnonymousHeading"]
-                </MudText>
-                <MudText Typo="Typo.body1" Class="mb-6">@L["Home_AnonymousIntro"]</MudText>
-                <MudStack Row="true" Spacing="2" Class="mb-8">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Register">
-                        @L["Account_Register_Button"]
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="Login">
-                        @L["Auth_Login"]
-                    </MudButton>
-                    @if (_microsoftAuthenticationAvailable)
-                    {
-                        <MudButton Variant="Variant.Outlined"
-                                   StartIcon="@Icons.Custom.Brands.Microsoft"
-                                   OnClick="LoginWithMicrosoft">
-                            @L["Join_LoginMicrosoft"]
+        <main class="pd-home">
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pd-home-container">
+                <section class="pd-home-hero" aria-labelledby="home-anonymous-heading">
+                    <div class="pd-home-hero-copy">
+                        <MudText Typo="Typo.overline" Class="pd-home-eyebrow">@L["Home_Eyebrow"]</MudText>
+                        <MudText HtmlTag="h1" id="home-anonymous-heading" Typo="Typo.h2" Class="pd-home-title">
+                            @L["Home_HeroHeading"]
+                        </MudText>
+                        <MudText Typo="Typo.h6" Class="pd-home-lead">@L["Home_HeroLead"]</MudText>
+                        <div class="pd-home-actions">
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Size="Size.Large"
+                                       StartIcon="@Icons.Material.Filled.PlayArrow"
+                                       OnClick="Register">
+                                @L["Home_PrimaryCta"]
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       Size="Size.Large"
+                                       StartIcon="@Icons.Material.Filled.Key"
+                                       Href="#home-join">
+                                @L["Home_SecondaryCta"]
+                            </MudButton>
+                        </div>
+                        <div class="pd-home-sign-in">
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="Login">
+                                @L["Home_LoginCta"]
+                            </MudButton>
+                            @if (_microsoftAuthenticationAvailable)
+                            {
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Custom.Brands.Microsoft"
+                                           OnClick="LoginWithMicrosoft">
+                                    @L["Home_MicrosoftCta"]
+                                </MudButton>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="pd-home-table" aria-hidden="true">
+                        <div class="pd-home-table-header">
+                            <span>PLANDECK / PD-142</span>
+                            <span class="pd-home-live-dot"></span>
+                        </div>
+                        <div class="pd-home-task">
+                            <span class="pd-home-task-label">@L["Home_TableTaskLabel"]</span>
+                            <strong>@L["Home_TableTaskTitle"]</strong>
+                            <span class="pd-home-task-meta">Azure DevOps · Sprint 24</span>
+                        </div>
+                        <div class="pd-home-votes">
+                            <span class="pd-home-vote-card pd-home-vote-card-muted">?</span>
+                            <span class="pd-home-vote-card">3</span>
+                            <span class="pd-home-vote-card pd-home-vote-card-selected">5</span>
+                            <span class="pd-home-vote-card">8</span>
+                        </div>
+                        <div class="pd-home-result">
+                            <span>@L["Home_TableResultLabel"]</span>
+                            <strong>5</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="pd-home-flow" aria-labelledby="home-flow-heading">
+                    <div class="pd-home-section-heading">
+                        <MudText Typo="Typo.overline" Class="pd-home-eyebrow">@L["Home_FlowEyebrow"]</MudText>
+                        <MudText HtmlTag="h2" id="home-flow-heading" Typo="Typo.h3">@L["Home_FlowHeading"]</MudText>
+                    </div>
+                    <ol class="pd-home-flow-list">
+                        <li>
+                            <span class="pd-home-step-number">01</span>
+                            <MudIcon Icon="@Icons.Material.Filled.CloudDownload" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.h6">@L["Home_FlowImport"]</MudText>
+                                <MudText Typo="Typo.body2">@L["Home_FlowImportDetail"]</MudText>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="pd-home-step-number">02</span>
+                            <MudIcon Icon="@Icons.Material.Filled.Style" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.h6">@L["Home_FlowVote"]</MudText>
+                                <MudText Typo="Typo.body2">@L["Home_FlowVoteDetail"]</MudText>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="pd-home-step-number">03</span>
+                            <MudIcon Icon="@Icons.Material.Filled.Sync" Color="Color.Primary" />
+                            <div>
+                                <MudText Typo="Typo.h6">@L["Home_FlowSync"]</MudText>
+                                <MudText Typo="Typo.body2">@L["Home_FlowSyncDetail"]</MudText>
+                            </div>
+                        </li>
+                    </ol>
+                </section>
+
+                <section class="pd-home-roles" aria-labelledby="home-roles-heading">
+                    <div class="pd-home-section-heading">
+                        <MudText HtmlTag="h2" id="home-roles-heading" Typo="Typo.h3">@L["Home_RolesHeading"]</MudText>
+                        <MudText Typo="Typo.body1">@L["Home_RolesLead"]</MudText>
+                    </div>
+                    <div class="pd-home-role-grid">
+                        <article class="pd-home-role-card">
+                            <span class="pd-home-role-icon">
+                                <MudIcon Icon="@Icons.Material.Filled.Tune" />
+                            </span>
+                            <MudText HtmlTag="h3" Typo="Typo.h5">@L["Home_FacilitatorTitle"]</MudText>
+                            <MudText Typo="Typo.body1">@L["Home_FacilitatorDetail"]</MudText>
+                        </article>
+                        <article class="pd-home-role-card">
+                            <span class="pd-home-role-icon">
+                                <MudIcon Icon="@Icons.Material.Filled.HowToVote" />
+                            </span>
+                            <MudText HtmlTag="h3" Typo="Typo.h5">@L["Home_ParticipantTitle"]</MudText>
+                            <MudText Typo="Typo.body1">@L["Home_ParticipantDetail"]</MudText>
+                        </article>
+                    </div>
+                </section>
+
+                <section id="home-join" class="pd-home-join" aria-labelledby="home-join-heading">
+                    <div>
+                        <MudText HtmlTag="h2" id="home-join-heading" Typo="Typo.h4">@L["Home_JoinHeading"]</MudText>
+                        <MudText Typo="Typo.body1">@L["Home_JoinLead"]</MudText>
+                    </div>
+                    <div class="pd-home-join-form">
+                        <MudTextField @bind-Value="_sessionCode"
+                                      Label="@L["Home_SessionCode"]"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" />
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Large"
+                                   StartIcon="@Icons.Material.Filled.ArrowForward"
+                                   OnClick="JoinSession">
+                            @L["Home_JoinButton"]
                         </MudButton>
-                    }
-                </MudStack>
-                <MudText Typo="Typo.h5" GutterBottom="true">@L["Join_Title"]</MudText>
-                <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
-                    <MudTextField @bind-Value="_sessionCode"
-                                  Label="@L["Home_SessionCode"]"
-                                  Variant="Variant.Outlined" />
-                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="JoinSession">
-                        @L["Join_Submit"]
-                    </MudButton>
-                </MudStack>
-            </section>
-        </MudContainer>
+                    </div>
+                </section>
+
+                <section class="pd-home-trust" aria-label="@L["Home_TrustLabel"]">
+                    <span><MudIcon Icon="@Icons.Material.Filled.VerifiedUser" />@L["Home_TrustIdentity"]</span>
+                    <span><MudIcon Icon="@Icons.Material.Filled.Domain" />@L["Home_TrustIsolation"]</span>
+                    <span><MudIcon Icon="@Icons.Material.Filled.Translate" />@L["Home_TrustLanguages"]</span>
+                    <span><MudIcon Icon="@Icons.Material.Filled.Contrast" />@L["Home_TrustThemes"]</span>
+                </section>
+            </MudContainer>
+        </main>
         break;
 
     case HomePageView.Registered:
@@ -61,13 +176,13 @@
                 <MudText Typo="Typo.body1" Class="mb-6">@L["Home_RegisteredIntro"]</MudText>
                 <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenProjects">
-                        @L["Nav_Projects"]
+                        @L["Home_OpenProjects"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="CreateProject">
-                        @L["Projects_Create"]
+                        @L["Home_CreateProject"]
                     </MudButton>
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="OpenTeams">
-                        @L["Nav_Teams"]
+                        @L["Home_ManageTeams"]
                     </MudButton>
                 </MudStack>
             </section>
@@ -86,7 +201,7 @@
                                   Label="@L["Home_SessionCode"]"
                                   Variant="Variant.Outlined" />
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="JoinSession">
-                        @L["Join_Submit"]
+                        @L["Home_JoinButton"]
                     </MudButton>
                 </MudStack>
             </section>

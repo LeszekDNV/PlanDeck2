@@ -278,27 +278,27 @@ Brak migracji danych i backendu. Zmienia się kontrakt UX: zalogowany użytkowni
 
 #### Automated
 
-- [x] 1.1 Testy reguł Home przechodzą
-- [x] 1.2 Projekt klienta kompiluje się
+- [x] 1.1 Testy reguł Home przechodzą — 9a73eb1
+- [x] 1.2 Projekt klienta kompiluje się — 9a73eb1
 
 #### Manual
 
-- [x] 1.3 Trzy stany użytkownika renderują właściwy wariant bez mignięcia
-- [x] 1.4 Szybkie akcje i pole kodu prowadzą do właściwych tras
+- [x] 1.3 Trzy stany użytkownika renderują właściwy wariant bez mignięcia — 9a73eb1
+- [x] 1.4 Szybkie akcje i pole kodu prowadzą do właściwych tras — 9a73eb1
 
 ### Phase 2: Publiczne doświadczenie „The Estimation Table”
 
 #### Automated
 
-- [ ] 2.1 Parytet zasobów EN/PL przechodzi
-- [ ] 2.2 Całe rozwiązanie kompiluje się
+- [x] 2.1 Parytet zasobów EN/PL przechodzi
+- [x] 2.2 Całe rozwiązanie kompiluje się
 
 #### Manual
 
-- [ ] 2.3 Landing jest czytelny w jasnym i ciemnym motywie
-- [ ] 2.4 Układ 375 px nie powoduje poziomego przewijania
-- [ ] 2.5 Focus, semantyka i reduced motion są poprawne
-- [ ] 2.6 Teksty EN/PL są kompletne i zgodne z zakresem produktu
+- [x] 2.3 Landing jest czytelny w jasnym i ciemnym motywie
+- [x] 2.4 Układ 375 px nie powoduje poziomego przewijania
+- [x] 2.5 Focus, semantyka i reduced motion są poprawne
+- [x] 2.6 Teksty EN/PL są kompletne i zgodne z zakresem produktu
 
 ### Phase 3: Weryfikacja adaptacyjnego doświadczenia
 
