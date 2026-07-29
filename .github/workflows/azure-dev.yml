@@ -189,3 +189,12 @@ jobs:
       - name: Deploy application
         working-directory: src/PlanDeck
         run: azd deploy --no-prompt
+
+      - name: Verify Container App readiness
+        uses: ./.github/actions/wait-for-container-app-readiness
+        with:
+          resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
+          container-app-name: plandeck-server
+          revision-timeout-seconds: "600"
+          public-health-timeout-seconds: "300"
+          health-path: /health

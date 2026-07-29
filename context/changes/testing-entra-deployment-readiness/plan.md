@@ -493,30 +493,30 @@ Application rollback does not reverse EF Core migrations.
 
 #### Automated
 
-- [x] 2.1 PowerShell parses the validation script without syntax errors
-- [x] 2.2 Validation succeeds with complete placeholder inputs
-- [x] 2.3 Validation rejects every missing required input without exposing values
-- [x] 2.4 Whole solution builds after preflight integration
+- [x] 2.1 PowerShell parses the validation script without syntax errors — 0c31668
+- [x] 2.2 Validation succeeds with complete placeholder inputs — 0c31668
+- [x] 2.3 Validation rejects every missing required input without exposing values — 0c31668
+- [x] 2.4 Whole solution builds after preflight integration — 0c31668
 
 #### Manual
 
-- [x] 2.5 Testing workflow preflight passes without exposing credentials
-- [x] 2.6 Controlled missing-input check stops before Azure provisioning
+- [x] 2.5 Testing workflow preflight passes without exposing credentials — 0c31668
+- [x] 2.6 Controlled missing-input check stops before Azure provisioning — 0c31668
 
 ### Phase 3: Gate Deployment on the Final ACA Revision and Public Readiness
 
 #### Automated
 
-- [ ] 3.1 PowerShell parses the readiness script without syntax errors
-- [ ] 3.2 Both workflows invoke the shared readiness action after final deployment
-- [ ] 3.3 Healthy Testing deployment verifies one revision and public HTTP 200
-- [ ] 3.4 Whole solution builds after readiness integration
+- [x] 3.1 PowerShell parses the readiness script without syntax errors
+- [x] 3.2 Both workflows invoke the shared readiness action after final deployment
+- [x] 3.3 Healthy Testing deployment verifies one revision and public HTTP 200
+- [x] 3.4 Whole solution builds after readiness integration
 
 #### Manual
 
-- [ ] 3.5 Workflow logs expose safe revision and health diagnostics only
-- [ ] 3.6 Azure active revision matches the workflow-verified revision
-- [ ] 3.7 Failure behavior preserves traffic and revision state for operator review
+- [x] 3.5 Workflow logs expose safe revision and health diagnostics only
+- [x] 3.6 Azure active revision matches the workflow-verified revision
+- [x] 3.7 Failure behavior preserves traffic and revision state for operator review
 
 ### Phase 4: Verify Microsoft Sign-In and Complete the Operational Handoff
 
