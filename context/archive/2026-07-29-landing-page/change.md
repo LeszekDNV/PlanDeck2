@@ -1,10 +1,10 @@
 ---
 change_id: landing-page
 title: Efektowny landing page dla strony głównej
-status: implemented
+status: archived
 created: 2026-07-29
 updated: 2026-07-29
-archived_at: null
+archived_at: 2026-07-29T17:51:11Z
 ---
 
 ## Notes
