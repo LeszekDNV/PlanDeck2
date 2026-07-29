@@ -201,11 +201,14 @@ try {
         ($schema | ConvertTo-Json -Depth 100 -Compress).Length + $fixedInput.Length
     $maximumInputCharacters = $InputTokenBudget * $charactersPerToken
     $maximumDiffCharacters = $maximumInputCharacters - $fixedCharacterCount
+    Write-Output "Token budget: input=$InputTokenBudget output=$OutputTokenBudget."
+    Write-Output "Character budget: input=$maximumInputCharacters fixed=$fixedCharacterCount diff=$maximumDiffCharacters."
     if ($maximumDiffCharacters -lt $minimumDiffCharacters) {
         throw 'Trusted policy, schema, and metadata leave insufficient room for a reviewable diff.'
     }
 
     $boundedDiff = Get-BoundedDiff -Diff $diff -MaximumLength $maximumDiffCharacters
+    Write-Output "Diff length: raw=$($diff.Length) bounded=$($boundedDiff.Text.Length) complete=$($boundedDiff.Complete)."
     $trustedLimitations = @($boundedDiff.Limitations)
     if ($titleWasRedacted) {
         $trustedLimitations += 'Suspected credential-bearing pull request title content was redacted.'
@@ -264,7 +267,10 @@ try {
     }
 
     Write-Output 'Requesting one structured GitHub Models review.'
-    $response = Invoke-RestMethod `
+    $requestBody = $request | ConvertTo-Json -Depth 100 -Compress
+    Write-Output "Request body length: $($requestBody.Length) characters."
+    try {
+        $response = Invoke-RestMethod `
         -Method Post `
         -Uri 'https://models.github.ai/inference/chat/completions' `
         -Headers @{
@@ -273,7 +279,16 @@ try {
             'X-GitHub-Api-Version' = '2022-11-28'
         } `
         -ContentType 'application/json' `
-        -Body ($request | ConvertTo-Json -Depth 100 -Compress)
+        -Body $requestBody
+    }
+    catch {
+        $errorResponse = $_.ErrorDetails.Message
+        if ([string]::IsNullOrWhiteSpace($errorResponse)) {
+            $errorResponse = $_.Exception.Message
+        }
+        Write-Output "GitHub Models error response: $errorResponse"
+        throw "GitHub Models request failed: $errorResponse"
+    }
 
     $content = [string] $response.choices[0].message.content
     if ([string]::IsNullOrWhiteSpace($content)) {
@@ -324,3 +339,4 @@ catch {
     Write-Error "AI code review failed: $($_.Exception.Message)"
     exit 1
 }
+
