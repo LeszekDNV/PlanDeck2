@@ -491,12 +491,12 @@ compatible, but the prior misleading `/Error` behavior also returns.
 
 #### Automated
 
-- [x] 3.1 Global exception-handler tests pass
-- [x] 3.2 All integration tests pass
-- [x] 3.3 Whole solution builds
+- [x] 3.1 Global exception-handler tests pass — edabca8
+- [x] 3.2 All integration tests pass — edabca8
+- [x] 3.3 Whole solution builds — edabca8
 
 #### Manual
 
-- [x] 3.4 Testing Microsoft login redirects and completes successfully
-- [x] 3.5 Controlled server failure remains HTTP 500 with a trace ID
-- [x] 3.6 Logs correlate the trace ID without exposing sensitive details
+- [x] 3.4 Testing Microsoft login redirects and completes successfully — edabca8
+- [x] 3.5 Controlled server failure remains HTTP 500 with a trace ID — edabca8
+- [x] 3.6 Logs correlate the trace ID without exposing sensitive details — edabca8
