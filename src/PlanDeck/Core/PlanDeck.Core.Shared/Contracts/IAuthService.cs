@@ -9,6 +9,11 @@ public interface IAuthService
 {
     [Operation]
     Task<CurrentUserReply> GetCurrentUserAsync(CurrentUserRequest request, CallContext context = default);
+
+    [Operation]
+    Task<AuthenticationCapabilitiesReply> GetAuthenticationCapabilitiesAsync(
+        AuthenticationCapabilitiesRequest request,
+        CallContext context = default);
 }
 
 [DataContract]
@@ -33,4 +38,16 @@ public sealed class CurrentUserReply
 
     [DataMember(Order = 5)]
     public bool IsGuest { get; set; }
+}
+
+[DataContract]
+public sealed class AuthenticationCapabilitiesRequest
+{
+}
+
+[DataContract]
+public sealed class AuthenticationCapabilitiesReply
+{
+    [DataMember(Order = 1)]
+    public bool MicrosoftAuthenticationAvailable { get; set; }
 }

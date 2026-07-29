@@ -20,6 +20,8 @@ public interface IAccountClientService
 
     Task<AccountActionResponse> ResetPasswordAsync(ResetPasswordModel model, CancellationToken cancellationToken = default);
 
+    Task<bool> IsMicrosoftAuthenticationAvailableAsync(CancellationToken cancellationToken = default);
+
     void NavigateToEntraLogin(string? returnUrl = null);
 
     void NavigateToEntraRegister(string? returnUrl = null, string? invitationToken = null);

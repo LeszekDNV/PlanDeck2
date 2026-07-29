@@ -23,7 +23,8 @@ public sealed class LoginPage
         _page.GetByLabel("Password", new() { Exact = true });
 
     public ILocator SignInButton(string text) =>
-        _page.Locator("form").GetByRole(AriaRole.Button, new() { Name = text, Exact = true });
+        _page.GetByRole(AriaRole.Form)
+            .GetByRole(AriaRole.Button, new() { Name = text, Exact = true });
 
     public ILocator MicrosoftButton =>
         _page.GetByRole(AriaRole.Button, new() { Name = "Sign in with a Microsoft account", Exact = true });

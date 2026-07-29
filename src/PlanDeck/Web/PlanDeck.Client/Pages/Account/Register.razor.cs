@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Grpc.Core;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Localization;
@@ -20,10 +21,26 @@ public partial class Register
 
     private readonly RegisterFormModel _model = new();
     private bool _isBusy;
+    private bool _microsoftAuthenticationAvailable;
     private string? _statusMessage;
     private string? _passwordError;
     private IReadOnlyList<string> _errors = [];
     private Severity _statusSeverity = Severity.Info;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _microsoftAuthenticationAvailable =
+                await AccountService.IsMicrosoftAuthenticationAvailableAsync();
+        }
+        catch (RpcException)
+        {
+            _microsoftAuthenticationAvailable = false;
+            _statusSeverity = Severity.Warning;
+            _errors = [Localizer["Error_Generic"]];
+        }
+    }
 
     private async Task HandleSubmitAsync(EditContext context)
     {

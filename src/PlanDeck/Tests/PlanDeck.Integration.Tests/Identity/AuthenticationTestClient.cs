@@ -53,6 +53,13 @@ internal sealed class AuthenticationTestClient : IDisposable
         return await service.GetCurrentUserAsync(new CurrentUserRequest());
     }
 
+    public async Task<AuthenticationCapabilitiesReply> GetAuthenticationCapabilitiesAsync()
+    {
+        var service = _channel.CreateGrpcService<IAuthService>();
+        return await service.GetAuthenticationCapabilitiesAsync(
+            new AuthenticationCapabilitiesRequest());
+    }
+
     public bool HasCookie(string name) =>
         _cookies.GetCookies(BaseAddress).Cast<Cookie>().Any(cookie => cookie.Name == name);
 

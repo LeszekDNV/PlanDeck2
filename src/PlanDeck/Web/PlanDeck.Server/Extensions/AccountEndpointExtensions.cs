@@ -17,7 +17,9 @@ namespace PlanDeck.Server.Extensions;
 
 public static class AccountEndpointExtensions
 {
-    public static IEndpointRouteBuilder MapAccountEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapAccountEndpoints(
+        this IEndpointRouteBuilder app,
+        MicrosoftAuthenticationOptions microsoftAuthentication)
     {
         app.MapPost("/account/register", async (
             LocalRegisterRequest request,
@@ -220,72 +222,84 @@ public static class AccountEndpointExtensions
         .WithName("AccountLogout")
         .WithDisplayName("Account Logout");
 
-        app.MapGet("/account/entra/login", (
-            string? returnUrl,
-            HttpContext httpContext) =>
+        if (microsoftAuthentication.IsAvailable)
         {
-            var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
-            var properties = EntraCallbackHandler.CreateChallengeProperties("login", target);
-            return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
-        })
-        .AllowAnonymous()
-        .WithName("AccountEntraLogin")
-        .WithDisplayName("Account Entra Login");
+            app.MapGet("/account/entra/login", (
+                string? returnUrl,
+                HttpContext httpContext) =>
+            {
+                var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
+                var properties = EntraCallbackHandler.CreateChallengeProperties("login", target);
+                return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
+            })
+            .AllowAnonymous()
+            .WithName("AccountEntraLogin")
+            .WithDisplayName("Account Entra Login");
 
-        app.MapGet("/account/entra/register", (
-            string? returnUrl,
-            string? invitationToken,
-            HttpContext httpContext) =>
+            app.MapGet("/account/entra/register", (
+                string? returnUrl,
+                string? invitationToken,
+                HttpContext httpContext) =>
+            {
+                var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
+                var properties = EntraCallbackHandler.CreateChallengeProperties("register", target, invitationToken);
+                return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
+            })
+            .AllowAnonymous()
+            .WithName("AccountEntraRegister")
+            .WithDisplayName("Account Entra Register");
+
+            app.MapPost("/account/entra/link", async (
+                LinkEntraRequest request,
+                HttpContext httpContext,
+                IAntiforgery antiforgery,
+                UserManager<ApplicationUser> userManager) =>
+            {
+                if (!await antiforgery.IsRequestValidAsync(httpContext))
+                {
+                    return Results.BadRequest(new AccountResponse("InvalidAntiForgeryToken", null, ["Invalid antiforgery token."]));
+                }
+
+                var userId = ReadCurrentUserId(httpContext.User);
+                if (userId is null)
+                {
+                    return Results.Unauthorized();
+                }
+
+                var user = await userManager.FindByIdAsync(userId.Value.ToString());
+                if (user is null)
+                {
+                    return Results.Unauthorized();
+                }
+
+                if (!await userManager.HasPasswordAsync(user))
+                {
+                    return Results.BadRequest(new AccountResponse("NoLocalPassword", null, ["Add a local password before linking a Microsoft identity."]));
+                }
+
+                if (!await userManager.CheckPasswordAsync(user, request.Password))
+                {
+                    return Results.BadRequest(new AccountResponse("InvalidPassword", null, ["Invalid password."]));
+                }
+
+                var target = ResolveLocalReturnUrl(httpContext.Request, request.ReturnUrl);
+                var properties = EntraCallbackHandler.CreateChallengeProperties("link", target, linkUserId: userId.Value);
+                return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
+            })
+            .RequireAuthorization(PlanDeckPolicies.MemberAccount)
+            .RequireRateLimiting("login")
+            .WithName("AccountEntraLink")
+            .WithDisplayName("Account Entra Link");
+        }
+        else
         {
-            var target = ResolveLocalReturnUrl(httpContext.Request, returnUrl);
-            var properties = EntraCallbackHandler.CreateChallengeProperties("register", target, invitationToken);
-            return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
-        })
-        .AllowAnonymous()
-        .WithName("AccountEntraRegister")
-        .WithDisplayName("Account Entra Register");
-
-        app.MapPost("/account/entra/link", async (
-            LinkEntraRequest request,
-            HttpContext httpContext,
-            IAntiforgery antiforgery,
-            UserManager<ApplicationUser> userManager) =>
-        {
-            if (!await antiforgery.IsRequestValidAsync(httpContext))
-            {
-                return Results.BadRequest(new AccountResponse("InvalidAntiForgeryToken", null, ["Invalid antiforgery token."]));
-            }
-
-            var userId = ReadCurrentUserId(httpContext.User);
-            if (userId is null)
-            {
-                return Results.Unauthorized();
-            }
-
-            var user = await userManager.FindByIdAsync(userId.Value.ToString());
-            if (user is null)
-            {
-                return Results.Unauthorized();
-            }
-
-            if (!await userManager.HasPasswordAsync(user))
-            {
-                return Results.BadRequest(new AccountResponse("NoLocalPassword", null, ["Add a local password before linking a Microsoft identity."]));
-            }
-
-            if (!await userManager.CheckPasswordAsync(user, request.Password))
-            {
-                return Results.BadRequest(new AccountResponse("InvalidPassword", null, ["Invalid password."]));
-            }
-
-            var target = ResolveLocalReturnUrl(httpContext.Request, request.ReturnUrl);
-            var properties = EntraCallbackHandler.CreateChallengeProperties("link", target, linkUserId: userId.Value);
-            return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
-        })
-        .RequireAuthorization(PlanDeckPolicies.MemberAccount)
-        .RequireRateLimiting("login")
-        .WithName("AccountEntraLink")
-        .WithDisplayName("Account Entra Link");
+            app.MapMethods(
+                "/account/entra/{**path}",
+                [HttpMethods.Get, HttpMethods.Post],
+                static () => Results.NotFound())
+                .AllowAnonymous()
+                .ExcludeFromDescription();
+        }
 
         app.MapPost("/account/entra/unlink", async (
             UnlinkEntraRequest request,
@@ -417,5 +431,4 @@ public static class AccountEndpointExtensions
         IReadOnlyList<string>? Errors = null,
         string? ReturnUrl = null);
 }
-
 

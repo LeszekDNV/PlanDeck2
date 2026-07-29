@@ -38,7 +38,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler();
     app.UseHsts();
 }
 
@@ -62,7 +62,8 @@ app.UseAuthorization();
 app.MapGet("/auth/logout", static () => Results.NotFound())
     .ExcludeFromDescription();
 
-app.MapAccountEndpoints();
+app.MapAccountEndpoints(
+    app.Services.GetRequiredService<MicrosoftAuthenticationOptions>());
 
 app.MapPost("/guest/logout", async (
     IAntiforgery antiforgery,
