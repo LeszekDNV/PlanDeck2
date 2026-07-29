@@ -240,7 +240,7 @@ function Get-ReviewComment {
             $evidence -join '<br>'
         }
 
-        "| `$(ConvertTo-SafeMarkdown $criterion.id 80)` | $($criterion.score) | $detail |"
+        "| ``$(ConvertTo-SafeMarkdown $criterion.id 80)`` | $($criterion.score) | $detail |"
     }
 
     $limitations = @($Result.analysis.limitations | ForEach-Object {
@@ -251,8 +251,8 @@ function Get-ReviewComment {
     }
 
     $blockers = @($Result.blockers | ForEach-Object {
-        "- **`$(ConvertTo-SafeMarkdown $_.criterionId 80)`** at " +
-            "`$(ConvertTo-SafeMarkdown $_.changedPath 260)`: " +
+        "- **``$(ConvertTo-SafeMarkdown $_.criterionId 80)``** at " +
+            "``$(ConvertTo-SafeMarkdown $_.changedPath 260)``: " +
             (ConvertTo-SafeMarkdown $_.finding 500)
     })
     if ($blockers.Count -eq 0) {
