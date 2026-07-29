@@ -15,9 +15,11 @@ var keyVaultConfigured =
     !string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("key-vault"))
     || !string.IsNullOrWhiteSpace(
         builder.Configuration["Aspire:Azure:Security:KeyVault:VaultUri"]);
-builder.AddAzureKeyVaultClient(
-    "key-vault",
-    settings => settings.DisableHealthChecks = !keyVaultConfigured);
+
+if (keyVaultConfigured)
+{
+    builder.AddAzureKeyVaultClient("key-vault");
+}
 
 // Add services to the container.
 builder.Services.AddLocalization();

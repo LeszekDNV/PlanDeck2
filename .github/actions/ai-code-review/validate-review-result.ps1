@@ -67,8 +67,8 @@ try {
             }
         }
         else {
-            if ($hasNaReason) {
-                throw "Criterion '$($criterion.id)' has a numeric score and must not supply naReason."
+            if ($hasNaReason -and -not [string]::IsNullOrWhiteSpace($criterion.naReason)) {
+                throw "Criterion '$($criterion.id)' has a numeric score and must not supply a non-empty naReason."
             }
 
             if (@($criterion.evidence).Count -eq 0) {
