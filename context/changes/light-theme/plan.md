@@ -183,7 +183,7 @@ No data or schema migration is required. Existing users have no theme key, so th
 
 #### Automated
 
-- [x] 1.1 Client project compiles
+- [x] 1.1 Client project compiles — 21e0ef8
 
 #### Manual
 
@@ -195,8 +195,8 @@ No data or schema migration is required. Existing users have no theme key, so th
 
 #### Automated
 
-- [ ] 2.1 English and Polish resource keys remain aligned
-- [ ] 2.2 Full solution compiles
+- [x] 2.1 English and Polish resource keys remain aligned
+- [x] 2.2 Full solution compiles
 
 #### Manual
 

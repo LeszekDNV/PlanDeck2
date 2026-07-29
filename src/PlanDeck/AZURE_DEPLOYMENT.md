@@ -43,6 +43,35 @@ Current `azd` environment: `test`.
 
 The app uses the user-assigned managed identity `plandeck_server_identity-ade7omipejs3a` for Azure SQL. The identity is represented as a contained database user in `PlanDeckDb`; keep this grant in place when reprovisioning or replacing the SQL server.
 
+### Testing Microsoft sign-in contract
+
+Testing uses a dedicated, single-tenant Microsoft Entra web application named
+`PlanDeck Testing`. It accepts organizational accounts from the application tenant
+and has this exact web redirect URI:
+
+```text
+https://plandeck-server.wittymeadow-96369440.polandcentral.azurecontainerapps.io/signin-oidc
+```
+
+The GitHub Environment named `Testing` permits deployments from `main` and
+`develop`. Configure the application sign-in values at environment scope:
+
+| Name | GitHub Environment value type |
+| --- | --- |
+| `AZURE_ENTRA_TENANT_ID` | Variable |
+| `AZURE_ENTRA_CLIENT_ID` | Variable |
+| `AZURE_ENTRA_CLIENT_SECRET` | Secret |
+
+These values configure the user-facing OpenID Connect client. They are separate
+from `AZURE_TENANT_ID` and `AZURE_CLIENT_ID`, which identify the federated
+service principal used by GitHub Actions to deploy Azure resources.
+
+Keep the client-secret value only in the GitHub Environment. Record its expiry
+on the Entra application credential and assign at least one named owner to the
+application. The owner is responsible for rotating the credential before expiry
+without changing the GitHub secret name. Do not add tenant IDs, client IDs,
+secret values, or copies of the credential to this repository.
+
 ## CI/CD direction
 
 Use Azure Pipelines for automatic deployment after push to `master`; do not add GitHub Actions for this deployment path.

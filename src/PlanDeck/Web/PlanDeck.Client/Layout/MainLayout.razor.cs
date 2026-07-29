@@ -139,4 +139,10 @@ public partial class MainLayout
         true => Icons.Material.Rounded.LightMode,
         false => Icons.Material.Rounded.DarkMode,
     };
+
+    public string ThemeToggleLabel => _isDarkMode switch
+    {
+        true => Localizer["Theme_EnableLight"],
+        false => Localizer["Theme_EnableDark"],
+    };
 }

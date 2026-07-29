@@ -73,6 +73,12 @@
   <data name="Language" xml:space="preserve">
     <value>Language</value>
   </data>
+  <data name="Theme_EnableLight" xml:space="preserve">
+    <value>Enable light theme</value>
+  </data>
+  <data name="Theme_EnableDark" xml:space="preserve">
+    <value>Enable dark theme</value>
+  </data>
   <data name="Teams_Title" xml:space="preserve">
     <value>Teams</value>
   </data>
