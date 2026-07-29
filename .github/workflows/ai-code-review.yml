@@ -37,8 +37,8 @@ jobs:
         with:
           model: openai/gpt-4.1-mini
           expected-base-branch: develop
-          input-token-budget: "8000"
-          output-token-budget: "4000"
+          input-token-budget: "4000"
+          output-token-budget: "3000"
 
       - id: artifact
         name: Name review artifact

@@ -5,21 +5,146 @@
     "limitations": []
   },
   "criteria": [
-    { "id": "solid-design", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Responsibilities remain cohesive." }] },
-    { "id": "clean-architecture", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Dependencies continue to point inward." }] },
-    { "id": "dry-kiss-yagni", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "The implementation is direct and avoids duplication." }] },
-    { "id": "blazor-mudblazor", "score": "N/A", "naReason": "The pull request does not change UI code.", "evidence": [] },
-    { "id": "correctness-maintainability", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Validation and naming make the behavior explicit." }] },
-    { "id": "dependency-configuration", "score": "N/A", "naReason": "The pull request does not change DI or configuration.", "evidence": [] },
-    { "id": "data-persistence", "score": "N/A", "naReason": "The pull request does not change persistence.", "evidence": [] },
-    { "id": "async-concurrency", "score": "N/A", "naReason": "The pull request does not change asynchronous code.", "evidence": [] },
-    { "id": "security-authorization", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "External input is validated before use." }] },
-    { "id": "errors-observability", "score": 7, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Failures remain explicit and actionable." }] },
-    { "id": "performance-resources", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "No unnecessary I/O or allocation is introduced." }] },
-    { "id": "accessibility-ux", "score": "N/A", "naReason": "The pull request does not change user experience.", "evidence": [] },
-    { "id": "testing-verification", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Tests/ExampleTests.cs", "finding": "Focused tests cover observable behavior." }] },
-    { "id": "api-contracts", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "Existing public contracts remain compatible." }] },
-    { "id": "pr-quality-scope", "score": 8, "evidence": [{ "changedPath": "src/PlanDeck/Core/Example.cs", "finding": "The change has one coherent purpose." }] }
+    {
+      "id": "solid-design",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "Responsibilities remain cohesive."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "clean-architecture",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "Dependencies continue to point inward."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "dry-kiss-yagni",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "The implementation is direct and avoids duplication."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "blazor-mudblazor",
+      "score": "N/A",
+      "naReason": "The pull request does not change UI code.",
+      "evidence": []
+    },
+    {
+      "id": "correctness-maintainability",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "Validation and naming make the behavior explicit."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "dependency-configuration",
+      "score": "N/A",
+      "naReason": "The pull request does not change DI or configuration.",
+      "evidence": []
+    },
+    {
+      "id": "data-persistence",
+      "score": "N/A",
+      "naReason": "The pull request does not change persistence.",
+      "evidence": []
+    },
+    {
+      "id": "async-concurrency",
+      "score": "N/A",
+      "naReason": "The pull request does not change asynchronous code.",
+      "evidence": []
+    },
+    {
+      "id": "security-authorization",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "External input is validated before use."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "errors-observability",
+      "score": 7,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "Failures remain explicit and actionable."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "performance-resources",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "No unnecessary I/O or allocation is introduced."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "accessibility-ux",
+      "score": "N/A",
+      "naReason": "The pull request does not change user experience.",
+      "evidence": []
+    },
+    {
+      "id": "testing-verification",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Tests/ExampleTests.cs",
+          "finding": "Focused tests cover observable behavior."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "api-contracts",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "Existing public contracts remain compatible."
+        }
+      ],
+      "naReason": ""
+    },
+    {
+      "id": "pr-quality-scope",
+      "score": 8,
+      "evidence": [
+        {
+          "changedPath": "src/PlanDeck/Core/Example.cs",
+          "finding": "The change has one coherent purpose."
+        }
+      ],
+      "naReason": ""
+    }
   ],
   "blockers": [],
   "summary": "The static diff is complete and all applicable criteria meet the advisory threshold."
