@@ -2,8 +2,8 @@
 #
 # One-time setup (human, requires an Azure subscription):
 #   1. Add a federated credential to the existing `plandeck-pipeline-oidc` Entra application with
-#      subject `repo:LeszekDNV/PlanDeck2:ref:refs/heads/develop`; keep Owner on `rg-test` and
-#      AcrPush on the container registry.
+#      subject `repo:LeszekDNV/PlanDeck2:environment:Testing`; keep Owner on `rg-test` and
+#      AcrPush on the container registry. The Testing environment branch policy limits deployments.
 #   2. The pipeline service principal remains a contained `db_owner` user in `PlanDeckDb` so the
 #      migration step can apply the schema.
 #   3. Reuse the repository variables below for the shared Testing environment.

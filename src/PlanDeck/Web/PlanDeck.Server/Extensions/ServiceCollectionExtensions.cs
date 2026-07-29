@@ -182,7 +182,7 @@ public static class ServiceCollectionExtensions
             return services;
         }
 
-        public IServiceCollection AddLocalServices()
+        public IServiceCollection AddLocalServices(bool keyVaultConfigured)
         {
             services.AddProblemDetails();
             services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -213,7 +213,14 @@ public static class ServiceCollectionExtensions
                 IProjectAzureDevOpsConnectionRepository,
                 ProjectAzureDevOpsConnectionRepository>();
             services.AddScoped<IProjectAccessResolver, ProjectAccessResolver>();
-            services.AddSingleton<IProjectSecretStore, KeyVaultProjectSecretStore>();
+            if (keyVaultConfigured)
+            {
+                services.AddSingleton<IProjectSecretStore, KeyVaultProjectSecretStore>();
+            }
+            else
+            {
+                services.AddSingleton<IProjectSecretStore, UnavailableProjectSecretStore>();
+            }
             services.AddScoped<ISessionAccessResolver, SessionAccessResolver>();
             services.AddScoped<ProjectGrpcService>();
             services.AddScoped<ISessionRepository, SessionRepository>();
@@ -337,7 +344,6 @@ public static class ServiceCollectionExtensions
     }
 
 }
-
 
 
 

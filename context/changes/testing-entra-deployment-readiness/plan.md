@@ -507,27 +507,27 @@ Application rollback does not reverse EF Core migrations.
 
 #### Automated
 
-- [x] 3.1 PowerShell parses the readiness script without syntax errors
-- [x] 3.2 Both workflows invoke the shared readiness action after final deployment
-- [x] 3.3 Healthy Testing deployment verifies one revision and public HTTP 200
-- [x] 3.4 Whole solution builds after readiness integration
+- [x] 3.1 PowerShell parses the readiness script without syntax errors — 1fafb96
+- [x] 3.2 Both workflows invoke the shared readiness action after final deployment — 1fafb96
+- [x] 3.3 Healthy Testing deployment verifies one revision and public HTTP 200 — 1fafb96
+- [x] 3.4 Whole solution builds after readiness integration — 1fafb96
 
 #### Manual
 
-- [x] 3.5 Workflow logs expose safe revision and health diagnostics only
-- [x] 3.6 Azure active revision matches the workflow-verified revision
-- [x] 3.7 Failure behavior preserves traffic and revision state for operator review
+- [x] 3.5 Workflow logs expose safe revision and health diagnostics only — 1fafb96
+- [x] 3.6 Azure active revision matches the workflow-verified revision — 1fafb96
+- [x] 3.7 Failure behavior preserves traffic and revision state for operator review — 1fafb96
 
 ### Phase 4: Verify Microsoft Sign-In and Complete the Operational Handoff
 
 #### Automated
 
-- [ ] 4.1 Main Testing workflow completes all deployment gates
-- [ ] 4.2 Develop Testing workflow completes all deployment gates
-- [ ] 4.3 Whole solution builds after documentation and handoff changes
+- [x] 4.1 Main Testing workflow completes all deployment gates
+- [x] 4.2 Develop Testing workflow completes all deployment gates
+- [x] 4.3 Whole solution builds after documentation and handoff changes
 
 #### Manual
 
-- [ ] 4.4 Microsoft authorization uses the dedicated Testing client and callback
-- [ ] 4.5 Organizational Microsoft sign-in completes and returns to Testing
-- [ ] 4.6 Documented diagnostics and human-approved rollback procedure are usable
+- [x] 4.4 Microsoft authorization uses the dedicated Testing client and callback
+- [x] 4.5 Organizational Microsoft sign-in completes and returns to Testing
+- [x] 4.6 Documented diagnostics and human-approved rollback procedure are usable

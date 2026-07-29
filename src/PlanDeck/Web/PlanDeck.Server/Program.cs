@@ -11,12 +11,13 @@ using System.Globalization;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("key-vault"))
+var keyVaultConfigured =
+    !string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("key-vault"))
     || !string.IsNullOrWhiteSpace(
-        builder.Configuration["Aspire:Azure:Security:KeyVault:VaultUri"]))
-{
-    builder.AddAzureKeyVaultClient("key-vault");
-}
+        builder.Configuration["Aspire:Azure:Security:KeyVault:VaultUri"]);
+builder.AddAzureKeyVaultClient(
+    "key-vault",
+    settings => settings.DisableHealthChecks = !keyVaultConfigured);
 
 // Add services to the container.
 builder.Services.AddLocalization();
@@ -25,7 +26,7 @@ builder.Services.AddSignalR();
 
 builder.Services
     .AddSqlDatabase(builder.Configuration)
-    .AddLocalServices()
+    .AddLocalServices(keyVaultConfigured)
     .AddExternalServices(builder.Configuration, builder.Environment)
     .AddAccountRateLimiting(builder.Configuration);
 
