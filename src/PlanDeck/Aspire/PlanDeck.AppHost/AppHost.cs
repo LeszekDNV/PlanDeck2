@@ -99,7 +99,8 @@ if (builder.ExecutionContext.IsPublishMode)
     planDeckServer
         .WithEnvironment("Authentication__Microsoft__TenantId", entraTenantId)
         .WithEnvironment("Authentication__Microsoft__ClientId", entraClientId)
-        .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret);
+        .WithEnvironment("Authentication__Microsoft__ClientSecret", entraClientSecret)
+        .WithEnvironment("Authentication__Microsoft__Required", bool.TrueString);
 
     planDeckServer
         .WaitFor(sqlDatabase)

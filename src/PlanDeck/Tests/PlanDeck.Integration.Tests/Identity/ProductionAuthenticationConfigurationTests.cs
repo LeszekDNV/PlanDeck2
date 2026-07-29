@@ -11,48 +11,50 @@ namespace PlanDeck.Identity.IntegrationTests;
 public sealed class ProductionAuthenticationConfigurationTests
 {
     [Test]
-    public void ProductionWithoutCompleteEntraConfiguration_FailsClosed()
+    public void RequiredMicrosoftAuthenticationWithoutCompleteConfiguration_FailsClosed()
     {
         var services = new ServiceCollection();
-        var configuration = new ConfigurationManager();
-        configuration["EmailSettings:Host"] = "smtp.example.com";
-        configuration["EmailSettings:SenderAddress"] = "noreply@example.com";
-        configuration["EmailSettings:PublicBaseUrl"] = "https://example.com";
+        var configuration = CreateConfiguration();
+        configuration["Authentication:Microsoft:Required"] = bool.TrueString;
 
         Assert.That(
             () => services.AddExternalServices(
                 configuration,
-                new ProductionEnvironment()),
+                new TestingEnvironment()),
             Throws.TypeOf<InvalidOperationException>()
-                .With.Message.Contains("Production requires"));
+                .With.Message.EqualTo(
+                    "Microsoft authentication is required. Configure "
+                    + "Authentication:Microsoft:TenantId, ClientId, and ClientSecret."));
     }
 
     [Test]
-    public void ProductionWithLegacyTestAuthenticationFlag_StillFailsWithoutEntraConfiguration()
+    public void RequiredMicrosoftAuthenticationWithPartialConfiguration_FailsClosed()
     {
         var services = new ServiceCollection();
-        var configuration = new ConfigurationManager();
-        configuration["Authentication:UseTestScheme"] = bool.TrueString;
-        configuration["EmailSettings:Host"] = "smtp.example.com";
-        configuration["EmailSettings:SenderAddress"] = "noreply@example.com";
-        configuration["EmailSettings:PublicBaseUrl"] = "https://example.com";
+        var configuration = CreateConfiguration();
+        configuration["Authentication:Microsoft:Required"] = bool.TrueString;
+        configuration["Authentication:Microsoft:TenantId"] = "tenant-id";
+        configuration["Authentication:Microsoft:ClientId"] = "client-id";
 
         Assert.That(
             () => services.AddExternalServices(
                 configuration,
-                new ProductionEnvironment()),
+                new TestingEnvironment()),
             Throws.TypeOf<InvalidOperationException>()
-                .With.Message.Contains("Production requires"));
+                .With.Message.EqualTo(
+                    "Microsoft authentication is required. Configure "
+                    + "Authentication:Microsoft:TenantId, ClientId, and ClientSecret."));
     }
 
     [Test]
-    public void TestingWithoutEntraConfiguration_UsesLocalAccountAuthentication()
+    public void RequiredMicrosoftAuthenticationWithCompleteConfiguration_Starts()
     {
         var services = new ServiceCollection();
-        var configuration = new ConfigurationManager();
-        configuration["EmailSettings:Host"] = "smtp.example.com";
-        configuration["EmailSettings:SenderAddress"] = "noreply@example.com";
-        configuration["EmailSettings:PublicBaseUrl"] = "https://example.com";
+        var configuration = CreateConfiguration();
+        configuration["Authentication:Microsoft:Required"] = bool.TrueString;
+        configuration["Authentication:Microsoft:TenantId"] = "tenant-id";
+        configuration["Authentication:Microsoft:ClientId"] = "client-id";
+        configuration["Authentication:Microsoft:ClientSecret"] = "client-secret";
 
         Assert.That(
             () => services.AddExternalServices(
@@ -61,17 +63,20 @@ public sealed class ProductionAuthenticationConfigurationTests
             Throws.Nothing);
     }
 
-    private sealed class ProductionEnvironment : IHostEnvironment
+    [Test]
+    public void OptionalMicrosoftAuthenticationWithoutConfiguration_Starts()
     {
-        public string EnvironmentName { get; set; } = Environments.Production;
+        var services = new ServiceCollection();
+        var configuration = CreateConfiguration();
 
-        public string ApplicationName { get; set; } = nameof(PlanDeck);
-
-        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
-
-        public IFileProvider ContentRootFileProvider { get; set; } =
-            new NullFileProvider();
+        Assert.That(
+            () => services.AddExternalServices(
+                configuration,
+                new TestingEnvironment()),
+            Throws.Nothing);
     }
+
+    private static ConfigurationManager CreateConfiguration() => new();
 
     private sealed class TestingEnvironment : IHostEnvironment
     {

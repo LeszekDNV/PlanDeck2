@@ -66,42 +66,34 @@ public static class ServiceCollectionExtensions
             ConfigureIdentity(services);
             ConfigureEmailServices(services, configuration, environment);
 
-            var microsoftAuth = configuration.GetSection("Authentication:Microsoft");
-            var tenantId = microsoftAuth["TenantId"];
-            var clientId = microsoftAuth["ClientId"];
-            var clientSecret = microsoftAuth["ClientSecret"];
-            var callbackPath = microsoftAuth["CallbackPath"];
-            var isMicrosoftAuthConfigured = !string.IsNullOrWhiteSpace(tenantId)
-                && !string.IsNullOrWhiteSpace(clientId)
-                && !string.IsNullOrWhiteSpace(clientSecret);
-
-            if (environment.IsProduction() && !isMicrosoftAuthConfigured)
-            {
-                throw new InvalidOperationException(
-                    "Production requires Authentication:Microsoft:TenantId, ClientId, and ClientSecret.");
-            }
+            var microsoftAuthentication = configuration
+                .GetSection(MicrosoftAuthenticationOptions.SectionName)
+                .Get<MicrosoftAuthenticationOptions>()
+                ?? new MicrosoftAuthenticationOptions();
+            microsoftAuthentication.Validate();
+            services.AddSingleton(microsoftAuthentication);
 
             var authenticationBuilder = services
                 .AddAuthentication(options =>
                 {
                     options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = isMicrosoftAuthConfigured
+                    options.DefaultChallengeScheme = microsoftAuthentication.IsAvailable
                         ? OpenIdConnectDefaults.AuthenticationScheme
                         : CookieAuthenticationDefaults.AuthenticationScheme;
                 })
                 .AddCookie(ConfigureMemberCookie)
                 .AddCookie(GuestAuthentication.SchemeName, GuestAuthentication.ConfigureCookie);
 
-            if (isMicrosoftAuthConfigured)
+            if (microsoftAuthentication.IsAvailable)
             {
                 authenticationBuilder.AddOpenIdConnect(options =>
                 {
                     options.Authority = "https://login.microsoftonline.com/organizations/v2.0";
-                    options.ClientId = clientId;
-                    options.ClientSecret = clientSecret;
-                    options.CallbackPath = string.IsNullOrWhiteSpace(callbackPath)
+                    options.ClientId = microsoftAuthentication.ClientId;
+                    options.ClientSecret = microsoftAuthentication.ClientSecret;
+                    options.CallbackPath = string.IsNullOrWhiteSpace(microsoftAuthentication.CallbackPath)
                         ? "/signin-oidc"
-                        : callbackPath;
+                        : microsoftAuthentication.CallbackPath;
                     options.ResponseType = OpenIdConnectResponseType.Code;
                     options.SaveTokens = false;
                     options.GetClaimsFromUserInfoEndpoint = true;
@@ -341,7 +333,6 @@ public static class ServiceCollectionExtensions
     }
 
 }
-
 
 
 
