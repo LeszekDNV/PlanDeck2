@@ -522,12 +522,12 @@ Application rollback does not reverse EF Core migrations.
 
 #### Automated
 
-- [x] 4.1 Main Testing workflow completes all deployment gates
-- [x] 4.2 Develop Testing workflow completes all deployment gates
-- [x] 4.3 Whole solution builds after documentation and handoff changes
+- [x] 4.1 Main Testing workflow completes all deployment gates — 372f1dd
+- [x] 4.2 Develop Testing workflow completes all deployment gates — 372f1dd
+- [x] 4.3 Whole solution builds after documentation and handoff changes — 372f1dd
 
 #### Manual
 
-- [x] 4.4 Microsoft authorization uses the dedicated Testing client and callback
-- [x] 4.5 Organizational Microsoft sign-in completes and returns to Testing
-- [x] 4.6 Documented diagnostics and human-approved rollback procedure are usable
+- [x] 4.4 Microsoft authorization uses the dedicated Testing client and callback — 372f1dd
+- [x] 4.5 Organizational Microsoft sign-in completes and returns to Testing — 372f1dd
+- [x] 4.6 Documented diagnostics and human-approved rollback procedure are usable — 372f1dd
