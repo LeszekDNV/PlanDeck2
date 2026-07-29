@@ -302,6 +302,12 @@ try {
         throw 'GitHub Models returned unparseable structured content.'
     }
 
+    foreach ($criterion in $result.criteria) {
+        if ($criterion.score -eq 'N/A') {
+            $criterion.evidence = @()
+        }
+    }
+
     $modelLimitations = @($result.analysis.limitations | Where-Object { $_ })
     $allLimitations = @(
         $trustedLimitations + $modelLimitations |
