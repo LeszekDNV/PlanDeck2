@@ -16,6 +16,7 @@ using PlanDeck.Infrastructure.AzureDevOps;
 using PlanDeck.Infrastructure.Identity;
 using PlanDeck.Infrastructure.Persistence;
 using PlanDeck.Server.Identity;
+using PlanDeck.Server.Diagnostics;
 using PlanDeck.Server.Realtime;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -183,6 +184,8 @@ public static class ServiceCollectionExtensions
 
         public IServiceCollection AddLocalServices()
         {
+            services.AddProblemDetails();
+            services.AddExceptionHandler<GlobalExceptionHandler>();
             services.AddAntiforgery();
             services.AddMemoryCache();
             services.AddHttpContextAccessor();
@@ -334,7 +337,6 @@ public static class ServiceCollectionExtensions
     }
 
 }
-
 
 
 

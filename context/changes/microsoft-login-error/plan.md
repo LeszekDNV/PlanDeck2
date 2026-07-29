@@ -478,25 +478,25 @@ compatible, but the prior misleading `/Error` behavior also returns.
 
 #### Automated
 
-- [x] 2.1 Authentication capability tests pass
-- [x] 2.2 Existing Entra and local account tests pass
-- [x] 2.3 Client and shared contracts build
+- [x] 2.1 Authentication capability tests pass — cbcd74d
+- [x] 2.2 Existing Entra and local account tests pass — cbcd74d
+- [x] 2.3 Client and shared contracts build — cbcd74d
 
 #### Manual
 
-- [x] 2.4 Optional host hides all Microsoft actions without render flicker
-- [x] 2.5 Configured host shows all Microsoft actions with unchanged local forms
+- [x] 2.4 Optional host hides all Microsoft actions without render flicker — cbcd74d
+- [x] 2.5 Configured host shows all Microsoft actions with unchanged local forms — cbcd74d
 
 ### Phase 3: Preserve Accurate Server Errors and Verify Deployment
 
 #### Automated
 
-- [ ] 3.1 Global exception-handler tests pass
-- [ ] 3.2 All integration tests pass
-- [ ] 3.3 Whole solution builds
+- [x] 3.1 Global exception-handler tests pass
+- [x] 3.2 All integration tests pass
+- [x] 3.3 Whole solution builds
 
 #### Manual
 
-- [ ] 3.4 Testing Microsoft login redirects and completes successfully
-- [ ] 3.5 Controlled server failure remains HTTP 500 with a trace ID
-- [ ] 3.6 Logs correlate the trace ID without exposing sensitive details
+- [x] 3.4 Testing Microsoft login redirects and completes successfully
+- [x] 3.5 Controlled server failure remains HTTP 500 with a trace ID
+- [x] 3.6 Logs correlate the trace ID without exposing sensitive details
