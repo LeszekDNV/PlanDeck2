@@ -304,11 +304,11 @@ Brak migracji danych i backendu. Zmienia się kontrakt UX: zalogowany użytkowni
 
 #### Automated
 
-- [x] 3.1 Testy E2E Home przechodzą lokalnie przez Aspire
-- [x] 3.2 Wszystkie testy jednostkowe przechodzą
-- [x] 3.3 Całe rozwiązanie kompiluje się
+- [x] 3.1 Testy E2E Home przechodzą lokalnie przez Aspire — 8254986
+- [x] 3.2 Wszystkie testy jednostkowe przechodzą — 8254986
+- [x] 3.3 Całe rozwiązanie kompiluje się — 8254986
 
 #### Manual
 
-- [x] 3.4 Krytyczne ścieżki działają w aplikacji uruchomionej przez AppHost
-- [x] 3.5 Zmiana języka i motywu zachowuje poprawny układ
+- [x] 3.4 Krytyczne ścieżki działają w aplikacji uruchomionej przez AppHost — 8254986
+- [x] 3.5 Zmiana języka i motywu zachowuje poprawny układ — 8254986

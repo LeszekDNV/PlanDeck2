@@ -1,7 +1,7 @@
 ---
 change_id: landing-page
 title: Efektowny landing page dla strony głównej
-status: implementing
+status: implemented
 created: 2026-07-29
 updated: 2026-07-29
 archived_at: null
