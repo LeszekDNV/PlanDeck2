@@ -253,7 +253,6 @@ try {
         temperature = 0.1
         max_tokens = $OutputTokenBudget
         stream = $false
-        tool_choice = 'none'
         response_format = [pscustomobject]@{
             type = 'json_schema'
             json_schema = [pscustomobject]@{
