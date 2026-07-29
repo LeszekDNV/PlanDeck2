@@ -4,7 +4,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using PlanDeck.Application.Abstractions;
 using PlanDeck.Application.Account;
 using PlanDeck.Server;
+using PlanDeck.Server.Diagnostics;
 
 namespace PlanDeck.ErrorHandling.IntegrationTests;
 
@@ -19,6 +23,40 @@ namespace PlanDeck.ErrorHandling.IntegrationTests;
 public sealed class GlobalExceptionHandlerTests
 {
     private const string ExceptionMessage = "sensitive-test-exception";
+
+    [Test]
+    public async Task StartedResponse_IsNotRewrittenOrLogged()
+    {
+        var logs = new CapturingLoggerProvider();
+        using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(logs));
+        var problemDetails = new TrackingProblemDetailsService();
+        var responseFeature = new StartedResponseFeature();
+        var features = new FeatureCollection();
+        features.Set<IHttpResponseFeature>(responseFeature);
+        var context = new DefaultHttpContext(features);
+        var handler = new GlobalExceptionHandler(
+            loggerFactory.CreateLogger<GlobalExceptionHandler>(),
+            problemDetails);
+
+        var handled = await handler.TryHandleAsync(
+            context,
+            new InvalidOperationException(ExceptionMessage),
+            CancellationToken.None);
+
+        responseFeature.Body.Position = 0;
+        using var reader = new StreamReader(responseFeature.Body, leaveOpen: true);
+        var body = await reader.ReadToEndAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(handled, Is.False);
+            Assert.That(responseFeature.StatusCode, Is.EqualTo(StatusCodes.Status202Accepted));
+            Assert.That(responseFeature.Headers.ContentType.ToString(), Is.EqualTo("text/plain"));
+            Assert.That(body, Is.EqualTo(StartedResponseFeature.OriginalBody));
+            Assert.That(problemDetails.WasCalled, Is.False);
+            Assert.That(logs.ErrorEntries, Is.Empty);
+        });
+    }
 
     [Test]
     public async Task ApiFailure_ReturnsSafeProblemDetailsWithCorrelatedTraceId()
@@ -200,4 +238,44 @@ public sealed class GlobalExceptionHandlerTests
         LogLevel Level,
         Exception? Exception,
         IReadOnlyDictionary<string, string> Properties);
+
+    private sealed class TrackingProblemDetailsService : IProblemDetailsService
+    {
+        public bool WasCalled { get; private set; }
+
+        public ValueTask WriteAsync(ProblemDetailsContext context)
+        {
+            WasCalled = true;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class StartedResponseFeature : IHttpResponseFeature
+    {
+        public const string OriginalBody = "response-already-started";
+
+        public StartedResponseFeature()
+        {
+            Headers.ContentType = "text/plain";
+            Body.Write(Encoding.UTF8.GetBytes(OriginalBody));
+        }
+
+        public int StatusCode { get; set; } = StatusCodes.Status202Accepted;
+
+        public string? ReasonPhrase { get; set; }
+
+        public IHeaderDictionary Headers { get; set; } = new HeaderDictionary();
+
+        public Stream Body { get; set; } = new MemoryStream();
+
+        public bool HasStarted => true;
+
+        public void OnStarting(Func<object, Task> callback, object state)
+        {
+        }
+
+        public void OnCompleted(Func<object, Task> callback, object state)
+        {
+        }
+    }
 }

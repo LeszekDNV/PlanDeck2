@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Components;
 using PlanDeck.Client.Models;
@@ -125,11 +126,26 @@ public sealed class AccountClientService(
         return await ReadResponseAsync(response, cancellationToken);
     }
 
-    public Task<bool> IsMicrosoftAuthenticationAvailableAsync(
+    public async Task<bool> IsMicrosoftAuthenticationAvailableAsync(
         CancellationToken cancellationToken = default)
     {
-        return _microsoftAuthenticationAvailability ??=
+        var request = _microsoftAuthenticationAvailability ??=
             LoadMicrosoftAuthenticationAvailabilityAsync(cancellationToken);
+
+        try
+        {
+            return await request;
+        }
+        catch (RpcException)
+        {
+            ResetMicrosoftAuthenticationAvailability(request);
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            ResetMicrosoftAuthenticationAvailability(request);
+            throw;
+        }
     }
 
     public void NavigateToEntraLogin(string? returnUrl = null)
@@ -214,6 +230,14 @@ public sealed class AccountClientService(
         return reply.MicrosoftAuthenticationAvailable;
     }
 
+    private void ResetMicrosoftAuthenticationAvailability(Task<bool> request)
+    {
+        if (ReferenceEquals(_microsoftAuthenticationAvailability, request))
+        {
+            _microsoftAuthenticationAvailability = null;
+        }
+    }
+
     private async Task EnsureAntiforgeryTokenAsync(CancellationToken cancellationToken)
     {
         if (httpClient.DefaultRequestHeaders.Contains(AntiforgeryHeader))
@@ -269,4 +293,3 @@ public sealed class AccountClientService(
 
     private sealed record AntiforgeryTokenResponse(string Token);
 }
-

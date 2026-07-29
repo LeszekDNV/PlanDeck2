@@ -1,5 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Routing;
@@ -19,15 +22,32 @@ public sealed class EntraEndpointAvailabilityTests
     ];
 
     [Test]
-    public void CompleteMicrosoftConfiguration_MapsAllChallengeRoutes()
+    public async Task CompleteMicrosoftConfiguration_MapsSchemeAndChallengeRoutes()
     {
         using var factory = CreateFactory(microsoftAuthenticationAvailable: true);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
 
         var routes = GetRoutePatterns(factory);
+        var schemeProvider = factory.Services.GetRequiredService<IAuthenticationSchemeProvider>();
+        var scheme = await schemeProvider.GetSchemeAsync(OpenIdConnectDefaults.AuthenticationScheme);
+        var loginResponse = await client.GetAsync(EntraChallengeRoutes[0]);
+        var registerResponse = await client.GetAsync(EntraChallengeRoutes[1]);
+        var linkEndpoint = GetRouteEndpoints(factory)
+            .Single(endpoint => endpoint.RoutePattern.RawText == EntraChallengeRoutes[2]);
 
-        Assert.That(routes, Does.Contain(EntraChallengeRoutes[0]));
-        Assert.That(routes, Does.Contain(EntraChallengeRoutes[1]));
-        Assert.That(routes, Does.Contain(EntraChallengeRoutes[2]));
+        Assert.Multiple(() =>
+        {
+            Assert.That(scheme, Is.Not.Null);
+            Assert.That(routes, Does.Contain(EntraChallengeRoutes[0]));
+            Assert.That(routes, Does.Contain(EntraChallengeRoutes[1]));
+            Assert.That(routes, Does.Contain(EntraChallengeRoutes[2]));
+            AssertMicrosoftChallenge(loginResponse);
+            AssertMicrosoftChallenge(registerResponse);
+            Assert.That(linkEndpoint.Metadata.GetMetadata<IAuthorizeData>(), Is.Not.Null);
+        });
     }
 
     [Test]
@@ -98,14 +118,26 @@ public sealed class EntraEndpointAvailabilityTests
     private static string[] GetRoutePatterns(
         WebApplicationFactory<ServerEntryPoint> factory)
     {
-        _ = factory.Services;
+        return GetRouteEndpoints(factory)
+            .Select(endpoint => endpoint.RoutePattern.RawText)
+            .OfType<string>()
+            .ToArray();
+    }
 
+    private static RouteEndpoint[] GetRouteEndpoints(
+        WebApplicationFactory<ServerEntryPoint> factory)
+    {
         return factory.Services
             .GetServices<EndpointDataSource>()
             .SelectMany(source => source.Endpoints)
             .OfType<RouteEndpoint>()
-            .Select(endpoint => endpoint.RoutePattern.RawText)
-            .OfType<string>()
             .ToArray();
+    }
+
+    private static void AssertMicrosoftChallenge(HttpResponseMessage response)
+    {
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Redirect));
+        Assert.That(response.Headers.Location, Is.Not.Null);
+        Assert.That(response.Headers.Location!.Host, Is.EqualTo("login.microsoftonline.com"));
     }
 }
