@@ -306,6 +306,9 @@ try {
         if ($criterion.score -eq 'N/A') {
             $criterion.evidence = @()
         }
+        else {
+            $criterion.naReason = ''
+        }
     }
 
     $modelLimitations = @($result.analysis.limitations | Where-Object { $_ })
