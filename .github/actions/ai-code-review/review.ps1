@@ -150,14 +150,14 @@ try {
     ))
 
     if ((Invoke-Git -Arguments @('rev-parse', '--is-shallow-repository')).Trim() -eq 'true') {
+        # --unshallow must be used without explicit refspecs; fetch all history first,
+        # then the refs created above remain available for the diff.
         [void] (Invoke-Git -Arguments @(
             'fetch',
             '--no-tags',
             '--no-recurse-submodules',
             '--unshallow',
-            'origin',
-            "+refs/heads/$baseBranch`:refs/remotes/ai-code-review/base-$pullRequestNumber",
-            "+refs/pull/$pullRequestNumber/head:refs/remotes/ai-code-review/pr-$pullRequestNumber"
+            'origin'
         ))
     }
 
