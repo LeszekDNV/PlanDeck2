@@ -405,13 +405,13 @@ does not alter Key Vault contents or database state.
 
 #### Automated
 
-- [x] 2.1 Testing infrastructure preview succeeds without destructive or broader RBAC changes
-- [x] 2.2 Testing workflow passes binding, revision, and public health gates
-- [x] 2.3 Final revision contains the Key Vault binding name without logging its value
+- [x] 2.1 Testing infrastructure preview succeeds without destructive or broader RBAC changes — 3f6953c
+- [x] 2.2 Testing workflow passes binding, revision, and public health gates — 3f6953c
+- [x] 2.3 Final revision contains the Key Vault binding name without logging its value — 3f6953c
 
 #### Manual
 
-- [x] 2.4 Existing vault, identity, RBAC, soft delete, and purge protection remain intact
-- [x] 2.5 Sandbox PAT validates and saves without the unavailable-store error
-- [x] 2.6 Saved connection remains valid without exposing the PAT
-- [x] 2.7 Smoke-test connection cleanup completes without credential exposure
+- [x] 2.4 Existing vault, identity, RBAC, soft delete, and purge protection remain intact — 3f6953c
+- [x] 2.5 Sandbox PAT validates and saves without the unavailable-store error — 3f6953c
+- [x] 2.6 Saved connection remains valid without exposing the PAT — 3f6953c
+- [x] 2.7 Smoke-test connection cleanup completes without credential exposure — 3f6953c
