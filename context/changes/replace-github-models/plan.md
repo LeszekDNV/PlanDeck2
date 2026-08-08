@@ -358,14 +358,14 @@ Required status checks, CODEOWNERS, human approvals, and protection of AI instru
 
 #### Automated
 
-- [x] 3.1 The repository has no remaining `ai-cr:*` labels
-- [x] 3.2 The old review workflow remains absent after the canary and label cleanup
+- [x] 3.1 The repository has no remaining `ai-cr:*` labels — 7b929c2
+- [x] 3.2 The old review workflow remains absent after the canary and label cleanup — 7b929c2
 
 #### Manual
 
-- [x] 3.3 The draft canary receives no automatic review before it is marked ready
-- [x] 3.4 Marking the PR ready produces a Copilot review with state `Comment`, not `Approve` or `Request changes`
-- [x] 3.5 Review output demonstrates use of the `code-review` skill and does not claim build/test execution or a merge verdict
-- [x] 3.6 The second push receives a fresh review of the current head
-- [x] 3.7 Manual re-review from the GitHub UI works without a workflow or label
-- [x] 3.8 Deleting the four legacy labels does not change unrelated repository labels
+- [x] 3.3 The draft canary receives no automatic review before it is marked ready — 7b929c2
+- [x] 3.4 Marking the PR ready produces a Copilot review with state `Comment`, not `Approve` or `Request changes` — 7b929c2
+- [x] 3.5 Review output demonstrates use of the `code-review` skill and does not claim build/test execution or a merge verdict — 7b929c2
+- [x] 3.6 The second push receives a fresh review of the current head — 7b929c2
+- [x] 3.7 Manual re-review from the GitHub UI works without a workflow or label — 7b929c2
+- [x] 3.8 Deleting the four legacy labels does not change unrelated repository labels — 7b929c2
