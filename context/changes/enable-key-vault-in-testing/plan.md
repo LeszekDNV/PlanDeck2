@@ -390,28 +390,28 @@ does not alter Key Vault contents or database state.
 
 #### Automated
 
-- [x] 1.1 PowerShell parses the readiness script without syntax errors
-- [x] 1.2 Both active workflows pass the exact Key Vault binding name
-- [x] 1.3 Testing publish manifest contains the Key Vault resource, role dependency, and binding
-- [x] 1.4 Whole solution builds
-- [x] 1.5 Repository diff passes whitespace validation
+- [x] 1.1 PowerShell parses the readiness script without syntax errors — fdbc5c3
+- [x] 1.2 Both active workflows pass the exact Key Vault binding name — fdbc5c3
+- [x] 1.3 Testing publish manifest contains the Key Vault resource, role dependency, and binding — fdbc5c3
+- [x] 1.4 Whole solution builds — fdbc5c3
+- [x] 1.5 Repository diff passes whitespace validation — fdbc5c3
 
 #### Manual
 
-- [x] 1.6 Testing manifest preserves protection, least privilege, and secret-free output
-- [x] 1.7 Runbook diagnostics expose binding names but no values
+- [x] 1.6 Testing manifest preserves protection, least privilege, and secret-free output — fdbc5c3
+- [x] 1.7 Runbook diagnostics expose binding names but no values — fdbc5c3
 
 ### Phase 2: Preview, Deploy, and Prove PAT Persistence
 
 #### Automated
 
-- [ ] 2.1 Testing infrastructure preview succeeds without destructive or broader RBAC changes
-- [ ] 2.2 Testing workflow passes binding, revision, and public health gates
-- [ ] 2.3 Final revision contains the Key Vault binding name without logging its value
+- [x] 2.1 Testing infrastructure preview succeeds without destructive or broader RBAC changes
+- [x] 2.2 Testing workflow passes binding, revision, and public health gates
+- [x] 2.3 Final revision contains the Key Vault binding name without logging its value
 
 #### Manual
 
-- [ ] 2.4 Existing vault, identity, RBAC, soft delete, and purge protection remain intact
-- [ ] 2.5 Sandbox PAT validates and saves without the unavailable-store error
-- [ ] 2.6 Saved connection remains valid without exposing the PAT
-- [ ] 2.7 Smoke-test connection cleanup completes without credential exposure
+- [x] 2.4 Existing vault, identity, RBAC, soft delete, and purge protection remain intact
+- [x] 2.5 Sandbox PAT validates and saves without the unavailable-store error
+- [x] 2.6 Saved connection remains valid without exposing the PAT
+- [x] 2.7 Smoke-test connection cleanup completes without credential exposure

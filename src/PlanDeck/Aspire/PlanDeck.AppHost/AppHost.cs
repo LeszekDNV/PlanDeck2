@@ -1,9 +1,18 @@
+using Aspire.Hosting.Azure;
+using Azure.Provisioning;
 using Azure.Provisioning.AppContainers;
 using Azure.Provisioning.KeyVault;
+using Azure.Provisioning.Primitives;
+using Azure.Provisioning.Resources;
 using Azure.Provisioning.Sql;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = DistributedApplication.CreateBuilder(args);
+
+builder.Services.Configure<AzureProvisioningOptions>(options =>
+    options.ProvisioningBuildOptions.InfrastructureResolvers.Add(
+        new AzureSqlPowerShellModuleWorkaround()));
 
 const string PublishTargetConfigurationKey = "Publishing:Target";
 const string PublishTargetTesting = "Testing";
@@ -185,4 +194,39 @@ static string ResolvePublishTarget(
     }
 
     return PublishTargetProduction;
+}
+
+internal sealed class AzureSqlPowerShellModuleWorkaround : InfrastructureResolver
+{
+    private const string SqlServerInstall =
+        "Install-Module -Name SqlServer -RequiredVersion 22.3.0";
+
+    public override IEnumerable<Provisionable> ResolveResources(
+        IEnumerable<Provisionable> resources,
+        ProvisioningBuildOptions options)
+    {
+        var resolvedResources = resources.ToArray();
+
+        foreach (var script in resolvedResources.OfType<AzurePowerShellScript>())
+        {
+            if (script.ScriptContent.Value is not { } content
+                || !content.Contains(SqlServerInstall, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            // Temporary workaround for https://github.com/microsoft/aspire/issues/18845.
+            var updatedContent = content.Replace(
+                "-RequiredVersion 22.3.0",
+                "-RequiredVersion 22.4.5.1",
+                StringComparison.Ordinal);
+            updatedContent = updatedContent.Replace(
+                "Import-Module SqlServer",
+                "Import-Module SqlServer -RequiredVersion 22.4.5.1 -Force",
+                StringComparison.Ordinal);
+            script.ScriptContent.Assign(new BicepValue<string>(updatedContent));
+        }
+
+        return base.ResolveResources(resolvedResources, options);
+    }
 }
