@@ -2,7 +2,6 @@
 
 [![Deploy develop](https://github.com/LeszekDNV/PlanDeck2/actions/workflows/azure-develop.yml/badge.svg?branch=develop)](https://github.com/LeszekDNV/PlanDeck2/actions/workflows/azure-develop.yml)
 [![Deploy main](https://github.com/LeszekDNV/PlanDeck2/actions/workflows/azure-dev.yml/badge.svg?branch=main)](https://github.com/LeszekDNV/PlanDeck2/actions/workflows/azure-dev.yml)
-[![Advisory AI code review](https://github.com/LeszekDNV/PlanDeck2/actions/workflows/ai-code-review.yml/badge.svg)](https://github.com/LeszekDNV/PlanDeck2/actions/workflows/ai-code-review.yml)
 [![License: GPL-3.0](https://img.shields.io/github/license/LeszekDNV/PlanDeck2)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 
@@ -61,7 +60,7 @@ Stan aktywnych pokojów głosowania jest obecnie przechowywany w pamięci proces
 
 ```text
 .
-├── .github/workflows/             # GitHub Actions: przegląd PR i wdrożenia
+├── .github/workflows/             # GitHub Actions: wdrożenia
 ├── context/                       # PRD, roadmapa, decyzje i historia zmian
 └── src/PlanDeck/
     ├── Aspire/
@@ -155,7 +154,6 @@ dotnet test PlanDeck.slnx
 | --- | --- | --- |
 | `azure-develop.yml` | push do `develop` lub ręcznie | środowisko Azure `Testing` |
 | `azure-dev.yml` | push do `main` lub ręcznie | pilot w środowisku Azure `Testing` |
-| `ai-code-review.yml` | pull request do `develop` | doradczy przegląd statycznego diffu |
 
 Workflowy wdrożeniowe używają federacji OIDC zamiast długotrwałego sekretu do logowania w Azure. Pipeline:
 

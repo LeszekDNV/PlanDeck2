@@ -12,7 +12,7 @@ The `main` and `develop` Testing workflows independently repeat the same SQL seq
 
 The Testing database is intentionally serverless and auto-pauses after 60 minutes (`src/PlanDeck/Aspire/PlanDeck.AppHost/AppHost.cs:57-75`). Microsoft documents that the first connection to a paused database triggers resume and can return error 40613; clients are expected to retry. Runtime EF Core already follows this convention through `EnableRetryOnFailure()` (`src/PlanDeck/Web/PlanDeck.Server/Extensions/ServiceCollectionExtensions.cs:28-53`), but the deployment path does not.
 
-The repository already keeps reusable GitHub automation in local composite actions backed by PowerShell (`.github/actions/ai-code-review/action.yml:1-50`). Both SQL workflows run on the same GitHub-hosted Ubuntu runner for the duration of a job, so a module installed by the readiness action remains available to the later reset and migration steps.
+The repository already keeps reusable GitHub automation in local composite actions backed by PowerShell (`.github/actions/validate-azure-entra-config/action.yml:1-24`). Both SQL workflows run on the same GitHub-hosted Ubuntu runner for the duration of a job, so a module installed by the readiness action remains available to the later reset and migration steps.
 
 ## Desired End State
 
@@ -188,7 +188,7 @@ Rollback consists of removing the readiness step/action and restoring per-step `
 - Develop Testing workflow: `.github/workflows/azure-develop.yml:85-158`
 - Serverless configuration: `src/PlanDeck/Aspire/PlanDeck.AppHost/AppHost.cs:57-75`
 - Runtime retry convention: `src/PlanDeck/Web/PlanDeck.Server/Extensions/ServiceCollectionExtensions.cs:28-53`
-- Existing local action pattern: `.github/actions/ai-code-review/action.yml:1-50`
+- Existing local action pattern: `.github/actions/validate-azure-entra-config/action.yml:1-24`
 - Historical serverless warmup: `context/archive/2026-06-24-deploy-realtime-validation-skeleton/runbook.md:56-63`
 - Azure SQL serverless auto-resume: https://learn.microsoft.com/en-us/azure/azure-sql/database/serverless-tier-overview?view=azuresql
 - Azure SQL transient connectivity guidance: https://learn.microsoft.com/en-us/azure/azure-sql/database/troubleshoot-common-connectivity-issues?view=azuresql
