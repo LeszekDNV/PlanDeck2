@@ -342,30 +342,30 @@ Required status checks, CODEOWNERS, human approvals, and protection of AI instru
 
 #### Automated
 
-- [x] 2.1 All files under `.github/actions/ai-code-review/` and `.github/workflows/ai-code-review.yml` are absent
-- [x] 2.2 Tracked `.github` content has no GitHub Models endpoint, `models: read`, or `openai/gpt-4.1-mini` reference
-- [x] 2.3 Repository whitespace and patch integrity checks pass
-- [x] 2.4 The full solution builds successfully
+- [x] 2.1 All files under `.github/actions/ai-code-review/` and `.github/workflows/ai-code-review.yml` are absent — 566c772
+- [x] 2.2 Tracked `.github` content has no GitHub Models endpoint, `models: read`, or `openai/gpt-4.1-mini` reference — 566c772
+- [x] 2.3 Repository whitespace and patch integrity checks pass — 566c772
+- [x] 2.4 The full solution builds successfully — 566c772
 
 #### Manual
 
-- [x] 2.5 The merged repository contains the tracked `code-review` skill before the ruleset is enabled
-- [x] 2.6 `Protect develop` shows automatic Copilot review enabled with new-push review, drafts disabled, and `Balanced` effort
-- [x] 2.7 `Protect main` and all deterministic merge requirements remain unchanged
-- [x] 2.8 No old workflow run can be manually or automatically started after the cutover
+- [x] 2.5 The merged repository contains the tracked `code-review` skill before the ruleset is enabled — 566c772
+- [x] 2.6 `Protect develop` shows automatic Copilot review enabled with new-push review, drafts disabled, and `Balanced` effort — 566c772
+- [x] 2.7 `Protect main` and all deterministic merge requirements remain unchanged — 566c772
+- [x] 2.8 No old workflow run can be manually or automatically started after the cutover — 566c772
 
 ### Phase 3: Validate the Canary and Retire Legacy Labels
 
 #### Automated
 
-- [ ] 3.1 The repository has no remaining `ai-cr:*` labels
-- [ ] 3.2 The old review workflow remains absent after the canary and label cleanup
+- [x] 3.1 The repository has no remaining `ai-cr:*` labels
+- [x] 3.2 The old review workflow remains absent after the canary and label cleanup
 
 #### Manual
 
-- [ ] 3.3 The draft canary receives no automatic review before it is marked ready
-- [ ] 3.4 Marking the PR ready produces a Copilot review with state `Comment`, not `Approve` or `Request changes`
-- [ ] 3.5 Review output demonstrates use of the `code-review` skill and does not claim build/test execution or a merge verdict
-- [ ] 3.6 The second push receives a fresh review of the current head
-- [ ] 3.7 Manual re-review from the GitHub UI works without a workflow or label
-- [ ] 3.8 Deleting the four legacy labels does not change unrelated repository labels
+- [x] 3.3 The draft canary receives no automatic review before it is marked ready
+- [x] 3.4 Marking the PR ready produces a Copilot review with state `Comment`, not `Approve` or `Request changes`
+- [x] 3.5 Review output demonstrates use of the `code-review` skill and does not claim build/test execution or a merge verdict
+- [x] 3.6 The second push receives a fresh review of the current head
+- [x] 3.7 Manual re-review from the GitHub UI works without a workflow or label
+- [x] 3.8 Deleting the four legacy labels does not change unrelated repository labels
