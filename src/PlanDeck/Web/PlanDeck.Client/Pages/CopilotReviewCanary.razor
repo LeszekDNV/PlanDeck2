@@ -1,0 +1,11 @@
+@page "/copilot-review-canary"
+
+<h1>Copilot review canary</h1>
+
+<button @onclick="Increment">Count: @_count</button>
+
+@code {
+    private int _count;
+
+    private void Increment() => _count++;
+}
