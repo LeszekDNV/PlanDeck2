@@ -80,6 +80,11 @@ Tests use **NUnit** (`[Test]`, `[TestFixture]`; `NUnit.Framework` is a global `u
 - **Blazor views use `.razor.cs` code-behind, never `@code`**: every component (Pages, Layout, shared components) keeps its C# in a `partial class` in a sibling `<Name>.razor.cs` file — do **not** put logic in an `@code { }` block in the `.razor`. The `.razor` holds only markup and directives (`@page`, `@inject`, `@using`, `@attribute`, etc.); put `@implements`/interface declarations and `[Parameter]` properties on the code-behind partial class instead. Match the component's namespace by folder (`Pages/` → `PlanDeck.Client.Pages`, `Layout/` → `PlanDeck.Client.Layout`) and the class name to the file. **Gotcha:** `@using` in the `.razor` and `_Imports.razor` do **not** apply to the `.razor.cs`, so add explicit `using` statements there (ImplicitUsings already covers `System`/`System.Linq`/`System.Collections.Generic`/`System.Threading.Tasks`). Do **not** restate the base class (`ComponentBase`/`LayoutComponentBase`) — the generated partial already provides it.
 - User-facing strings are localized (`en`/`pl`); don't hard-code display text that should be resource-driven.
 
+## Code review
+
+- For pull request reviews, follow `.github/skills/code-review/SKILL.md` and its referenced PlanDeck review policy.
+- AI review findings are advisory. Do not present them as approval, a request for changes, a status check, or a merge decision.
+
 ## Code quality (required)
 
 - Write **Clean Code**: follow **SOLID, KISS, DRY, and YAGNI**. Don't add abstraction or features that aren't needed yet.

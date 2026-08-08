@@ -431,6 +431,10 @@ FodyWeavers.xsd
 /.github/*
 !/.github/workflows/
 !/.github/actions/
+!/.github/skills/
+/.github/skills/*
+!/.github/skills/code-review/
+!/.github/skills/code-review/**
 /.agents/skills
 *.pem
 *.cer
