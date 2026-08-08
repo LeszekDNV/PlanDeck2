@@ -40,8 +40,13 @@ Current `azd` environment: `test`.
 - Aspire dashboard: `https://aspire-dashboard.ext.wittymeadow-96369440.polandcentral.azurecontainerapps.io`
 - SQL server: `sqlserver-ade7omipejs3a.database.windows.net`
 - Database: `PlanDeckDb`
+- Key Vault: `keyvault-ade7omipejs3a`
 
-The app uses the user-assigned managed identity `plandeck_server_identity-ade7omipejs3a` for Azure SQL. The identity is represented as a contained database user in `PlanDeckDb`; keep this grant in place when reprovisioning or replacing the SQL server.
+The app uses the user-assigned managed identity
+`plandeck_server_identity-ade7omipejs3a` for Azure SQL and Key Vault. The
+identity is represented as a contained database user in `PlanDeckDb` and has
+`Key Vault Secrets Officer` at the Testing vault scope. Keep both grants in
+place when reprovisioning or replacing infrastructure.
 
 ### Testing Microsoft sign-in contract
 
@@ -99,7 +104,9 @@ Each GitHub workflow:
 4. Deploys the application.
 5. Captures the final Container App revision once and waits for that immutable
    revision to become provisioned, healthy, and running.
-6. Requires the public HTTPS `/health` endpoint to return HTTP 200 without
+6. Requires that revision to contain the exact environment binding name
+   `ConnectionStrings__key-vault` without reading or logging its value.
+7. Requires the public HTTPS `/health` endpoint to return HTTP 200 without
    following redirects.
 
 Deployment failure stops the workflow but does not automatically alter traffic,
@@ -144,6 +151,17 @@ curl.exe --max-redirs 0 --fail-with-body `
   "https://plandeck-server.wittymeadow-96369440.polandcentral.azurecontainerapps.io/health"
 ```
 
+Confirm the final revision exposes the required Key Vault binding name without
+querying environment values:
+
+```powershell
+$Revision = az containerapp show --resource-group $ResourceGroup --name $ContainerApp `
+  --query "properties.latestRevisionName" --output tsv
+az containerapp revision show --resource-group $ResourceGroup --name $ContainerApp `
+  --revision $Revision `
+  --query "properties.template.containers[0].env[].name" --output tsv
+```
+
 After human review, restore traffic to a known-good active revision:
 
 ```powershell
@@ -158,7 +176,12 @@ script or database point-in-time restore only after separate human approval.
 Common incident checks:
 
 - ACA provisioning failure: capture `azd` logs, generated Bicep, resource group deployment operation ID, and Azure activity-log correlation ID before editing resources.
-- Managed identity or Key Vault failure: verify identity assignment, RBAC/access policy, secret names, and whether a new ACA revision/restart is needed. Testing does not provision Key Vault, so its readiness checks only configured dependencies.
+- Managed identity or Key Vault failure: verify the final revision contains the
+  `ConnectionStrings__key-vault` binding name, the application identity is
+  assigned, and that identity retains `Key Vault Secrets Officer` at the
+  Testing vault scope. Verify Azure RBAC, soft delete, and purge protection
+  remain enabled. Do not print binding values, PATs, secret names, or secret
+  values while diagnosing the incident.
 - SQL failure: check `DefaultConnection` binding, Azure SQL firewall/private access, managed identity user mapping, migration state, and `/health` output.
 - Entra ID callback failure: verify redirect URI, forwarded HTTPS headers, cookie settings, tenant ID, and client ID.
 - Azure DevOps import/write-back failure: surface 401/403/404/409/429 separately, honor `Retry-After`, retain the PlanDeck estimate, and retry only after correcting permission, field, or revision conflicts.

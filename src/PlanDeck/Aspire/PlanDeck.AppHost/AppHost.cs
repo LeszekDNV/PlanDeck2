@@ -31,24 +31,21 @@ var planDeckServer = builder
     .AddProject<Projects.PlanDeck_Server>("plandeck-server")
     .WithExternalHttpEndpoints();
 
-if (!isTestingPublishTarget)
-{
-    var keyVault = builder.AddAzureKeyVault("key-vault")
-        .ClearDefaultRoleAssignments()
-        .ConfigureInfrastructure(infrastructure =>
-        {
-            var vault = infrastructure.GetProvisionableResources()
-                .OfType<KeyVaultService>()
-                .Single();
-            vault.Properties.EnableSoftDelete = true;
-            vault.Properties.EnablePurgeProtection = true;
-        });
+var keyVault = builder.AddAzureKeyVault("key-vault")
+    .ClearDefaultRoleAssignments()
+    .ConfigureInfrastructure(infrastructure =>
+    {
+        var vault = infrastructure.GetProvisionableResources()
+            .OfType<KeyVaultService>()
+            .Single();
+        vault.Properties.EnableSoftDelete = true;
+        vault.Properties.EnablePurgeProtection = true;
+    });
 
-    planDeckServer
-        .WithRoleAssignments(keyVault, KeyVaultBuiltInRole.KeyVaultSecretsOfficer)
-        .WithReference(keyVault)
-        .WaitFor(keyVault);
-}
+planDeckServer
+    .WithRoleAssignments(keyVault, KeyVaultBuiltInRole.KeyVaultSecretsOfficer)
+    .WithReference(keyVault)
+    .WaitFor(keyVault);
 
 if (builder.ExecutionContext.IsPublishMode)
 {

@@ -8,6 +8,10 @@ param(
     [ValidateNotNullOrEmpty()]
     [string] $ContainerAppName,
 
+    [Parameter(Mandatory)]
+    [ValidateNotNullOrEmpty()]
+    [string] $RequiredEnvironmentVariableName,
+
     [Parameter()]
     [ValidateRange(1, [int]::MaxValue)]
     [int] $RevisionTimeoutSeconds = 600,
@@ -201,6 +205,34 @@ if (-not $revisionReady) {
 
 Write-Host (
     "Revision '$revisionName' is provisioned, healthy, and running.")
+
+$environmentVariableNames = @(
+    $revision.properties.template.containers[0].env |
+        ForEach-Object { [string] $_.name }
+)
+$requiredEnvironmentVariableFound = $false
+foreach ($environmentVariableName in $environmentVariableNames)
+{
+    if ([string]::Equals(
+            $environmentVariableName,
+            $RequiredEnvironmentVariableName,
+            [StringComparison]::Ordinal))
+    {
+        $requiredEnvironmentVariableFound = $true
+        break
+    }
+}
+
+if (-not $requiredEnvironmentVariableFound)
+{
+    throw (
+        "Revision '$revisionName' is missing required environment variable " +
+        "'$RequiredEnvironmentVariableName'.")
+}
+
+Write-Host (
+    "Revision '$revisionName' contains required environment variable " +
+    "'$RequiredEnvironmentVariableName'.")
 
 $fqdn = (
     Invoke-AzureCli -Arguments @(
