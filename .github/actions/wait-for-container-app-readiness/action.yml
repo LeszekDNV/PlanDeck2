@@ -8,6 +8,9 @@ inputs:
   container-app-name:
     description: Container App name.
     required: true
+  required-environment-variable-name:
+    description: Environment variable name required on the final revision.
+    required: true
   revision-timeout-seconds:
     description: Maximum time to wait for the captured revision.
     required: false
@@ -29,6 +32,7 @@ runs:
       env:
         ACA_RESOURCE_GROUP: ${{ inputs.resource-group }}
         ACA_CONTAINER_APP_NAME: ${{ inputs.container-app-name }}
+        ACA_REQUIRED_ENVIRONMENT_VARIABLE_NAME: ${{ inputs.required-environment-variable-name }}
         ACA_REVISION_TIMEOUT_SECONDS: ${{ inputs.revision-timeout-seconds }}
         ACA_PUBLIC_HEALTH_TIMEOUT_SECONDS: ${{ inputs.public-health-timeout-seconds }}
         ACA_HEALTH_PATH: ${{ inputs.health-path }}
@@ -36,6 +40,7 @@ runs:
         & (Join-Path $env:GITHUB_ACTION_PATH 'wait-for-container-app-readiness.ps1')
         -ResourceGroup $env:ACA_RESOURCE_GROUP
         -ContainerAppName $env:ACA_CONTAINER_APP_NAME
+        -RequiredEnvironmentVariableName $env:ACA_REQUIRED_ENVIRONMENT_VARIABLE_NAME
         -RevisionTimeoutSeconds $env:ACA_REVISION_TIMEOUT_SECONDS
         -PublicHealthTimeoutSeconds $env:ACA_PUBLIC_HEALTH_TIMEOUT_SECONDS
         -HealthPath $env:ACA_HEALTH_PATH

@@ -195,6 +195,7 @@ jobs:
         with:
           resource-group: ${{ env.AZURE_RESOURCE_GROUP }}
           container-app-name: plandeck-server
+          required-environment-variable-name: ConnectionStrings__key-vault
           revision-timeout-seconds: "600"
           public-health-timeout-seconds: "300"
           health-path: /health

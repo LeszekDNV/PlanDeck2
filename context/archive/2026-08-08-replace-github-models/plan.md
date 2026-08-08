@@ -325,47 +325,47 @@ Required status checks, CODEOWNERS, human approvals, and protection of AI instru
 
 #### Automated
 
-- [x] 1.1 The new review skill is not ignored while sibling local skills remain ignored
-- [x] 1.2 Skill structure and frontmatter validate
-- [x] 1.3 The policy contains exactly 15 unique criterion identifiers matching the archived requirements
-- [x] 1.4 Repository whitespace and patch integrity checks pass
-- [x] 1.5 The full solution builds successfully
+- [x] 1.1 The new review skill is not ignored while sibling local skills remain ignored — 089796d
+- [x] 1.2 Skill structure and frontmatter validate — 089796d
+- [x] 1.3 The policy contains exactly 15 unique criterion identifiers matching the archived requirements — 089796d
+- [x] 1.4 Repository whitespace and patch integrity checks pass — 089796d
+- [x] 1.5 The full solution builds successfully — 089796d
 
 #### Manual
 
-- [x] 1.6 Copilot Code Review entitlement, repository availability, and `Balanced` AI-credit budget are confirmed before Phase 2
-- [x] 1.7 The policy preserves the substance of all 15 criteria and blocker classes without retaining scoring or verdict semantics
-- [x] 1.8 The skill produces focused finding guidance rather than a mandatory 15-section report
-- [x] 1.9 No unrelated local skill is made trackable by the `.gitignore` change
+- [x] 1.6 Copilot Code Review entitlement, repository availability, and `Balanced` AI-credit budget are confirmed before Phase 2 — 089796d
+- [x] 1.7 The policy preserves the substance of all 15 criteria and blocker classes without retaining scoring or verdict semantics — 089796d
+- [x] 1.8 The skill produces focused finding guidance rather than a mandatory 15-section report — 089796d
+- [x] 1.9 No unrelated local skill is made trackable by the `.gitignore` change — 089796d
 
 ### Phase 2: Remove GitHub Models and Cut Over `develop`
 
 #### Automated
 
-- [ ] 2.1 All files under `.github/actions/ai-code-review/` and `.github/workflows/ai-code-review.yml` are absent
-- [ ] 2.2 Tracked `.github` content has no GitHub Models endpoint, `models: read`, or `openai/gpt-4.1-mini` reference
-- [ ] 2.3 Repository whitespace and patch integrity checks pass
-- [ ] 2.4 The full solution builds successfully
+- [x] 2.1 All files under `.github/actions/ai-code-review/` and `.github/workflows/ai-code-review.yml` are absent — 566c772
+- [x] 2.2 Tracked `.github` content has no GitHub Models endpoint, `models: read`, or `openai/gpt-4.1-mini` reference — 566c772
+- [x] 2.3 Repository whitespace and patch integrity checks pass — 566c772
+- [x] 2.4 The full solution builds successfully — 566c772
 
 #### Manual
 
-- [ ] 2.5 The merged repository contains the tracked `code-review` skill before the ruleset is enabled
-- [ ] 2.6 `Protect develop` shows automatic Copilot review enabled with new-push review, drafts disabled, and `Balanced` effort
-- [ ] 2.7 `Protect main` and all deterministic merge requirements remain unchanged
-- [ ] 2.8 No old workflow run can be manually or automatically started after the cutover
+- [x] 2.5 The merged repository contains the tracked `code-review` skill before the ruleset is enabled — 566c772
+- [x] 2.6 `Protect develop` shows automatic Copilot review enabled with new-push review, drafts disabled, and `Balanced` effort — 566c772
+- [x] 2.7 `Protect main` and all deterministic merge requirements remain unchanged — 566c772
+- [x] 2.8 No old workflow run can be manually or automatically started after the cutover — 566c772
 
 ### Phase 3: Validate the Canary and Retire Legacy Labels
 
 #### Automated
 
-- [ ] 3.1 The repository has no remaining `ai-cr:*` labels
-- [ ] 3.2 The old review workflow remains absent after the canary and label cleanup
+- [x] 3.1 The repository has no remaining `ai-cr:*` labels — 7b929c2
+- [x] 3.2 The old review workflow remains absent after the canary and label cleanup — 7b929c2
 
 #### Manual
 
-- [ ] 3.3 The draft canary receives no automatic review before it is marked ready
-- [ ] 3.4 Marking the PR ready produces a Copilot review with state `Comment`, not `Approve` or `Request changes`
-- [ ] 3.5 Review output demonstrates use of the `code-review` skill and does not claim build/test execution or a merge verdict
-- [ ] 3.6 The second push receives a fresh review of the current head
-- [ ] 3.7 Manual re-review from the GitHub UI works without a workflow or label
-- [ ] 3.8 Deleting the four legacy labels does not change unrelated repository labels
+- [x] 3.3 The draft canary receives no automatic review before it is marked ready — 7b929c2
+- [x] 3.4 Marking the PR ready produces a Copilot review with state `Comment`, not `Approve` or `Request changes` — 7b929c2
+- [x] 3.5 Review output demonstrates use of the `code-review` skill and does not claim build/test execution or a merge verdict — 7b929c2
+- [x] 3.6 The second push receives a fresh review of the current head — 7b929c2
+- [x] 3.7 Manual re-review from the GitHub UI works without a workflow or label — 7b929c2
+- [x] 3.8 Deleting the four legacy labels does not change unrelated repository labels — 7b929c2
