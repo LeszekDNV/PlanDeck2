@@ -14,6 +14,8 @@ namespace PlanDeck.Integration.Tests;
 [SetUpFixture]
 public class AspireAppFixture
 {
+    private const string IntegrationTestResourceGroup = "rg-test";
+
     private DistributedApplication? _app;
 
     /// <summary>
@@ -58,10 +60,15 @@ public class AspireAppFixture
     private static void EnsureAzureProvisioningConfigured(IConfiguration configuration)
     {
         if (string.IsNullOrWhiteSpace(configuration["Azure:SubscriptionId"])
-            || string.IsNullOrWhiteSpace(configuration["Azure:Location"]))
+            || string.IsNullOrWhiteSpace(configuration["Azure:Location"])
+            || !string.Equals(
+                configuration["Azure:ResourceGroup"],
+                IntegrationTestResourceGroup,
+                StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
-                "Local Aspire integration tests require Azure:SubscriptionId and Azure:Location for a dedicated non-production Key Vault.");
+                $"Local Aspire integration tests require Azure:SubscriptionId, Azure:Location, "
+                + $"and Azure:ResourceGroup={IntegrationTestResourceGroup} for the dedicated non-production Key Vault.");
         }
     }
 

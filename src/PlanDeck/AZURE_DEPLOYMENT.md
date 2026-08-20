@@ -114,8 +114,10 @@ activate or deactivate revisions, or roll back database migrations. Preserve
 the workflow URL and verified revision name before performing manual recovery.
 
 The real Key Vault integration test uses the non-production vault provisioned by
-the test AppHost. Local runs require `Azure:SubscriptionId` and `Azure:Location`
-in the AppHost user secrets and an authenticated Azure CLI session.
+the test AppHost. Local runs require `Azure:SubscriptionId`, `Azure:Location`,
+and `Azure:ResourceGroup=rg-test` in the AppHost user secrets, plus an
+authenticated Azure CLI session. The fixture rejects any other resource group
+before Aspire provisions or mutates Azure resources.
 
 ## Support runbooks
 
