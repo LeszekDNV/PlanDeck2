@@ -113,7 +113,9 @@ Deployment failure stops the workflow but does not automatically alter traffic,
 activate or deactivate revisions, or roll back database migrations. Preserve
 the workflow URL and verified revision name before performing manual recovery.
 
-Real Key Vault integration verification is opt-in by default (`PLANDECK_RUN_REAL_KEYVAULT_TESTS=true`). In CI security gates, also set `PLANDECK_REQUIRE_REAL_KEYVAULT_TESTS=true` to fail fast instead of silently skipping the test.
+The real Key Vault integration test uses the non-production vault provisioned by
+the test AppHost. Local runs require `Azure:SubscriptionId` and `Azure:Location`
+in the AppHost user secrets and an authenticated Azure CLI session.
 
 ## Support runbooks
 
