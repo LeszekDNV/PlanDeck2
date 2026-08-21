@@ -3,7 +3,7 @@ project: "PlanDeck"
 version: 1
 status: draft
 created: 2026-06-18
-updated: 2026-07-21
+updated: 2026-08-21
 prd_version: 1
 main_goal: quality
 top_blocker: time
@@ -248,6 +248,16 @@ Foundations below assume these are present and do NOT re-scaffold them.
 (Empty on first generation. `/10x-archive` appends an entry here — and flips that item's `Status` to `done` — when a change whose `Change ID` matches the item is archived. Do NOT pre-populate.)
 
 - **F-01: (foundation) the EF Core domain-persistence pattern and the per-user/tenant data-scoping convention are established, with a real migration applied on startup against the configured SQL database.** — Archived 2026-06-18 → `context/archive/2026-06-18-multitenant-persistence-baseline/`. Lesson: —.
+- **F-02: (foundation) the in-memory planning-room spike is hardened into the authoritative hidden-vote/reveal contract: votes are never lost, duplicated, or reordered; values are not observable by any participant before reveal; and a participant can drop and reconnect without corrupting room state.** — Archived 2026-07-21 → `context/archive/2026-06-22-realtime-vote-integrity/`. Lesson: —.
+- **F-03: (foundation) a minimal pilot environment on Azure Container Apps + Azure SQL exists, and the exact runtime contract — hosted Blazor WASM load, gRPC-Web unary calls, a SignalR voting round staying connected through reveal, and SQL access via managed identity — is validated.** — Archived 2026-06-25 → `context/archive/2026-06-24-deploy-realtime-validation-skeleton/`. Lesson: —.
+- **S-01: a signed-in user can create a team and add members to it.** — Archived 2026-06-18 → `context/archive/2026-06-18-team-and-members/`. Lesson: —.
+- **S-02: a user can create ad-hoc tasks manually within PlanDeck.** — Archived 2026-06-23 → `context/archive/2026-06-23-adhoc-tasks/`. Lesson: —.
+- **S-03: a user can connect to Azure DevOps and import selected tasks into PlanDeck.** — Archived 2026-06-24 → `context/archive/2026-06-24-azure-devops-import/`. Lesson: —.
+- **S-04: a user can create a planning session from a set of selected tasks and configure it (task selection and voting scale only).** — Archived 2026-06-19 → `context/archive/2026-06-18-create-configure-session/`. Lesson: —.
+- **S-05: a user can assign/invite team members to a session.** — Archived 2026-06-22 → `context/archive/2026-06-22-assign-session-members/`. Lesson: —.
+- **S-06: assigned members join a session and vote on each task in real time; participants see who has voted as it happens, values stay hidden until the round is revealed and then appear together, and the user manually selects the agreed estimate, which is persisted.** — Archived 2026-06-23 → `context/archive/2026-06-22-realtime-voting-round/`. Lesson: —.
+- **S-07: a user without an account can join a session's vote via a share link containing a code, providing only a temporary username, and vote like any participant.** — Archived 2026-06-24 → `context/archive/2026-06-24-guest-link-voting/`. Lesson: —.
+- **S-08: a user can write the agreed estimate back to the originating Azure DevOps task, with success or failure surfaced explicitly and never silently dropped.** — Archived 2026-06-24 → `context/archive/2026-06-24-ado-estimate-writeback/`. Lesson: —.
 - **S-01: a signed-in user can create a team and add members to it.** — Archived 2026-06-18 → `context/archive/2026-06-18-team-and-members/`. Lesson: —.
 - **S-04: a user can create a planning session from a set of selected tasks and configure it (task selection and voting scale only).** — Archived 2026-06-19 → `context/archive/2026-06-18-create-configure-session/`. Lesson: —.
 - **S-02: a user can create ad-hoc tasks manually within PlanDeck.** — Archived 2026-06-23 → `context/archive/2026-06-23-adhoc-tasks/`. Lesson: —.
