@@ -1,10 +1,10 @@
 ---
 change_id: tenant-scoped-ado-connections
 title: Add tenant-scoped Azure DevOps connections
-status: new
+status: archived
 created: 2026-07-21
-updated: 2026-07-21
-archived_at: null
+updated: 2026-08-21
+archived_at: 2026-08-21T08:21:29Z
 ---
 
 ## Notes
