@@ -1,10 +1,10 @@
 ---
 change_id: rg-test-auto-login
 title: Automatyczne logowanie Test Owner w rg-test
-status: implemented
+status: archived
 created: 2026-07-25
-updated: 2026-07-25
-archived_at: null
+updated: 2026-08-21
+archived_at: 2026-08-21T08:21:29Z
 ---
 
 ## Notes
