@@ -1,10 +1,10 @@
 ---
 change_id: microsoft-login-error
 title: Naprawa logowania kontem Microsoft w środowisku Test
-status: impl_reviewed
+status: archived
 created: 2026-07-29
-updated: 2026-07-29
-archived_at: null
+updated: 2026-08-21
+archived_at: 2026-08-21T08:21:29Z
 ---
 
 ## Notes

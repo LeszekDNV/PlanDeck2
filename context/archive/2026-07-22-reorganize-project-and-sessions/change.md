@@ -1,10 +1,10 @@
 ---
 change_id: reorganize-project-and-sessions
 title: Reorganize projects and project-owned sessions
-status: impl_reviewed
+status: archived
 created: 2026-07-22
-updated: 2026-07-23
-archived_at: null
+updated: 2026-08-21
+archived_at: 2026-08-21T08:21:29Z
 ---
 
 ## Notes
